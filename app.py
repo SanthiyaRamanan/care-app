@@ -9,13 +9,14 @@ from functools import wraps
 
 from flask import (Flask, render_template, request, redirect,
                    url_for, session, flash, jsonify, send_file)
+import pymysql
+pymysql.install_as_MySQLdb()
 from flask_mysqldb import MySQL
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 
 from config import Config
-import pymysql
-pymysql.install_as_MySQLdb()
+
 
 try:
     import openpyxl
