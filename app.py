@@ -6,7 +6,7 @@ from datetime import datetime, date, timedelta
 from functools import wraps
 
 from flask import (Flask, render_template, request, redirect,
-                   url_for, session, flash, jsonify, send_file)
+                   url_for, session, flash, jsonify, send_file, send_from_directory)
 import pymysql
 import pymysql.cursors
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -110,7 +110,23 @@ def save_file(file, subfolder):
     path = os.path.join(app.config['UPLOAD_FOLDER'], subfolder, fn)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     file.save(path)
-    return f"uploads/{subfolder}/{fn}"
+    # Return a relative path from UPLOAD_FOLDER root, e.g. "profiles/20240101_pic.jpg"
+    return f"{subfolder}/{fn}"
+
+def get_profile_pic_url(profile_pic):
+    """
+    Returns a URL to serve the profile picture.
+    Handles both old-style paths (uploads/profiles/...) and new-style (profiles/...).
+    """
+    if not profile_pic:
+        return None
+    # Strip leading 'uploads/' if present (legacy paths stored with it)
+    clean = profile_pic.lstrip('/')
+    if clean.startswith('uploads/'):
+        clean = clean[len('uploads/'):]
+    return url_for('serve_upload', filename=clean)
+
+# make get_profile_pic_url available in all templates via context_processor (defined below after decorators)
 
 def get_current_user():
     if 'user_id' not in session:
@@ -263,12 +279,29 @@ def student_required(f):
         return f(*a,**kw)
     return deco
 
+# ════════════════════════════════════════════
+#  SERVE UPLOADED FILES + CONTEXT PROCESSOR
+# ════════════════════════════════════════════
+
+@app.route('/uploads/<path:filename>')
+def serve_upload(filename):
+    """Serve files from UPLOAD_FOLDER. Inline auth avoids decorator ordering issues."""
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
 @app.context_processor
 def inject_globals():
     nc = 0
     if 'user_id' in session:
         nc = get_notif_count(session['user_id'])
-    return dict(notif_count=nc, today=date.today(), all_classes=ALL_CLASSES, classes_by_year=CLASSES_BY_YEAR)
+    return dict(
+        notif_count=nc,
+        today=date.today(),
+        all_classes=ALL_CLASSES,
+        classes_by_year=CLASSES_BY_YEAR,
+        get_profile_pic_url=get_profile_pic_url
+    )
 
 # ════════════════════════════════════════════
 #  AUTH
@@ -1037,7 +1070,7 @@ def api_periods():
     return jsonify(result)
 
 # ════════════════════════════════════════════
-#  PROFILE
+#  PROFILE  (staff/admin)
 # ════════════════════════════════════════════
 
 @app.route('/profile', methods=['GET','POST'])
@@ -1048,11 +1081,11 @@ def profile():
     cur = get_cur()
 
     if request.method == 'POST':
-        phone = request.form.get('phone','')
-        pic   = request.files.get('profile_pic')
-        pic_path = user.get('profile_pic')
+        phone    = request.form.get('phone','')
+        pic      = request.files.get('profile_pic')
+        pic_path = user.get('profile_pic')   # keep existing if no new upload
 
-        if pic and allowed(pic.filename, ALLOWED_IMG):
+        if pic and pic.filename and allowed(pic.filename, ALLOWED_IMG):
             pic_path = save_file(pic, 'profiles')
 
         cur.execute("UPDATE users SET phone=%s, profile_pic=%s WHERE id=%s",
@@ -1068,8 +1101,9 @@ def profile():
 
         commit_and_close(cur)
         flash('Profile updated ✓','success')
-        return redirect(url_for('profile'))
+        return redirect(url_for('profile'))   # ← POST-Redirect-GET
 
+    # Fresh DB fetch on GET (after redirect, user is re-queried above)
     cur.execute("SELECT * FROM streak_log WHERE user_id=%s ORDER BY created_at DESC LIMIT 30",
                 (user['id'],))
     streak_history = cur.fetchall()
@@ -1080,6 +1114,65 @@ def profile():
     return render_template('profile.html',
         user=user, streak_history=streak_history,
         my_classes=my_classes, all_classes=ALL_CLASSES)
+
+# ════════════════════════════════════════════
+#  PROFILE  (student)
+# ════════════════════════════════════════════
+
+@app.route('/student/profile', methods=['GET','POST'])
+@login_required
+@student_required
+def student_profile():
+    user = get_current_user()
+    if not user: return redirect(url_for('login'))
+    cur = get_cur()
+
+    if request.method == 'POST':
+        phone    = request.form.get('phone','')
+        pic      = request.files.get('profile_pic')
+        pic_path = user.get('profile_pic')   # keep existing if no new upload
+
+        if pic and pic.filename and allowed(pic.filename, ALLOWED_IMG):
+            pic_path = save_file(pic, 'profiles')
+
+        cur.execute("UPDATE users SET phone=%s, profile_pic=%s WHERE id=%s",
+                    (phone, pic_path, user['id']))
+        commit_and_close(cur)
+        flash('Profile updated ✓','success')
+        return redirect(url_for('student_profile'))   # ← POST-Redirect-GET
+
+    # Re-fetch user fresh from DB (after redirect above)
+    user = get_current_user()
+
+    cur.execute("SELECT COUNT(*) AS total, SUM(status='present') AS present FROM attendance WHERE student_id=%s",
+                (user['id'],))
+    att = cur.fetchone() or {'total':0,'present':0}
+
+    cur.execute("SELECT COUNT(*) AS c FROM certificates WHERE student_id=%s AND verification_status='verified'",
+                (user['id'],))
+    cert_count = cur.fetchone()['c']
+
+    cur.execute("SELECT COUNT(*) AS c FROM projects WHERE student_id=%s", (user['id'],))
+    project_count = cur.fetchone()['c']
+
+    cur.execute("SELECT * FROM streak_log WHERE user_id=%s ORDER BY created_at DESC LIMIT 20",
+                (user['id'],))
+    streak_history = cur.fetchall()
+
+    cur.execute("SELECT COUNT(*)+1 AS rnk FROM users WHERE class_name=%s AND role='student' AND streak_stars>%s",
+                (user['class_name'], user['streak_stars']))
+    rank_row = cur.fetchone()
+    rank = rank_row['rnk'] if rank_row else '-'
+    close_cur(cur)
+
+    att_pct        = round((att['present'] or 0) / (att['total'] or 1) * 100, 1)
+    level_progress = ((user['streak_stars'] or 0) % 1000) / 10
+
+    return render_template('student/profile.html',
+        user=user, att=att, att_pct=att_pct,
+        cert_count=cert_count, project_count=project_count,
+        streak_history=streak_history, rank=rank,
+        level_progress=level_progress)
 
 @app.route('/staff/timetable')
 @login_required
@@ -2014,49 +2107,6 @@ def _student_dashboard(user):
         user=user,att=att,today=today,pending_assignments=pending_assignments,
         active_quizzes=active_quizzes,top5=top5,rank=rank,
         recent_activity=recent_activity,notifications=notifications,level_progress=level_progress)
-
-@app.route('/student/profile', methods=['GET','POST'])
-@login_required
-@student_required
-def student_profile():
-    user = get_current_user()
-    if not user: return redirect(url_for('login'))
-    cur = get_cur()
-
-    if request.method == 'POST':
-        phone    = request.form.get('phone','')
-        pic      = request.files.get('profile_pic')
-        pic_path = user.get('profile_pic')
-        if pic and allowed(pic.filename, ALLOWED_IMG):
-            pic_path = save_file(pic, 'profiles')
-        cur.execute("UPDATE users SET phone=%s, profile_pic=%s WHERE id=%s",
-                    (phone, pic_path, user['id']))
-        commit_and_close(cur)
-        flash('Profile updated ✓','success')
-        return redirect(url_for('student_profile'))
-
-    cur.execute("SELECT COUNT(*) AS total, SUM(status='present') AS present FROM attendance WHERE student_id=%s", (user['id'],))
-    att = cur.fetchone() or {'total':0,'present':0}
-    cur.execute("SELECT COUNT(*) AS c FROM certificates WHERE student_id=%s AND verification_status='verified'", (user['id'],))
-    cert_count = cur.fetchone()['c']
-    cur.execute("SELECT COUNT(*) AS c FROM projects WHERE student_id=%s", (user['id'],))
-    project_count = cur.fetchone()['c']
-    cur.execute("SELECT * FROM streak_log WHERE user_id=%s ORDER BY created_at DESC LIMIT 20", (user['id'],))
-    streak_history = cur.fetchall()
-    cur.execute("SELECT COUNT(*)+1 AS rnk FROM users WHERE class_name=%s AND role='student' AND streak_stars>%s",
-                (user['class_name'], user['streak_stars']))
-    rank_row = cur.fetchone()
-    rank = rank_row['rnk'] if rank_row else '-'
-    close_cur(cur)
-
-    att_pct = round((att['present'] or 0)/(att['total'] or 1)*100, 1)
-    level_progress = ((user['streak_stars'] or 0) % 1000) / 10
-
-    return render_template('student/profile.html',
-        user=user, att=att, att_pct=att_pct,
-        cert_count=cert_count, project_count=project_count,
-        streak_history=streak_history, rank=rank,
-        level_progress=level_progress)
 
 @app.route('/leaderboard')
 @login_required
