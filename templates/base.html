@@ -558,6 +558,28 @@
             <div class="dstars">⭐ {{ current_user.streak_stars }} &nbsp;|&nbsp; LVL {{ current_user.level }}</div>
         </div>
     </div>
+
+    <!-- ── MOBILE AVATAR XP BAR ── -->
+    <div style="padding:12px 16px 14px;border-bottom:1px solid var(--border);background:rgba(233,69,96,0.03);">
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text2);margin-bottom:6px;font-family:'Share Tech Mono',monospace;">
+            <span>LVL {{ current_user.level }}</span>
+            <span>{{ current_user.streak_stars % 1000 }}/1000 XP</span>
+            <span>LVL {{ current_user.level + 1 }}</span>
+        </div>
+        <div style="position:relative;height:34px;overflow:visible;">
+            <div style="height:6px;background:var(--border);border-radius:3px;margin-top:14px;overflow:hidden;">
+                <div id="mob-bar-fill" style="height:100%;width:{{ (current_user.streak_stars % 1000) / 10 }}%;background:linear-gradient(90deg,var(--accent),var(--gold));border-radius:3px;transition:width 1.5s ease;box-shadow:0 0 8px rgba(233,69,96,0.5);"></div>
+            </div>
+            <div id="mob-walker"
+                 style="position:absolute;top:0;font-size:26px;left:{{ (current_user.streak_stars % 1000) / 10 }}%;transform:translateX(-50%);transition:left 1.5s ease;animation:walkerBob 0.5s ease infinite alternate;cursor:pointer;user-select:none;"
+                 onclick="mobWalkerTap(event)">
+                {% if session.get('role') == 'student' %}🧑‍🎓{% elif session.get('role') == 'staff' %}👩‍🏫{% else %}👑{% endif %}
+            </div>
+        </div>
+        <div id="mob-bubble" style="display:none;margin-top:8px;background:var(--bg3);border:1px solid var(--gold);border-radius:8px;padding:7px 11px;font-size:11px;color:var(--text);line-height:1.4;">
+            <span id="mob-bubble-msg"></span>
+        </div>
+    </div>
     {% endif %}
 
     <div class="drawer-nav">
@@ -795,5 +817,66 @@ setInterval(async()=>{
 {% endif %}
 </script>
 {% block scripts %}{% endblock %}
+<script>
+// ── MOBILE WALKER TAP
+function mobWalkerTap(e) {
+    {% if current_user %}
+    const stars = {{ current_user.streak_stars|default(0) }};
+    const msgs = stars < 10
+        ? ["So few stars... 😢", "Help me grow! 🌱", "I need more XP!"]
+        : stars < 100
+        ? ["Getting there! 💪", "Keep grinding! ⚡", "Almost 100 stars!"]
+        : stars < 500
+        ? ["I'm levelling up! 🔥", "Stars incoming! ⭐", "Feel the power!"]
+        : ["Top tier! 🏆", "Unstoppable! 🚀", "Legend in the making!"];
+    const msg = msgs[Math.floor(Math.random() * msgs.length)];
+    const bubble = document.getElementById('mob-bubble');
+    const bubbleMsg = document.getElementById('mob-bubble-msg');
+    bubbleMsg.textContent = msg;
+    bubble.style.display = 'block';
+    bubble.style.animation = 'none';
+    void bubble.offsetWidth;
+    bubble.style.animation = 'bubblePop 0.3s ease';
+    // Burst stars at tap location
+    burstStars(e.clientX, e.clientY, 8);
+    clearTimeout(window._mobBubbleTimer);
+    window._mobBubbleTimer = setTimeout(() => {
+        bubble.style.transition = 'opacity 0.4s';
+        bubble.style.opacity = '0';
+        setTimeout(() => { bubble.style.display = 'none'; bubble.style.opacity = '1'; }, 420);
+    }, 3000);
+    {% endif %}
+}
+
+// Auto-show bubble when drawer opens
+const _origOpen = window.openSideDrawer;
+window.openSideDrawer = function() {
+    _origOpen();
+    {% if current_user %}
+    setTimeout(() => {
+        const stars = {{ current_user.streak_stars|default(0) }};
+        const greets = stars < 10
+            ? ["Hi! Earn more stars! ⭐", "Let's get grinding! 💪"]
+            : stars < 100
+            ? ["Welcome back! 🎮", "Keep it up! 🔥"]
+            : ["You're on fire! 🔥", "Champion mode! 🏆"];
+        const msg = greets[Math.floor(Math.random() * greets.length)];
+        const bubble = document.getElementById('mob-bubble');
+        const bubbleMsg = document.getElementById('mob-bubble-msg');
+        if (bubble && bubbleMsg) {
+            bubbleMsg.textContent = msg;
+            bubble.style.display = 'block';
+            bubble.style.opacity = '1';
+            clearTimeout(window._mobBubbleTimer);
+            window._mobBubbleTimer = setTimeout(() => {
+                bubble.style.transition = 'opacity 0.4s';
+                bubble.style.opacity = '0';
+                setTimeout(() => { bubble.style.display = 'none'; bubble.style.opacity = '1'; }, 420);
+            }, 3500);
+        }
+    }, 400);
+    {% endif %}
+};
+</script>
 </body>
 </html>
