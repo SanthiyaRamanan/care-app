@@ -8,8 +8,8 @@ SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
 -- ── Create database if not exists ──
-CREATE DATABASE IF NOT EXISTS `care` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE `care`;
+CREATE DATABASE IF NOT EXISTS `railway` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE `railway`;
 
 -- ─────────────────────────────────────
 --  TABLE: users
