@@ -1,15 +1,2 @@
 [phases.setup]
 nixPkgs = ["python312", "gcc", "pkg-config", "mariadb"]
-```
-
-**3. Update `requirements.txt`** — keep it simple, no Flask-MySQLdb at all:
-```
-Flask==3.0.3
-Werkzeug==3.0.3
-gunicorn==22.0.0
-PyMySQL==1.1.1
-python-dotenv==1.0.1
-Pillow==10.4.0
-fpdf2==2.7.9
-requests==2.32.3
-openpyxl==3.1.2
