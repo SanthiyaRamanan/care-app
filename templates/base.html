@@ -333,84 +333,44 @@
     {% block head %}{% endblock %}
 
 <style id="mobile-global-fix">
-/* ═══════════════════════════════════════
-   CARE — Global Mobile Fixes
-   Applied to all pages
-═══════════════════════════════════════ */
 @media (max-width: 768px) {
-  /* ── Layout ── */
   body { overflow-x: hidden !important; }
-
-  /* ── Cards ── */
   .card { padding: 14px !important; }
   .card-title { font-size: 11px !important; letter-spacing: 1px !important; }
-
-  /* ── Stats grid ── */
   .stats-grid { grid-template-columns: repeat(2,1fr) !important; gap: 10px !important; }
   .stat-card { padding: 12px !important; }
   .stat-value { font-size: 20px !important; }
   .stat-label { font-size: 10px !important; }
-
-  /* ── Grids ── */
   .grid-2, .grid-3 { grid-template-columns: 1fr !important; gap: 12px !important; }
-
-  /* ── Tables ── */
   .table-wrap { overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; border-radius: 8px !important; }
   table { font-size: 12px !important; min-width: 420px; }
   th, td { padding: 8px 10px !important; white-space: nowrap !important; }
-
-  /* ── Forms ── */
-  input, select, textarea { font-size: 16px !important; } /* prevent iOS zoom */
-
-  /* ── Buttons ── */
+  input, select, textarea { font-size: 16px !important; }
   .btn { padding: 8px 13px !important; font-size: 13px !important; }
   .btn-sm { padding: 5px 10px !important; font-size: 11px !important; }
-
-  /* ── Flex rows → stack ── */
-  .filter-bar,
-  .flex-row,
+  .filter-bar, .flex-row,
   [style*="display:flex"][style*="gap"],
   [style*="display: flex"][style*="gap"] { flex-wrap: wrap !important; }
-
-  /* ── Inline width overrides ── */
   [style*="min-width:260px"],[style*="min-width: 260px"] { min-width:0 !important; width:100% !important; }
   [style*="min-width:180px"],[style*="min-width: 180px"] { min-width:0 !important; flex:1 1 100% !important; }
   [style*="min-width:160px"],[style*="min-width: 160px"] { min-width:0 !important; flex:1 1 100% !important; }
   [style*="min-width:130px"],[style*="min-width: 130px"] { min-width:0 !important; flex:1 1 100% !important; }
   [style*="width:900px"],[style*="width: 900px"] { width:100% !important; max-width:100% !important; }
-
-  /* ── Modal ── */
   .modal { max-width: 95vw !important; padding: 16px !important; margin: 8px !important; }
   .modal-title { font-size: 13px !important; }
-
-  /* ── XP Toast ── */
   .xp-toast { bottom: calc(var(--nav-h) + 10px) !important; right: 8px !important; min-width: 180px !important; padding: 10px 14px !important; }
-
-  /* ── Class tab rows ── */
   .class-tab-row { flex-wrap: wrap !important; gap: 6px !important; }
   .class-tab-row .btn { min-width: 72px !important; font-size: 11px !important; padding: 7px 8px !important; }
-
-  /* ── Hero card ── */
   .hero-card { padding: 16px !important; }
   .hero-name { font-size: 16px !important; }
   .stars-big { font-size: 26px !important; }
-
-  /* ── Section headers ── */
   h2, .section-title { font-size: 14px !important; }
-
-  /* ── Podium on leaderboard ── */
   .podium-wrap { gap: 8px !important; padding: 12px 0 !important; }
   .podium-item { width: 80px !important; }
   .podium-avatar { width: 44px !important; height: 44px !important; font-size: 16px !important; }
   .podium-bar { margin-top: 6px !important; }
-
-  /* ── Staff dashboard student cards ── */
   .student-mini-card { padding: 10px !important; }
-
-  /* ── Attendance step buttons ── */
   .period-btn { min-width: 0 !important; flex: 1 1 45% !important; }
-
-  /* ── Quiz grade buttons ── */
   .grade-btn-row { flex-wrap: wrap !important; gap: 6px !important; }
 }
 </style>
@@ -452,7 +412,8 @@
     {% if current_user %}
     <div class="sidebar-user">
         <div class="user-avatar">
-            {% if current_user.profile_pic %}<img src="{{ url_for('static', filename=current_user.profile_pic) }}" alt="">
+            {% if current_user.profile_pic %}
+            <img src="{{ get_profile_pic_url(current_user.profile_pic) }}" alt="">
             {% else %}{{ current_user.name[0].upper() }}{% endif %}
         </div>
         <div class="user-info">
@@ -477,7 +438,6 @@
     </div>
     {% endif %}
     <nav class="sidebar-nav">
-        <!-- NAV INLINE -->
         {% if session.get('role') == 'student' %}
             <div class="nav-section">Main</div>
             <a href="{{ url_for('dashboard') }}" class="nav-link {% if request.endpoint=='dashboard' %}active{% endif %}"><i class="fas fa-gamepad"></i><span>Dashboard</span></a>
@@ -581,18 +541,16 @@
 <div class="drawer-overlay" id="drawerOverlay" onclick="closeSideDrawer()"></div>
 
 <nav class="side-drawer" id="sideDrawer">
-    <!-- Header -->
     <div class="drawer-header">
         <div class="drawer-logo">C.A.R.E</div>
         <button class="drawer-close" onclick="closeSideDrawer()"><i class="fas fa-times"></i></button>
     </div>
 
-    <!-- User info -->
     {% if current_user %}
     <div class="drawer-user">
         <div class="drawer-avatar">
             {% if current_user.profile_pic %}
-            <img src="{{ url_for('static', filename=current_user.profile_pic) }}" alt="">
+            <img src="{{ get_profile_pic_url(current_user.profile_pic) }}" alt="">
             {% else %}{{ current_user.name[0].upper() }}{% endif %}
         </div>
         <div class="drawer-user-info">
@@ -602,7 +560,6 @@
     </div>
     {% endif %}
 
-    <!-- Nav links -->
     <div class="drawer-nav">
         {% if role == 'student' %}
             <div class="drawer-section">Main</div>
@@ -620,7 +577,6 @@
             <a href="{{ url_for('student_profile') }}" class="drawer-link {% if request.endpoint=='student_profile' %}active{% endif %}"><i class="fas fa-user"></i>My Profile</a>
             <a href="{{ url_for('generate_resume_page') }}" class="drawer-link"><i class="fas fa-file-pdf"></i>Resume</a>
             <a href="{{ url_for('notifications') }}" class="drawer-link"><i class="fas fa-bell"></i>Notifications</a>
-
         {% elif role == 'staff' %}
             <div class="drawer-section">Main</div>
             <a href="{{ url_for('staff_dashboard') }}" class="drawer-link {% if request.endpoint=='staff_dashboard' %}active{% endif %}"><i class="fas fa-tachometer-alt"></i>Dashboard</a>
@@ -637,7 +593,6 @@
             <div class="drawer-section">Account</div>
             <a href="{{ url_for('profile') }}" class="drawer-link {% if request.endpoint=='profile' %}active{% endif %}"><i class="fas fa-user"></i>Profile</a>
             <a href="{{ url_for('notifications') }}" class="drawer-link"><i class="fas fa-bell"></i>Notifications</a>
-
         {% elif role == 'admin' %}
             <div class="drawer-section">Admin</div>
             <a href="{{ url_for('admin_dashboard') }}" class="drawer-link {% if request.endpoint=='admin_dashboard' %}active{% endif %}"><i class="fas fa-shield-alt"></i>Dashboard</a>
@@ -648,7 +603,6 @@
             <div class="drawer-section">Account</div>
             <a href="{{ url_for('profile') }}" class="drawer-link {% if request.endpoint=='profile' %}active{% endif %}"><i class="fas fa-user"></i>Profile</a>
             <a href="{{ url_for('notifications') }}" class="drawer-link"><i class="fas fa-bell"></i>Notifications</a>
-
         {% elif role == 'library' %}
             <div class="drawer-section">Library</div>
             <a href="{{ url_for('library_dashboard') }}" class="drawer-link {% if request.endpoint=='library_dashboard' %}active{% endif %}"><i class="fas fa-book"></i>Dashboard</a>
@@ -656,7 +610,6 @@
             <a href="{{ url_for('profile') }}" class="drawer-link {% if request.endpoint=='profile' %}active{% endif %}"><i class="fas fa-user"></i>Profile</a>
             <a href="{{ url_for('notifications') }}" class="drawer-link"><i class="fas fa-bell"></i>Notifications</a>
         {% endif %}
-
         <a href="{{ url_for('logout') }}" class="drawer-link logout-link"><i class="fas fa-sign-out-alt"></i>Logout</a>
     </div>
 
@@ -665,15 +618,12 @@
 
 <!-- ══ GAME ENGINE JS ══ -->
 <script>
-// ── Alerts auto-hide
 setTimeout(()=>{document.querySelectorAll('.alert').forEach(a=>{a.style.transition='opacity 0.5s';a.style.opacity='0';setTimeout(()=>a.remove(),500);});},4000);
 
-// ── Modals
 function openModal(id){document.getElementById(id).classList.add('open');}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 document.addEventListener('click',e=>{if(e.target.classList.contains('modal-overlay'))e.target.classList.remove('open');});
 
-// ── Side Drawer
 function openSideDrawer(){
     document.getElementById('sideDrawer').classList.add('open');
     document.getElementById('drawerOverlay').classList.add('open');
@@ -688,9 +638,7 @@ function closeSideDrawer(){
     document.getElementById('hamburgerIcon').className='fas fa-bars';
     document.body.style.overflow='';
 }
-// Close on ESC
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSideDrawer();});
-// Swipe left to close
 (function(){
     let sx=0;
     document.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;},{passive:true});
@@ -700,7 +648,6 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSideDrawer();})
     },{passive:true});
 })();
 
-// ── Star burst
 function burstStars(x,y,count=12){
     const c=document.getElementById('star-burst-container');
     const em=['⭐','🌟','✨','💫'];
@@ -716,7 +663,6 @@ function burstStars(x,y,count=12){
     }
 }
 
-// ── XP Toast
 function showXPToast(amount,label='Stars Earned!',isLoss=false){
     const old=document.querySelector('.xp-toast');if(old)old.remove();
     const t=document.createElement('div');t.className='xp-toast';
@@ -729,7 +675,6 @@ function showXPToast(amount,label='Stars Earned!',isLoss=false){
     document.body.appendChild(t);setTimeout(()=>t.remove(),4200);
 }
 
-// ── Confetti
 function launchConfetti(count=60){
     const cols=['#ffd700','#e94560','#00ff88','#00b4d8','#7c3aed','#ff6b6b'];
     for(let i=0;i<count;i++){
@@ -741,7 +686,6 @@ function launchConfetti(count=60){
     }
 }
 
-// ── Level up banner
 function showLevelUp(level){
     const d=document.createElement('div');d.className='levelup-banner';
     d.innerHTML=`<div class="levelup-card">
@@ -757,7 +701,6 @@ function showLevelUp(level){
     document.body.appendChild(d);launchConfetti(80);
 }
 
-// ── Sad duck on star loss
 function showSadDuck(){
     const msgs=["My stars... gone 😭","Not fair!","I'll get them back...","Nooo ⭐"];
     const wrap=document.createElement('div');wrap.className='sad-duck-wrap';
@@ -766,7 +709,6 @@ function showSadDuck(){
     document.body.appendChild(wrap);setTimeout(()=>wrap.remove(),4500);
 }
 
-// ── Avatar speech bubble
 function showSpeech(msg,x,y){
     const old=document.querySelector('.speech-bubble');if(old)old.remove();
     const b=document.createElement('div');b.className='speech-bubble';
@@ -774,14 +716,12 @@ function showSpeech(msg,x,y){
     document.body.appendChild(b);setTimeout(()=>b.remove(),4600);
 }
 
-// ── Sleeping character (inactive)
 function showSleepyChar(){
     const s=document.createElement('div');s.className='sleep-overlay';
     s.innerHTML=`<div class="sleep-char">😴</div><div class="sleep-zzz">z z z</div>`;
     document.body.appendChild(s);setTimeout(()=>s.remove(),5000);
 }
 
-// ── Parse flash messages → trigger animations
 {% with messages = get_flashed_messages(with_categories=true) %}
 {% for cat, msg in messages %}
 (function(){
@@ -808,7 +748,6 @@ function showSleepyChar(){
 {% endfor %}
 {% endwith %}
 
-// ── Milestone check on load
 (function(){
     {% if current_user %}
     const stars={{ current_user.streak_stars|default(0) }};
@@ -818,7 +757,6 @@ function showSleepyChar(){
             setTimeout(()=>{launchConfetti(100);showXPToast(m,'🎉 MILESTONE REACHED!');},1200);
         }
     });
-    // Streak fire on sidebar if stars > 50
     if(stars>=50){
         const lb=document.querySelector('.level-fill');
         if(lb)lb.style.boxShadow='0 0 20px rgba(255,100,0,0.8)';
@@ -826,7 +764,6 @@ function showSleepyChar(){
     {% endif %}
 })();
 
-// ── Avatar idle speech
 (function(){
     {% if current_user %}
     const stars={{ current_user.streak_stars|default(0) }};
@@ -843,13 +780,11 @@ function showSleepyChar(){
     {% endif %}
 })();
 
-// ── Submit button burst
 document.addEventListener('click',e=>{
     const btn=e.target.closest('.btn-primary');
     if(btn){const r=btn.getBoundingClientRect();burstStars(r.left+r.width/2,r.top+r.height/2,8);}
 });
 
-// ── Notif poll
 {% if session.get('user_id') %}
 setInterval(async()=>{
     try{const r=await fetch('/api/notifications/count');const d=await r.json();
