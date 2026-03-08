@@ -30,7 +30,7 @@
   th, td { padding: 8px 10px !important; white-space: nowrap !important; }
 
   /* ── Forms ── */
-  input, select, textarea { font-size: 16px !important; } /* prevent iOS zoom */
+  input, select, textarea { font-size: 16px !important; }
 
   /* ── Buttons ── */
   .btn { padding: 8px 13px !important; font-size: 13px !important; }
@@ -86,15 +86,184 @@
 </style>
 
 <style>
+/* ── Results page specific styles ── */
+
+/* Semester grid: always 4-per-row, contained */
+.sem-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.sem-grid label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 4px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 14px;
+  font-family: 'Orbitron', monospace;
+  transition: all 0.15s;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* Results table */
+.results-table { width: 100%; border-collapse: collapse; }
+.results-table th {
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text2);
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+.results-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  vertical-align: middle;
+}
+.results-table tr:last-child td { border-bottom: none; }
+
+/* Semester card header */
+.sem-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.sem-card-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 14px;
+  color: var(--accent);
+}
+.sem-card-count {
+  font-size: 12px;
+  color: var(--text2);
+}
+
+/* Grade display */
+.grade-chip {
+  font-family: 'Orbitron', monospace;
+  font-size: 18px;
+  font-weight: 700;
+  display: inline-block;
+  min-width: 36px;
+  text-align: center;
+}
+
+/* Delete button */
+.delete-btn {
+  background: none;
+  border: none;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 14px;
+  opacity: 0.55;
+  padding: 6px 8px;
+  border-radius: 6px;
+  transition: opacity 0.15s;
+  line-height: 1;
+}
+.delete-btn:hover { opacity: 1; }
+
+/* Subject type badge */
+.type-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* Grade picker buttons */
+.grade-picker {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.grade-pick-btn {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  color: var(--text2);
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+  flex: 1;
+  min-width: 40px;
+  text-align: center;
+}
+
 @media (max-width: 768px) {
   input, select, textarea { font-size: 16px !important; }
   body { overflow-x: hidden; }
-  .sem-grid { grid-template-columns: repeat(2,1fr) !important; }
+
+  /* Semester grid: keep 4-per-row but tighter */
+  .sem-grid {
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 6px !important;
+  }
+  .sem-grid label {
+    padding: 10px 2px !important;
+    font-size: 12px !important;
+    border-radius: 6px !important;
+  }
+
+  /* Results table: scrollable container */
+  .table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 8px;
+    margin: 0 -2px;
+  }
+  .results-table { min-width: 300px !important; }
+  .results-table th { font-size: 9px !important; padding: 8px 8px !important; }
+  .results-table td { padding: 10px 8px !important; font-size: 12px !important; white-space: nowrap; }
+
+  /* Grade chip: readable size */
+  .grade-chip { font-size: 15px !important; min-width: 28px !important; }
+
+  /* Subject name: allow wrap */
+  .subject-name { font-size: 12px !important; white-space: normal !important; max-width: 140px; line-height: 1.3; }
+
+  /* Semester card header */
+  .sem-card-title { font-size: 12px !important; }
+  .sem-card-count { font-size: 11px !important; }
+
+  /* Grade picker: full-width buttons */
+  .grade-pick-btn {
+    padding: 10px 6px !important;
+    font-size: 13px !important;
+    min-width: 36px !important;
+    flex: 1 !important;
+  }
+
+  /* Subject card in grade picker */
+  .subject-pick-card { padding: 10px 12px !important; }
+  .subject-pick-name { font-size: 13px !important; }
+
+  /* Add form stacking */
   .add-form-row { flex-direction: column !important; gap: 8px !important; }
   .add-form-row .form-group { width: 100% !important; min-width: 0 !important; }
-  .result-header { flex-direction: column !important; gap: 6px !important; }
-  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  .table-wrap table { min-width: 380px; }
+
+  /* CAT marks table */
+  .cat-table th, .cat-table td { padding: 7px 8px !important; font-size: 11px !important; }
+
+  /* Delete button: bigger tap area on mobile */
+  .delete-btn { font-size: 16px !important; padding: 8px 10px !important; opacity: 0.65 !important; }
+
+  /* Empty state */
+  .empty-state { padding: 40px 20px !important; }
+  .empty-state .empty-icon { font-size: 36px !important; }
 }
 </style>
 {% endblock %}
@@ -110,13 +279,13 @@
     <div class="card-title"><i class="fas fa-plus"></i> ADD SEMESTER RESULT</div>
     <form method="POST" action="{{ url_for('student_results') }}" id="resultForm">
       <input type="hidden" name="action" value="add_result">
+
       <!-- STEP 1: Pick Semester -->
       <div class="form-group">
         <label>Step 1 — Select Semester</label>
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;" class="sem-grid">
+        <div class="sem-grid">
           {% for i in range(1,9) %}
-          <label onclick="selectSem({{ i }},this)"
-            style="display:flex;align-items:center;justify-content:center;padding:10px 4px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-weight:700;font-size:14px;font-family:'Orbitron',monospace;transition:all 0.15s;text-transform:none;letter-spacing:0;" id="semlbl_{{ i }}">
+          <label onclick="selectSem({{ i }},this)" id="semlbl_{{ i }}">
             <input type="radio" name="semester" value="{{ i }}" style="width:auto;display:none;">
             S{{ i }}
           </label>
@@ -124,26 +293,47 @@
         </div>
       </div>
 
-      <!-- STEP 2: Subjects table for that semester (shown after sem select) -->
+      <!-- STEP 2: Subjects for that semester -->
       <div id="subjectsArea" style="display:none;">
-        <div style="font-size:11px;color:var(--text2);margin-bottom:10px;letter-spacing:1px;text-transform:uppercase;">Step 2 — Enter Grades for Each Subject</div>
-        <div id="loadingMsg" style="display:none;text-align:center;padding:20px;color:var(--text2);">Loading subjects...</div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:10px;letter-spacing:1px;text-transform:uppercase;">
+          Step 2 — Enter Grades for Each Subject
+        </div>
+        <div id="loadingMsg" style="display:none;text-align:center;padding:20px;color:var(--text2);">
+          Loading subjects...
+        </div>
         <div id="subjectRows"></div>
         <div id="noSubjectsMsg" style="display:none;">
           <div style="color:var(--text2);font-size:13px;margin-bottom:10px;">No subjects found in master. Enter manually:</div>
           <div id="manualEntry">
-            <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
-              <div class="form-group" style="flex:1;min-width:160px;margin-bottom:0;"><label>Subject Name</label><input type="text" name="subject" id="manualSubject" placeholder="Subject name"></div>
-              <div class="form-group" style="margin-bottom:0;"><label>Type</label><select name="subject_type"><option value="theory">Theory</option><option value="lab">Lab</option><option value="elective">Elective</option></select></div>
-              <div class="form-group" style="margin-bottom:0;"><label>Grade</label>
-                <select name="grade">{% for g in ['O','A+','A','B+','B','C','F'] %}<option value="{{ g }}">{{ g }}</option>{% endfor %}</select>
+            <div class="add-form-row" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+              <div class="form-group" style="flex:1;min-width:160px;margin-bottom:0;">
+                <label>Subject Name</label>
+                <input type="text" name="subject" id="manualSubject" placeholder="Subject name">
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label>Type</label>
+                <select name="subject_type">
+                  <option value="theory">Theory</option>
+                  <option value="lab">Lab</option>
+                  <option value="elective">Elective</option>
+                </select>
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label>Grade</label>
+                <select name="grade">
+                  {% for g in ['O','A+','A','B+','B','C','F'] %}
+                  <option value="{{ g }}">{{ g }}</option>
+                  {% endfor %}
+                </select>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <button type="submit" id="saveBtn" class="btn btn-primary" style="width:100%;margin-top:14px;display:none;">+ Save Results</button>
+      <button type="submit" id="saveBtn" class="btn btn-primary" style="width:100%;margin-top:14px;display:none;">
+        + Save Results
+      </button>
     </form>
   </div>
 
@@ -151,20 +341,30 @@
   {% if cat_marks %}
   <div class="card">
     <div class="card-title"><i class="fas fa-clipboard-list"></i> INTERNAL MARKS (CAT)</div>
-    <div class="table-wrap"><table>
-      <thead><tr><th>Subject</th><th>Sem</th><th>CAT 1</th><th>CAT 2</th><th>Avg</th></tr></thead>
-      <tbody>
-      {% for c in cat_marks %}
-      <tr>
-        <td style="font-weight:600;">{{ c.subject }}</td>
-        <td style="font-family:'Share Tech Mono',monospace;color:var(--text2);">S{{ c.semester }}</td>
-        <td style="color:{% if c.cat1_marks >= 50 %}var(--green){% else %}var(--accent){% endif %};font-family:'Share Tech Mono',monospace;">{{ c.cat1_marks }}</td>
-        <td style="color:{% if c.cat2_marks >= 50 %}var(--green){% else %}var(--accent){% endif %};font-family:'Share Tech Mono',monospace;">{{ c.cat2_marks }}</td>
-        <td style="color:var(--gold);font-weight:700;">{{ ((c.cat1_marks + c.cat2_marks) / 2)|round(1) }}</td>
-      </tr>
-      {% endfor %}
-      </tbody>
-    </table></div>
+    <div class="table-wrap">
+      <table class="cat-table" style="width:100%;border-collapse:collapse;">
+        <thead>
+          <tr>
+            <th style="text-align:left;padding:8px 10px;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text2);border-bottom:1px solid var(--border);">Subject</th>
+            <th style="text-align:left;padding:8px 10px;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text2);border-bottom:1px solid var(--border);">Sem</th>
+            <th style="text-align:left;padding:8px 10px;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text2);border-bottom:1px solid var(--border);">CAT 1</th>
+            <th style="text-align:left;padding:8px 10px;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text2);border-bottom:1px solid var(--border);">CAT 2</th>
+            <th style="text-align:left;padding:8px 10px;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text2);border-bottom:1px solid var(--border);">Avg</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for c in cat_marks %}
+        <tr>
+          <td style="padding:10px;font-weight:600;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.04);">{{ c.subject }}</td>
+          <td style="padding:10px;font-family:'Share Tech Mono',monospace;color:var(--text2);border-bottom:1px solid rgba(255,255,255,0.04);">S{{ c.semester }}</td>
+          <td style="padding:10px;color:{% if c.cat1_marks >= 50 %}var(--green){% else %}var(--accent){% endif %};font-family:'Share Tech Mono',monospace;border-bottom:1px solid rgba(255,255,255,0.04);">{{ c.cat1_marks }}</td>
+          <td style="padding:10px;color:{% if c.cat2_marks >= 50 %}var(--green){% else %}var(--accent){% endif %};font-family:'Share Tech Mono',monospace;border-bottom:1px solid rgba(255,255,255,0.04);">{{ c.cat2_marks }}</td>
+          <td style="padding:10px;color:var(--gold);font-weight:700;border-bottom:1px solid rgba(255,255,255,0.04);">{{ ((c.cat1_marks + c.cat2_marks) / 2)|round(1) }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </div>
   {% endif %}
 </div>
@@ -179,23 +379,58 @@
     {% set ns.prev_sem = r.semester %}
     {% set sem_subjects = sem_results | selectattr('semester','equalto',r.semester) | list %}
     <div class="card" style="margin-bottom:14px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-        <div style="font-family:'Orbitron',monospace;font-size:14px;color:var(--accent);">SEMESTER {{ r.semester }}</div>
-        <div style="font-size:12px;color:var(--text2);">{{ sem_subjects|length }} subject{{ 's' if sem_subjects|length != 1 }}</div>
+      <div class="sem-card-header">
+        <div class="sem-card-title">SEMESTER {{ r.semester }}</div>
+        <div class="sem-card-count">{{ sem_subjects|length }} subject{{ 's' if sem_subjects|length != 1 }}</div>
       </div>
-      <div class="table-wrap"><table><thead><tr><th>Subject</th><th>Type</th><th>Grade</th><th></th></tr></thead><tbody>
+      <div class="table-wrap">
+        <table class="results-table">
+          <thead>
+            <tr>
+              <th>Subject</th>
+              <th>Type</th>
+              <th>Grade</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
     {% endif %}
         <tr>
-          <td style="font-weight:600;">{{ r.subject }}</td>
-          <td><span class="badge {% if r.subject_type=='lab' %}badge-blue{% elif r.subject_type=='elective' %}badge-gold{% else %}badge-green{% endif %}" style="font-size:9px;">{{ r.subject_type.title() }}</span></td>
-          <td><span style="font-family:'Orbitron',monospace;font-size:18px;font-weight:700;color:{% if r.grade=='O' %}var(--green){% elif r.grade in ['A+','A'] %}var(--blue){% elif r.grade in ['B+','B'] %}var(--gold){% elif r.grade=='C' %}orange{% else %}var(--accent){% endif %};">{{ r.grade }}</span></td>
-          <td><form method="POST" action="{{ url_for('student_results') }}" style="display:inline;"><input type="hidden" name="action" value="delete_result"><input type="hidden" name="result_id" value="{{ r.id }}"><button type="submit" onclick="return confirm('Delete?')" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:13px;opacity:0.6;">✕</button></form></td>
+          <td>
+            <span class="subject-name" style="font-weight:600;">{{ r.subject }}</span>
+          </td>
+          <td>
+            <span class="type-badge
+              {% if r.subject_type=='lab' %}badge-blue
+              {% elif r.subject_type=='elective' %}badge-gold
+              {% else %}badge-green{% endif %}"
+              style="font-size:9px;">
+              {{ r.subject_type.title() }}
+            </span>
+          </td>
+          <td>
+            <span class="grade-chip" style="color:
+              {% if r.grade=='O' %}var(--green)
+              {% elif r.grade in ['A+','A'] %}var(--blue)
+              {% elif r.grade in ['B+','B'] %}var(--gold)
+              {% elif r.grade=='C' %}orange
+              {% else %}var(--accent){% endif %};">
+              {{ r.grade }}
+            </span>
+          </td>
+          <td style="text-align:right;">
+            <form method="POST" action="{{ url_for('student_results') }}" style="display:inline;">
+              <input type="hidden" name="action" value="delete_result">
+              <input type="hidden" name="result_id" value="{{ r.id }}">
+              <button type="submit" onclick="return confirm('Delete?')" class="delete-btn">✕</button>
+            </form>
+          </td>
         </tr>
     {% endfor %}
     {% if sem_results %}</tbody></table></div></div>{% endif %}
   {% else %}
-  <div class="card" style="text-align:center;padding:60px;color:var(--text2);">
-    <div style="font-size:48px;margin-bottom:12px;">📋</div>
+  <div class="card empty-state" style="text-align:center;padding:60px;color:var(--text2);">
+    <div class="empty-icon" style="font-size:48px;margin-bottom:12px;">📋</div>
     No results added yet.<br>Select a semester on the left.
   </div>
   {% endif %}
@@ -206,12 +441,19 @@
 const dept = "{{ user.department or '' }}";
 const cls  = "{{ user.class_name or '' }}";
 const GRADES = ['O','A+','A','B+','B','C','F'];
-const GRADE_COLORS = {'O':'var(--green)','A+':'var(--blue)','A':'var(--blue)','B+':'var(--gold)','B':'var(--gold)','C':'orange','F':'var(--accent)'};
+const GRADE_COLORS = {
+  'O':'var(--green)',
+  'A+':'var(--blue)',
+  'A':'var(--blue)',
+  'B+':'var(--gold)',
+  'B':'var(--gold)',
+  'C':'orange',
+  'F':'var(--accent)'
+};
 
 let selectedSem = null;
 
 function selectSem(sem, lbl) {
-  // Highlight selected
   document.querySelectorAll('[id^="semlbl_"]').forEach(el => {
     el.style.borderColor = 'var(--border)';
     el.style.background  = 'var(--bg3)';
@@ -226,7 +468,6 @@ function selectSem(sem, lbl) {
 }
 
 function gradeSelect(btn, subjectIdx, grade) {
-  // Deselect all buttons for this subject
   document.querySelectorAll(`.grade-btn-${subjectIdx}`).forEach(b => {
     b.style.background  = 'var(--bg3)';
     b.style.borderColor = 'var(--border)';
@@ -244,10 +485,11 @@ function loadSubjects(sem) {
   const rows    = document.getElementById('subjectRows');
   const noMsg   = document.getElementById('noSubjectsMsg');
   const saveBtn = document.getElementById('saveBtn');
-  area.style.display = 'block';
+
+  area.style.display   = 'block';
   loading.style.display = 'block';
-  rows.innerHTML = '';
-  noMsg.style.display = 'none';
+  rows.innerHTML        = '';
+  noMsg.style.display   = 'none';
   saveBtn.style.display = 'none';
 
   fetch(`/api/subjects?department=${encodeURIComponent(dept)}&semester=${sem}&class_name=${encodeURIComponent(cls)}`)
@@ -255,97 +497,102 @@ function loadSubjects(sem) {
     .then(subjects => {
       loading.style.display = 'none';
       if (!subjects.length) {
-        noMsg.style.display = 'block';
+        noMsg.style.display   = 'block';
         saveBtn.style.display = 'block';
         return;
       }
-      // Build a table row for each subject with grade picker
-      let html = `<div style="display:flex;flex-direction:column;gap:12px;">`;
+
+      let html = `<div style="display:flex;flex-direction:column;gap:10px;">`;
       subjects.forEach((s, i) => {
-        const typeColors = {'theory':'var(--green)','lab':'var(--blue)','elective':'var(--gold)'};
+        const typeColors = {
+          'theory': 'var(--green)',
+          'lab':    'var(--blue)',
+          'elective': 'var(--gold)'
+        };
         const tc = typeColors[s.type] || 'var(--text2)';
-        html += `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px 14px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+
+        html += `
+        <div class="subject-pick-card" style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px 14px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px;">
             <div>
-              <div style="font-weight:700;font-size:14px;">${s.subject}</div>
-              <div style="font-size:11px;color:${tc};">${s.type}${s.staff ? ' · ' + s.staff : ''}</div>
+              <div class="subject-pick-name" style="font-weight:700;font-size:14px;">${s.subject}</div>
+              <div style="font-size:11px;color:${tc};margin-top:2px;">${s.type}${s.staff ? ' · ' + s.staff : ''}</div>
             </div>
           </div>
           <input type="hidden" name="subject" value="${s.subject}">
           <input type="hidden" name="subject_type" value="${s.type}">
           <input type="hidden" name="grade" id="grade_hidden_${i}" value="">
-          <div style="display:flex;gap:6px;flex-wrap:wrap;">
-            ${GRADES.map(g => `<button type="button" class="grade-btn-${i}"
-              onclick="gradeSelect(this,${i},'${g}')"
-              style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-weight:700;font-size:15px;cursor:pointer;transition:all 0.15s;min-width:44px;">${g}</button>`).join('')}
+          <div class="grade-picker">
+            ${GRADES.map(g => `
+              <button type="button" class="grade-pick-btn grade-btn-${i}"
+                onclick="gradeSelect(this,${i},'${g}')">${g}</button>
+            `).join('')}
           </div>
         </div>`;
       });
       html += '</div>';
-      // Only one subject per form submit — use hidden inputs dynamically
-      rows.innerHTML = html;
+
+      rows.innerHTML        = html;
       saveBtn.style.display = 'block';
     })
     .catch(() => {
       loading.style.display = 'none';
-      noMsg.style.display = 'block';
+      noMsg.style.display   = 'block';
       saveBtn.style.display = 'block';
     });
 }
 
-// Override submit to post one result per subject (sequential or multi)
 document.getElementById('resultForm').addEventListener('submit', function(e) {
   e.preventDefault();
   if (!selectedSem) { alert('Select a semester first!'); return; }
+
   const hiddenGrades = document.querySelectorAll('[id^="grade_hidden_"]');
   const semVal = selectedSem;
-  let submitted = 0;
-  const forms = [];
 
   if (hiddenGrades.length === 0) {
-    // Manual mode — single subject
+    // Manual mode
     const manSub = document.getElementById('manualSubject')?.value?.trim();
     if (!manSub) { alert('Enter subject name!'); return; }
     const grade = this.querySelector('[name="grade"]')?.value;
     const type  = this.querySelector('[name="subject_type"]')?.value || 'theory';
     if (!grade) { alert('Select a grade!'); return; }
-    submitResult(semVal, manSub, type, grade, null);
+    submitResult(semVal, manSub, type, grade);
     return;
   }
 
-  // Multiple subjects — check all have grades
   const names  = [...document.querySelectorAll('[name="subject"]')].map(i => i.value);
   const types  = [...document.querySelectorAll('[name="subject_type"]')].map(i => i.value);
   const grades = [...hiddenGrades].map(i => i.value);
 
-  let missing = [];
+  const missing = [];
   grades.forEach((g, i) => { if (!g) missing.push(names[i]); });
   if (missing.length) {
     alert('Please select a grade for: ' + missing.join(', '));
     return;
   }
 
-  // Submit all via sequential fetch posts
   const promises = names.map((name, i) => {
     const fd = new FormData();
-    fd.append('action','add_result');
+    fd.append('action', 'add_result');
     fd.append('semester', semVal);
     fd.append('subject', name);
     fd.append('subject_type', types[i]);
     fd.append('grade', grades[i]);
-    return fetch(window.location.href, { method:'POST', body: fd });
+    return fetch(window.location.href, { method: 'POST', body: fd });
   });
+
   Promise.all(promises).then(() => window.location.reload());
 });
 
 function submitResult(sem, subject, type, grade) {
   const fd = new FormData();
-  fd.append('action','add_result');
+  fd.append('action', 'add_result');
   fd.append('semester', sem);
   fd.append('subject', subject);
   fd.append('subject_type', type);
   fd.append('grade', grade);
-  fetch(window.location.href, { method:'POST', body: fd }).then(() => window.location.reload());
+  fetch(window.location.href, { method: 'POST', body: fd })
+    .then(() => window.location.reload());
 }
 </script>
 {% endblock %}
