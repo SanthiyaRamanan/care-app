@@ -1,0 +1,255 @@
+{% set current_user = user %}
+{% extends "base.html" %}
+{% block head %}
+
+<style id="mobile-global-fix">
+/* ═══════════════════════════════════════
+   CARE — Global Mobile Fixes
+   Applied to all pages
+═══════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* ── Layout ── */
+  body { overflow-x: hidden !important; }
+
+  /* ── Cards ── */
+  .card { padding: 14px !important; }
+  .card-title { font-size: 11px !important; letter-spacing: 1px !important; }
+
+  /* ── Stats grid ── */
+  .stats-grid { grid-template-columns: repeat(2,1fr) !important; gap: 10px !important; }
+  .stat-card { padding: 12px !important; }
+  .stat-value { font-size: 20px !important; }
+  .stat-label { font-size: 10px !important; }
+
+  /* ── Grids ── */
+  .grid-2, .grid-3 { grid-template-columns: 1fr !important; gap: 12px !important; }
+
+  /* ── Tables ── */
+  .table-wrap { overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; border-radius: 8px !important; }
+  table { font-size: 12px !important; min-width: 420px; }
+  th, td { padding: 8px 10px !important; white-space: nowrap !important; }
+
+  /* ── Forms ── */
+  input, select, textarea { font-size: 16px !important; } /* prevent iOS zoom */
+
+  /* ── Buttons ── */
+  .btn { padding: 8px 13px !important; font-size: 13px !important; }
+  .btn-sm { padding: 5px 10px !important; font-size: 11px !important; }
+
+  /* ── Flex rows → stack ── */
+  .filter-bar,
+  .flex-row,
+  [style*="display:flex"][style*="gap"],
+  [style*="display: flex"][style*="gap"] { flex-wrap: wrap !important; }
+
+  /* ── Inline width overrides ── */
+  [style*="min-width:260px"],[style*="min-width: 260px"] { min-width:0 !important; width:100% !important; }
+  [style*="min-width:180px"],[style*="min-width: 180px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="min-width:160px"],[style*="min-width: 160px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="min-width:130px"],[style*="min-width: 130px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="width:900px"],[style*="width: 900px"] { width:100% !important; max-width:100% !important; }
+
+  /* ── Modal ── */
+  .modal { max-width: 95vw !important; padding: 16px !important; margin: 8px !important; }
+  .modal-title { font-size: 13px !important; }
+
+  /* ── XP Toast ── */
+  .xp-toast { bottom: calc(var(--nav-h) + 10px) !important; right: 8px !important; min-width: 180px !important; padding: 10px 14px !important; }
+
+  /* ── Class tab rows ── */
+  .class-tab-row { flex-wrap: wrap !important; gap: 6px !important; }
+  .class-tab-row .btn { min-width: 72px !important; font-size: 11px !important; padding: 7px 8px !important; }
+
+  /* ── Hero card ── */
+  .hero-card { padding: 16px !important; }
+  .hero-name { font-size: 16px !important; }
+  .stars-big { font-size: 26px !important; }
+
+  /* ── Section headers ── */
+  h2, .section-title { font-size: 14px !important; }
+
+  /* ── Podium on leaderboard ── */
+  .podium-wrap { gap: 8px !important; padding: 12px 0 !important; }
+  .podium-item { width: 80px !important; }
+  .podium-avatar { width: 44px !important; height: 44px !important; font-size: 16px !important; }
+  .podium-bar { margin-top: 6px !important; }
+
+  /* ── Staff dashboard student cards ── */
+  .student-mini-card { padding: 10px !important; }
+
+  /* ── Attendance step buttons ── */
+  .period-btn { min-width: 0 !important; flex: 1 1 45% !important; }
+
+  /* ── Quiz grade buttons ── */
+  .grade-btn-row { flex-wrap: wrap !important; gap: 6px !important; }
+}
+</style>
+
+<style>
+@media (max-width: 768px) {
+  body { overflow-x: hidden; }
+  input, select, textarea { font-size: 16px !important; }
+  .cert-form-grid { grid-template-columns: 1fr !important; }
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .table-wrap table { min-width: 480px; }
+}
+</style>
+{% endblock %}
+{% block title %}Certificates{% endblock %}
+{% block page_title %}🏆 MY CERTIFICATES{% endblock %}
+{% block content %}
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+  <div style="color:var(--text2);font-size:13px;">Upload certificates — AI verifies your name automatically</div>
+  <button class="btn btn-primary" onclick="openModal('uploadCert')"><i class="fas fa-upload"></i> Upload Certificate</button>
+</div>
+
+<div class="card">
+  <div class="card-title"><i class="fas fa-certificate"></i> MY CERTIFICATES</div>
+  {% if certificates %}
+  <div class="table-wrap"><table>
+    <thead>
+      <tr>
+        <th>Event Name</th>
+        <th>Title / Work</th>
+        <th>Category</th>
+        <th>Issuer</th>
+        <th>Date</th>
+        <th>AI Confidence</th>
+        <th>Status</th>
+        <th>Stars</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for c in certificates %}
+    <tr>
+      <td style="font-weight:600;">{{ c.title }}</td>
+      <td style="color:var(--text2);font-size:12px;">{{ c.event_title or '—' }}</td>
+      <td><span class="badge badge-blue">{{ c.category.replace('_',' ').title() }}</span></td>
+      <td style="color:var(--text2);font-size:13px;">{{ c.issuer or '—' }}</td>
+      <td style="font-size:13px;">{{ c.issue_date or '—' }}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:60px;height:6px;background:var(--border);border-radius:3px;overflow:hidden;">
+            <div style="height:100%;width:{{ (c.ai_confidence*100)|round(0)|int }}%;background:{% if c.ai_confidence>=0.75 %}var(--green){% elif c.ai_confidence>=0.5 %}var(--gold){% else %}var(--accent){% endif %};"></div>
+          </div>
+          <span style="font-size:11px;font-family:'Share Tech Mono',monospace;">{{ (c.ai_confidence*100)|round(0)|int }}%</span>
+        </div>
+      </td>
+      <td>
+        {% if c.verification_status=='verified' %}<span class="badge badge-green">✓ Verified</span>
+        {% elif c.verification_status=='pending' %}<span class="badge badge-blue">⏳ Pending</span>
+        {% elif c.verification_status=='manual_review' %}<span class="badge" style="background:rgba(255,165,0,0.2);color:orange;border:1px solid orange;">👁 Review</span>
+        {% else %}<span class="badge badge-red">✗ Rejected</span>{% endif %}
+      </td>
+      <td style="color:var(--gold);font-family:'Share Tech Mono',monospace;">{% if c.stars_earned > 0 %}+{{ c.stars_earned }} ⭐{% else %}—{% endif %}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}
+  <div style="text-align:center;padding:40px;color:var(--text2);">
+    <div style="font-size:48px;margin-bottom:12px;">🏆</div>
+    No certificates yet. Start uploading your achievements!
+  </div>
+  {% endif %}
+</div>
+
+<!-- Upload Modal -->
+<div class="modal-overlay" id="uploadCert">
+  <div class="modal" style="max-width:560px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div class="modal-title">🤖 AI CERTIFICATE UPLOAD</div>
+      <button class="modal-close" onclick="closeModal('uploadCert')">×</button>
+    </div>
+    <div class="alert alert-info" style="font-size:12px;margin-bottom:14px;">🤖 AI will verify your name on the certificate automatically!</div>
+    <form method="POST" enctype="multipart/form-data">
+
+      <!-- Category first — drives the title label -->
+      <div class="form-group">
+        <label>Category <span style="color:var(--accent);">*</span></label>
+        <select name="category" id="catSelect" required onchange="updateTitleLabel()">
+          <option value="">Select Category</option>
+          <option value="workshop_attended">Workshop Attended (+10 ⭐)</option>
+          <option value="workshop_conducted">Workshop Conducted (+12 ⭐)</option>
+          <option value="sports">Sports (+12 ⭐)</option>
+          <option value="inter_college">Inter-College Event (+15 ⭐)</option>
+          <option value="intra_college">Intra-College Event (+10 ⭐)</option>
+          <option value="seminar">Seminar / Talk (+8 ⭐)</option>
+          <option value="paper_presentation">Paper Presentation (+10 ⭐)</option>
+          <option value="project_expo">Project Expo (+10 ⭐)</option>
+          <option value="club_event">Club Event (+8 ⭐)</option>
+          <option value="other">Other (+5 ⭐)</option>
+        </select>
+      </div>
+
+      <!-- Event / competition name -->
+      <div class="form-group">
+        <label id="eventNameLabel">Event / Competition Name <span style="color:var(--accent);">*</span></label>
+        <input type="text" name="title" required id="eventNameInput"
+               placeholder="e.g. Tech Fest 2025 — Coding Contest">
+        <div style="font-size:11px;color:var(--text2);margin-top:4px;" id="eventNameHint">Name of the event, competition, or workshop where you received this certificate.</div>
+      </div>
+
+      <!-- Title of paper / project (conditional) -->
+      <div class="form-group" id="eventTitleGroup" style="display:none;">
+        <label id="eventTitleLabel">Title of Your Work <span style="color:var(--accent);">*</span></label>
+        <input type="text" name="event_title" id="eventTitleInput"
+               placeholder="e.g. Deep Learning for Medical Imaging">
+        <div style="font-size:11px;color:var(--text2);margin-top:4px;" id="eventTitleHint">The specific title of your paper / project.</div>
+      </div>
+
+      <div class="grid-2">
+        <div class="form-group">
+          <label>Issue Date</label>
+          <input type="date" name="issue_date">
+        </div>
+        <div class="form-group">
+          <label>Issuing Organization</label>
+          <input type="text" name="issuer" placeholder="College / Company">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Certificate File (PDF/JPG/PNG) <span style="color:var(--accent);">*</span></label>
+        <input type="file" name="file" accept=".pdf,.jpg,.jpeg,.png" required>
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width:100%;">🤖 Upload & Verify with AI</button>
+    </form>
+  </div>
+</div>
+
+<script>
+const CAT_LABELS = {
+  'workshop_attended':  { event: 'Workshop Name', hint: 'Full name of the workshop.', showTitle: false },
+  'workshop_conducted': { event: 'Workshop You Conducted', hint: 'Name of the workshop you organized.', showTitle: false },
+  'sports':             { event: 'Competition / Meet Name', hint: 'e.g. State Athletics Championship 2025', showTitle: false },
+  'inter_college':      { event: 'Event / Competition Name', hint: 'Name of the inter-college event.', showTitle: false },
+  'intra_college':      { event: 'Event Name', hint: 'Name of the intra-college event.', showTitle: false },
+  'seminar':            { event: 'Seminar / Talk Name', hint: 'Name of the seminar or talk.', showTitle: true, titleLabel: 'Topic of Your Presentation', titleHint: 'Title of the talk or presentation you gave.' },
+  'paper_presentation': { event: 'Conference / Symposium Name', hint: 'Name of the conference where you presented.', showTitle: true, titleLabel: 'Title of Your Paper', titleHint: 'Full title of the research paper you presented.' },
+  'project_expo':       { event: 'Expo / Fair Name', hint: 'e.g. National Project Expo 2025', showTitle: true, titleLabel: 'Project Title', titleHint: 'Title of your project.' },
+  'club_event':         { event: 'Club Event Name', hint: 'Name of the club event.', showTitle: false },
+  'other':              { event: 'Event / Certificate Name', hint: 'Describe the event or achievement.', showTitle: false }
+};
+
+function updateTitleLabel() {
+  const cat  = document.getElementById('catSelect').value;
+  const cfg  = CAT_LABELS[cat] || { event: 'Event Name', hint: '', showTitle: false };
+  document.getElementById('eventNameLabel').innerHTML = cfg.event + ' <span style="color:var(--accent);">*</span>';
+  document.getElementById('eventNameHint').textContent = cfg.hint;
+  document.getElementById('eventNameInput').placeholder = cfg.event;
+  const titleGroup = document.getElementById('eventTitleGroup');
+  titleGroup.style.display = cfg.showTitle ? 'block' : 'none';
+  if (cfg.showTitle) {
+    document.getElementById('eventTitleLabel').innerHTML = (cfg.titleLabel||'Title of Your Work') + ' <span style="color:var(--accent);">*</span>';
+    document.getElementById('eventTitleHint').textContent = cfg.titleHint || '';
+    document.getElementById('eventTitleInput').placeholder = cfg.titleLabel || 'Enter title';
+    document.getElementById('eventTitleInput').required = true;
+  } else {
+    document.getElementById('eventTitleInput').required = false;
+  }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,47 @@
+# ── Python ──
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg
+*.egg-info/
+dist/
+build/
+
+# ── Virtual Environment ──
+venv/
+env/
+ENV/
+.venv/
+
+# ── Environment Variables — NEVER commit these ──
+.env
+.env.local
+.env.production
+secrets.py
+
+# ── Flask ──
+instance/
+flask_session/
+
+# ── Database ──
+*.db
+*.sqlite
+*.sqlite3
+
+# ── User uploaded files ──
+static/uploads/
+static/profile_pics/
+static/certificates/
+static/resumes/
+
+# ── IDE / OS ──
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# ── Logs ──
+*.log
+logs/

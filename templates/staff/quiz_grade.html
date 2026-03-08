@@ -1,0 +1,134 @@
+
+<style id="mobile-global-fix">
+/* ═══════════════════════════════════════
+   CARE — Global Mobile Fixes
+   Applied to all pages
+═══════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* ── Layout ── */
+  body { overflow-x: hidden !important; }
+
+  /* ── Cards ── */
+  .card { padding: 14px !important; }
+  .card-title { font-size: 11px !important; letter-spacing: 1px !important; }
+
+  /* ── Stats grid ── */
+  .stats-grid { grid-template-columns: repeat(2,1fr) !important; gap: 10px !important; }
+  .stat-card { padding: 12px !important; }
+  .stat-value { font-size: 20px !important; }
+  .stat-label { font-size: 10px !important; }
+
+  /* ── Grids ── */
+  .grid-2, .grid-3 { grid-template-columns: 1fr !important; gap: 12px !important; }
+
+  /* ── Tables ── */
+  .table-wrap { overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; border-radius: 8px !important; }
+  table { font-size: 12px !important; min-width: 420px; }
+  th, td { padding: 8px 10px !important; white-space: nowrap !important; }
+
+  /* ── Forms ── */
+  input, select, textarea { font-size: 16px !important; } /* prevent iOS zoom */
+
+  /* ── Buttons ── */
+  .btn { padding: 8px 13px !important; font-size: 13px !important; }
+  .btn-sm { padding: 5px 10px !important; font-size: 11px !important; }
+
+  /* ── Flex rows → stack ── */
+  .filter-bar,
+  .flex-row,
+  [style*="display:flex"][style*="gap"],
+  [style*="display: flex"][style*="gap"] { flex-wrap: wrap !important; }
+
+  /* ── Inline width overrides ── */
+  [style*="min-width:260px"],[style*="min-width: 260px"] { min-width:0 !important; width:100% !important; }
+  [style*="min-width:180px"],[style*="min-width: 180px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="min-width:160px"],[style*="min-width: 160px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="min-width:130px"],[style*="min-width: 130px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="width:900px"],[style*="width: 900px"] { width:100% !important; max-width:100% !important; }
+
+  /* ── Modal ── */
+  .modal { max-width: 95vw !important; padding: 16px !important; margin: 8px !important; }
+  .modal-title { font-size: 13px !important; }
+
+  /* ── XP Toast ── */
+  .xp-toast { bottom: calc(var(--nav-h) + 10px) !important; right: 8px !important; min-width: 180px !important; padding: 10px 14px !important; }
+
+  /* ── Class tab rows ── */
+  .class-tab-row { flex-wrap: wrap !important; gap: 6px !important; }
+  .class-tab-row .btn { min-width: 72px !important; font-size: 11px !important; padding: 7px 8px !important; }
+
+  /* ── Hero card ── */
+  .hero-card { padding: 16px !important; }
+  .hero-name { font-size: 16px !important; }
+  .stars-big { font-size: 26px !important; }
+
+  /* ── Section headers ── */
+  h2, .section-title { font-size: 14px !important; }
+
+  /* ── Podium on leaderboard ── */
+  .podium-wrap { gap: 8px !important; padding: 12px 0 !important; }
+  .podium-item { width: 80px !important; }
+  .podium-avatar { width: 44px !important; height: 44px !important; font-size: 16px !important; }
+  .podium-bar { margin-top: 6px !important; }
+
+  /* ── Staff dashboard student cards ── */
+  .student-mini-card { padding: 10px !important; }
+
+  /* ── Attendance step buttons ── */
+  .period-btn { min-width: 0 !important; flex: 1 1 45% !important; }
+
+  /* ── Quiz grade buttons ── */
+  .grade-btn-row { flex-wrap: wrap !important; gap: 6px !important; }
+}
+</style>
+{% set current_user = user %}
+{% extends "base.html" %}
+{% block title %}Grade Quiz{% endblock %}
+{% block page_title %}✏️ GRADE TEXT ANSWERS — {{ quiz.title }}{% endblock %}
+{% block content %}
+
+<a href="{{ url_for('quiz_results', quiz_id=quiz.id) }}" class="btn btn-outline btn-sm" style="margin-bottom:16px;"><i class="fas fa-arrow-left"></i> Back</a>
+
+{% if pending %}
+{% for item in pending %}
+<div class="card" style="margin-bottom:16px;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+    <div>
+      <div style="font-weight:700;font-size:14px;">{{ item.student_name }}</div>
+      <div style="font-size:11px;color:var(--text2);">{{ item.roll_number }}</div>
+    </div>
+    <span class="badge {% if item.is_graded %}badge-green{% else %}badge-red{% endif %}">
+      {% if item.is_graded %}Graded{% else %}Pending{% endif %}
+    </span>
+  </div>
+
+  <div style="background:var(--bg3);border-radius:8px;padding:12px;margin-bottom:10px;">
+    <div style="font-size:11px;color:var(--text2);margin-bottom:4px;">QUESTION</div>
+    <div style="font-weight:600;">{{ item.question }}</div>
+    <div style="font-size:11px;color:{% if item.q_type=='short_answer' %}var(--green){% else %}var(--gold){% endif %};margin-top:3px;">
+      {{ 'Short Answer' if item.q_type=='short_answer' else 'Long Answer' }} · {{ item.marks }} marks
+    </div>
+  </div>
+
+  <div style="background:rgba(255,255,255,0.03);border-left:3px solid var(--accent);padding:10px 14px;border-radius:0 8px 8px 0;margin-bottom:12px;">
+    <div style="font-size:11px;color:var(--text2);margin-bottom:4px;">STUDENT'S ANSWER</div>
+    <div style="font-size:13px;">{{ item.answer_given or '(No answer given)' }}</div>
+  </div>
+
+  <form method="POST" style="display:flex;gap:12px;align-items:flex-end;">
+    <input type="hidden" name="answer_id" value="{{ item.answer_id }}">
+    <div class="form-group" style="margin-bottom:0;flex:1;">
+      <label>Marks Given (max {{ item.marks }})</label>
+      <input type="number" name="marks_given" min="0" max="{{ item.marks }}" step="0.5"
+             value="{{ item.marks_given or 0 }}" required style="max-width:140px;">
+    </div>
+    <button type="submit" class="btn btn-primary btn-sm" style="padding:10px 20px;">Save</button>
+  </form>
+</div>
+{% endfor %}
+{% else %}
+<div class="card" style="text-align:center;padding:50px;color:var(--text2);">
+  No text answers to grade for this quiz.
+</div>
+{% endif %}
+{% endblock %}

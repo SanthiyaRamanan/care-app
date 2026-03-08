@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CARE — Register</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        :root{--bg:#0a0a14;--card:#1a1a2e;--border:#2a2a4a;--accent:#e94560;--blue:#00b4d8;--green:#00ff88;--purple:#7c3aed;--text:#e8e8f0;--text2:#9090b0;}
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{background:var(--bg);font-family:'Rajdhani',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+        .container{width:640px;max-width:100%;}
+        .header{text-align:center;margin-bottom:32px;}
+        .logo{font-family:'Orbitron',monospace;font-size:36px;font-weight:900;color:var(--accent);letter-spacing:6px;text-shadow:0 0 20px rgba(233,69,96,0.5);}
+        .subtitle{color:var(--text2);font-size:13px;margin-top:4px;}
+        .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:36px;}
+        .card-title{font-family:'Orbitron',monospace;font-size:16px;color:var(--text);margin-bottom:24px;letter-spacing:2px;}
+        .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+        .form-group{margin-bottom:0;}
+        .form-group.full{grid-column:1/-1;}
+        label{display:block;font-size:11px;color:var(--text2);letter-spacing:1.5px;margin-bottom:6px;text-transform:uppercase;}
+        input,select{width:100%;background:#0f0f1e;border:1px solid var(--border);color:var(--text);padding:11px 14px;border-radius:8px;font-family:'Rajdhani',sans-serif;font-size:14px;transition:border-color 0.2s;}
+        input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(233,69,96,0.1);}
+        select option{background:#1a1a2e;}
+        .student-fields,.staff-fields{display:none;}
+        .cc-fields{display:none;}
+        .btn{width:100%;padding:13px;background:var(--accent);color:white;border:none;border-radius:8px;font-family:'Orbitron',monospace;font-size:13px;letter-spacing:2px;cursor:pointer;margin-top:20px;transition:all 0.2s;}
+        .btn:hover{background:#c73252;box-shadow:0 0 20px rgba(233,69,96,0.4);}
+        .back-link{display:block;text-align:center;margin-top:16px;color:var(--text2);font-size:13px;text-decoration:none;}
+        .back-link:hover{color:var(--accent);}
+        .alert{padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px;background:rgba(233,69,96,0.1);border:1px solid rgba(233,69,96,0.3);color:var(--accent);}
+        .section-sep{grid-column:1/-1;font-family:'Orbitron',monospace;font-size:10px;color:var(--accent);letter-spacing:2px;margin-top:8px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+        .info-note{grid-column:1/-1;font-size:12px;color:var(--text2);padding:10px 14px;background:rgba(0,180,216,0.06);border:1px solid rgba(0,180,216,0.15);border-radius:8px;line-height:1.5;}
+        .cc-toggle-wrap{grid-column:1/-1;display:flex;align-items:center;gap:10px;padding:12px 14px;background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.3);border-radius:10px;cursor:pointer;}
+        .cc-toggle-wrap label{margin:0;text-transform:none;letter-spacing:0;font-size:13px;font-weight:600;color:#a78bfa;cursor:pointer;}
+        .year-class-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+        .class-preview{font-size:12px;color:var(--green);margin-top:6px;font-family:'Share Tech Mono',monospace;min-height:18px;}
+    </style>
+
+<style id="mobile-global-fix">
+/* ═══════════════════════════════════════
+   CARE — Global Mobile Fixes
+   Applied to all pages
+═══════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* ── Layout ── */
+  body { overflow-x: hidden !important; }
+
+  /* ── Cards ── */
+  .card { padding: 14px !important; }
+  .card-title { font-size: 11px !important; letter-spacing: 1px !important; }
+
+  /* ── Stats grid ── */
+  .stats-grid { grid-template-columns: repeat(2,1fr) !important; gap: 10px !important; }
+  .stat-card { padding: 12px !important; }
+  .stat-value { font-size: 20px !important; }
+  .stat-label { font-size: 10px !important; }
+
+  /* ── Grids ── */
+  .grid-2, .grid-3 { grid-template-columns: 1fr !important; gap: 12px !important; }
+
+  /* ── Tables ── */
+  .table-wrap { overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; border-radius: 8px !important; }
+  table { font-size: 12px !important; min-width: 420px; }
+  th, td { padding: 8px 10px !important; white-space: nowrap !important; }
+
+  /* ── Forms ── */
+  input, select, textarea { font-size: 16px !important; } /* prevent iOS zoom */
+
+  /* ── Buttons ── */
+  .btn { padding: 8px 13px !important; font-size: 13px !important; }
+  .btn-sm { padding: 5px 10px !important; font-size: 11px !important; }
+
+  /* ── Flex rows → stack ── */
+  .filter-bar,
+  .flex-row,
+  [style*="display:flex"][style*="gap"],
+  [style*="display: flex"][style*="gap"] { flex-wrap: wrap !important; }
+
+  /* ── Inline width overrides ── */
+  [style*="min-width:260px"],[style*="min-width: 260px"] { min-width:0 !important; width:100% !important; }
+  [style*="min-width:180px"],[style*="min-width: 180px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="min-width:160px"],[style*="min-width: 160px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="min-width:130px"],[style*="min-width: 130px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="width:900px"],[style*="width: 900px"] { width:100% !important; max-width:100% !important; }
+
+  /* ── Modal ── */
+  .modal { max-width: 95vw !important; padding: 16px !important; margin: 8px !important; }
+  .modal-title { font-size: 13px !important; }
+
+  /* ── XP Toast ── */
+  .xp-toast { bottom: calc(var(--nav-h) + 10px) !important; right: 8px !important; min-width: 180px !important; padding: 10px 14px !important; }
+
+  /* ── Class tab rows ── */
+  .class-tab-row { flex-wrap: wrap !important; gap: 6px !important; }
+  .class-tab-row .btn { min-width: 72px !important; font-size: 11px !important; padding: 7px 8px !important; }
+
+  /* ── Hero card ── */
+  .hero-card { padding: 16px !important; }
+  .hero-name { font-size: 16px !important; }
+  .stars-big { font-size: 26px !important; }
+
+  /* ── Section headers ── */
+  h2, .section-title { font-size: 14px !important; }
+
+  /* ── Podium on leaderboard ── */
+  .podium-wrap { gap: 8px !important; padding: 12px 0 !important; }
+  .podium-item { width: 80px !important; }
+  .podium-avatar { width: 44px !important; height: 44px !important; font-size: 16px !important; }
+  .podium-bar { margin-top: 6px !important; }
+
+  /* ── Staff dashboard student cards ── */
+  .student-mini-card { padding: 10px !important; }
+
+  /* ── Attendance step buttons ── */
+  .period-btn { min-width: 0 !important; flex: 1 1 45% !important; }
+
+  /* ── Quiz grade buttons ── */
+  .grade-btn-row { flex-wrap: wrap !important; gap: 6px !important; }
+}
+</style>
+
+<style id="register-mobile-fix">
+@media (max-width: 640px) {
+  .container { padding: 0 !important; }
+  .card { border-radius: 0 !important; border-left: none !important; border-right: none !important; padding: 20px 16px !important; }
+  .form-grid { grid-template-columns: 1fr !important; }
+  .form-group.full { grid-column: 1 !important; }
+  .header { padding: 20px 16px 0 !important; }
+  .logo { font-size: 28px !important; }
+  .section-sep { grid-column: 1 !important; }
+  .info-note { grid-column: 1 !important; }
+  .cc-toggle-wrap { grid-column: 1 !important; }
+  .year-class-row { grid-template-columns: 1fr !important; }
+  body { padding: 0 !important; align-items: flex-start !important; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <div class="logo">C.A.R.E</div>
+        <div class="subtitle">Create your account to start earning streak stars</div>
+    </div>
+    <div class="card">
+        <div class="card-title">🎮 JOIN THE ARENA</div>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, message in messages %}
+            <div class="alert">{{ message }}</div>
+            {% endfor %}
+        {% endwith %}
+        <form method="POST">
+            <div class="form-grid">
+                <div class="form-group full">
+                    <label>Full Name</label>
+                    <input type="text" name="name" required placeholder="Your full name">
+                </div>
+                <div class="form-group full">
+                    <label>Email Address</label>
+                    <input type="email" name="email" required placeholder="your@email.com">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" name="password" required placeholder="••••••••" minlength="6">
+                </div>
+                <div class="form-group">
+                    <label>Role</label>
+                    <select name="role" id="roleSelect" onchange="toggleFields(this.value)" required>
+                        <option value="">Select Role</option>
+                        <option value="student">Student</option>
+                        <option value="staff">Staff / Faculty</option>
+                    </select>
+                </div>
+                <div class="form-group full">
+                    <label>Department</label>
+                    <select name="department" id="deptSelect">
+                        <option value="">— Select Role first —</option>
+                    </select>
+                </div>
+                <div class="form-group full">
+                    <label>Phone</label>
+                    <input type="tel" name="phone" placeholder="+91 XXXXX XXXXX">
+                </div>
+
+                <!-- ── STUDENT FIELDS ── -->
+                <div class="section-sep student-fields">📚 Student Details</div>
+                <div class="form-group student-fields">
+                    <label>Roll Number</label>
+                    <input type="text" name="roll_number" placeholder="e.g. 810723243095">
+                </div>
+                <div class="form-group student-fields">
+                    <label>Year</label>
+                    <select name="year" id="yearSelect" onchange="updateClassOptions()">
+                        <option value="1">1st Year</option>
+                        <option value="2">2nd Year</option>
+                        <option value="3">3rd Year</option>
+                        <option value="4">4th Year</option>
+                    </select>
+                </div>
+                <div class="form-group student-fields full">
+                    <label>Class / Section</label>
+                    <select name="class_name" id="classSelect"></select>
+                </div>
+
+                <!-- ── STAFF FIELDS ── -->
+                <div class="section-sep staff-fields">🎓 Staff Details</div>
+                <div class="form-group staff-fields full">
+                    <label>Staff ID</label>
+                    <input type="text" name="staff_id" placeholder="e.g. STAFF001">
+                </div>
+
+                <!-- CC Toggle -->
+                <div class="cc-toggle-wrap staff-fields" onclick="toggleCC()">
+                    <input type="checkbox" name="is_coordinator" id="ccCheck" value="1"
+                           style="width:auto;accent-color:#a78bfa;" onclick="event.stopPropagation();toggleCC()">
+                    <label for="ccCheck">🏫 I am a Class Coordinator (CC)</label>
+                </div>
+
+                <!-- CC Year + Class select -->
+                <div class="form-group full cc-fields" id="ccClassWrap">
+                    <label>Coordinating Class</label>
+                    <div style="background:rgba(124,58,237,0.06);border:1px solid rgba(124,58,237,0.25);border-radius:10px;padding:16px;">
+
+                        <div class="year-class-row" style="margin-bottom:10px;">
+                            <div>
+                                <label style="color:#a78bfa;">Year</label>
+                                <select id="ccYearSelect" onchange="updateCCClassOptions()">
+                                    <option value="">— Select Year —</option>
+                                    <option value="1">1st Year</option>
+                                    <option value="2">2nd Year</option>
+                                    <option value="3">3rd Year</option>
+                                    <option value="4">4th Year</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="color:#a78bfa;">Section / Class</label>
+                                <select id="ccSectionSelect" name="coordinator_class" onchange="updateCCPreview()">
+                                    <option value="">— Select Year first —</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Hidden field stores year for CC -->
+                        <input type="hidden" name="coordinator_year" id="ccYearHidden" value="">
+
+                        <div class="class-preview" id="ccPreview"></div>
+                        <div style="font-size:11px;color:#a78bfa;margin-top:8px;">
+                            ⚡ Certificates from this class will be routed to you for verification.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-note staff-fields">
+                    ℹ️ Admin will assign your timetable and classes after registration. You can also update your classes from your Profile page.
+                </div>
+            </div>
+            <button type="submit" class="btn">⚡ CREATE ACCOUNT</button>
+        </form>
+        <a href="{{ url_for('login') }}" class="back-link">← Already have an account? Login</a>
+    </div>
+</div>
+
+<script>
+// Department options per role
+const DEPT_OPTIONS = {
+    student: [
+        {value: "Computer Science",  label: "Computer Science (CS)"},
+        {value: "AI & DS",           label: "Artificial Intelligence & Data Science (AD)"},
+        {value: "Civil Engineering", label: "Civil Engineering (CE)"},
+        {value: "Mechanical",        label: "Mechanical Engineering (MECH)"},
+        {value: "Electronics",       label: "Electronics & Communication (ECE)"}
+    ],
+    staff: [
+        {value: "Computer Science",  label: "Computer Science (CS)"},
+        {value: "AI & DS",           label: "Artificial Intelligence & Data Science (AD)"},
+        {value: "Civil Engineering", label: "Civil Engineering (CE)"},
+        {value: "Mechanical",        label: "Mechanical Engineering (MECH)"},
+        {value: "Electronics",       label: "Electronics & Communication (ECE)"},
+        {value: "S&H",               label: "Science & Humanities (S&H)"},
+        {value: "T&P",               label: "Training & Placement (T&P)"},
+        {value: "Library",           label: "Library"},
+        {value: "Administration",    label: "Administration"}
+    ]
+};
+
+function updateDeptOptions(role) {
+    const sel = document.getElementById('deptSelect');
+    sel.innerHTML = '';
+    (DEPT_OPTIONS[role] || []).forEach(d => {
+        const opt = document.createElement('option');
+        opt.value = d.value;
+        opt.textContent = d.label;
+        sel.appendChild(opt);
+    });
+}
+const CLASS_OPTIONS = {
+    "1": ["I-A","I-B","I-C","I-D","I-E","I-F","I-G"],
+    "2": ["CS-A","CS-B","CE-A","MECH-A","AD-A","AD-B","ECE-A"],
+    "3": ["CS-A","CS-B","CE-A","MECH-A","AD-A","AD-B","ECE-A"],
+    "4": ["CS-A","CS-B","CE-A","MECH-A","AD-A","AD-B","ECE-A"]
+};
+
+const YEAR_LABELS = {"1":"1st Year","2":"2nd Year","3":"3rd Year","4":"4th Year"};
+
+// ── Student class dropdown ──
+function updateClassOptions() {
+    const year = document.getElementById('yearSelect').value;
+    const sel  = document.getElementById('classSelect');
+    sel.innerHTML = '';
+    (CLASS_OPTIONS[year] || []).forEach(cls => {
+        const opt = document.createElement('option');
+        opt.value = cls; opt.textContent = cls;
+        sel.appendChild(opt);
+    });
+}
+
+// ── Show/hide student vs staff fields ──
+function toggleFields(role) {
+    document.querySelectorAll('.student-fields').forEach(el =>
+        el.style.display = role === 'student' ? 'block' : 'none');
+    document.querySelectorAll('.staff-fields').forEach(el =>
+        el.style.display = role === 'staff' ? 'block' : 'none');
+    document.getElementById('ccClassWrap').style.display = 'none';
+    document.getElementById('ccCheck').checked = false;
+    updateDeptOptions(role);
+    if (role === 'student') updateClassOptions();
+}
+
+// ── CC toggle ──
+function toggleCC() {
+    const checked = document.getElementById('ccCheck').checked;
+    document.getElementById('ccClassWrap').style.display = checked ? 'block' : 'none';
+    if (!checked) {
+        document.getElementById('ccPreview').textContent = '';
+        document.getElementById('ccYearHidden').value = '';
+    }
+}
+
+// ── CC: populate sections based on year ──
+function updateCCClassOptions() {
+    const year = document.getElementById('ccYearSelect').value;
+    const sel  = document.getElementById('ccSectionSelect');
+    sel.innerHTML = '<option value="">— Select Section —</option>';
+    if (!year) { updateCCPreview(); return; }
+    (CLASS_OPTIONS[year] || []).forEach(cls => {
+        const opt = document.createElement('option');
+        opt.value = cls;
+        opt.textContent = cls;
+        sel.appendChild(opt);
+    });
+    document.getElementById('ccYearHidden').value = year;
+    updateCCPreview();
+}
+
+// ── CC: show preview of selected year + class ──
+function updateCCPreview() {
+    const year = document.getElementById('ccYearSelect').value;
+    const cls  = document.getElementById('ccSectionSelect').value;
+    const prev = document.getElementById('ccPreview');
+    document.getElementById('ccYearHidden').value = year;
+    if (year && cls) {
+        prev.textContent = `✓ CC for ${YEAR_LABELS[year]} — ${cls}`;
+        prev.style.color = 'var(--green)';
+    } else {
+        prev.textContent = '';
+    }
+}
+
+updateClassOptions();
+</script>
+</body>
+</html>

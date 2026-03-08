@@ -1,0 +1,332 @@
+{% set current_user = user %}
+{% extends "base.html" %}
+{% block head %}
+
+<style id="mobile-global-fix">
+/* ═══════════════════════════════════════
+   CARE — Global Mobile Fixes
+   Applied to all pages
+═══════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* ── Layout ── */
+  body { overflow-x: hidden !important; }
+
+  /* ── Cards ── */
+  .card { padding: 14px !important; }
+  .card-title { font-size: 11px !important; letter-spacing: 1px !important; }
+
+  /* ── Stats grid ── */
+  .stats-grid { grid-template-columns: repeat(2,1fr) !important; gap: 10px !important; }
+  .stat-card { padding: 12px !important; }
+  .stat-value { font-size: 20px !important; }
+  .stat-label { font-size: 10px !important; }
+
+  /* ── Grids ── */
+  .grid-2, .grid-3 { grid-template-columns: 1fr !important; gap: 12px !important; }
+
+  /* ── Tables ── */
+  .table-wrap { overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; border-radius: 8px !important; }
+  table { font-size: 12px !important; min-width: 420px; }
+  th, td { padding: 8px 10px !important; white-space: nowrap !important; }
+
+  /* ── Forms ── */
+  input, select, textarea { font-size: 16px !important; } /* prevent iOS zoom */
+
+  /* ── Buttons ── */
+  .btn { padding: 8px 13px !important; font-size: 13px !important; }
+  .btn-sm { padding: 5px 10px !important; font-size: 11px !important; }
+
+  /* ── Flex rows → stack ── */
+  .filter-bar,
+  .flex-row,
+  [style*="display:flex"][style*="gap"],
+  [style*="display: flex"][style*="gap"] { flex-wrap: wrap !important; }
+
+  /* ── Inline width overrides ── */
+  [style*="min-width:260px"],[style*="min-width: 260px"] { min-width:0 !important; width:100% !important; }
+  [style*="min-width:180px"],[style*="min-width: 180px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="min-width:160px"],[style*="min-width: 160px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="min-width:130px"],[style*="min-width: 130px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="width:900px"],[style*="width: 900px"] { width:100% !important; max-width:100% !important; }
+
+  /* ── Modal ── */
+  .modal { max-width: 95vw !important; padding: 16px !important; margin: 8px !important; }
+  .modal-title { font-size: 13px !important; }
+
+  /* ── XP Toast ── */
+  .xp-toast { bottom: calc(var(--nav-h) + 10px) !important; right: 8px !important; min-width: 180px !important; padding: 10px 14px !important; }
+
+  /* ── Class tab rows ── */
+  .class-tab-row { flex-wrap: wrap !important; gap: 6px !important; }
+  .class-tab-row .btn { min-width: 72px !important; font-size: 11px !important; padding: 7px 8px !important; }
+
+  /* ── Hero card ── */
+  .hero-card { padding: 16px !important; }
+  .hero-name { font-size: 16px !important; }
+  .stars-big { font-size: 26px !important; }
+
+  /* ── Section headers ── */
+  h2, .section-title { font-size: 14px !important; }
+
+  /* ── Podium on leaderboard ── */
+  .podium-wrap { gap: 8px !important; padding: 12px 0 !important; }
+  .podium-item { width: 80px !important; }
+  .podium-avatar { width: 44px !important; height: 44px !important; font-size: 16px !important; }
+  .podium-bar { margin-top: 6px !important; }
+
+  /* ── Staff dashboard student cards ── */
+  .student-mini-card { padding: 10px !important; }
+
+  /* ── Attendance step buttons ── */
+  .period-btn { min-width: 0 !important; flex: 1 1 45% !important; }
+
+  /* ── Quiz grade buttons ── */
+  .grade-btn-row { flex-wrap: wrap !important; gap: 6px !important; }
+}
+</style>
+
+<style>
+@media (max-width: 768px) {
+  body { overflow-x: hidden; }
+  input, select, textarea { font-size: 16px !important; }
+  .quiz-form-grid { grid-template-columns: 1fr !important; }
+  .quiz-header-row { flex-direction: column !important; gap: 8px !important; }
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .table-wrap table { min-width: 480px; }
+}
+</style>
+{% endblock %}
+{% block title %}Quiz Maker{% endblock %}
+{% block page_title %}❓ QUIZ MAKER{% endblock %}
+{% block content %}
+
+<!-- Class tabs -->
+<div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
+  {% for cls in staff_classes %}
+  <a href="?class={{ cls }}" class="btn {% if cls==active_class %}btn-primary{% else %}btn-outline{% endif %}"
+     style="min-width:90px;justify-content:center;font-family:'Orbitron',monospace;font-size:12px;">{{ cls }}</a>
+  {% endfor %}
+  <button class="btn btn-primary" onclick="openModal('createQuiz')" style="margin-left:auto;">
+    <i class="fas fa-plus"></i> New Quiz
+  </button>
+</div>
+
+<!-- Quiz list -->
+{% if quizzes %}
+<div style="display:grid;gap:12px;">
+  {% for q in quizzes %}
+  <div class="card" style="padding:16px 20px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+      <div>
+        <div style="font-family:'Orbitron',monospace;font-size:15px;">{{ q.title }}</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:3px;">
+          {{ q.subject }} · {{ q.class_name }} · {{ q.duration_minutes }} min · {{ q.total_marks }} marks
+          {% if q.due_date %} · Due: {{ q.due_date }}{% endif %}
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <span style="font-size:12px;color:var(--text2);">{{ q.attempts or 0 }} attempts</span>
+        {% if q.avg_score %}<span style="font-size:12px;color:var(--gold);">Avg: {{ q.avg_score|round(1) }}%</span>{% endif %}
+        <a href="{{ url_for('quiz_results', quiz_id=q.id) }}" class="btn btn-outline btn-sm">Results</a>
+        <a href="{{ url_for('staff_grade_quiz', quiz_id=q.id) }}" class="btn btn-sm" style="background:rgba(124,58,237,0.15);color:#a78bfa;border:1px solid rgba(124,58,237,0.4);">Grade Text</a>
+        <a href="{{ url_for('export_quiz_excel', quiz_id=q.id) }}" class="btn btn-outline btn-sm"><i class="fas fa-download"></i></a>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card" style="text-align:center;padding:50px;color:var(--text2);">
+  No quizzes yet for {{ active_class }}. Click "New Quiz" to create one.
+</div>
+{% endif %}
+
+<!-- ══ CREATE QUIZ MODAL ══ -->
+<div class="modal-overlay" id="createQuiz">
+  <div class="modal" style="max-width:780px;max-height:90vh;overflow-y:auto;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;position:sticky;top:0;background:var(--card);padding-bottom:12px;border-bottom:1px solid var(--border);">
+      <div class="modal-title">❓ CREATE QUIZ</div>
+      <button class="modal-close" onclick="closeModal('createQuiz')">×</button>
+    </div>
+
+    <form method="POST" id="quizForm">
+      <input type="hidden" name="action" value="create_quiz">
+      <input type="hidden" name="questions_json" id="questionsJson">
+
+      <div class="grid-2" style="margin-bottom:14px;">
+        <div class="form-group"><label>Quiz Title</label><input type="text" name="title" required placeholder="e.g. Unit 1 Test"></div>
+        <div class="form-group"><label>Subject</label><input type="text" name="subject" required placeholder="Subject name"></div>
+        <div class="form-group"><label>Duration (minutes)</label><input type="number" name="duration_minutes" value="30" min="5"></div>
+        <div class="form-group"><label>Due Date (optional)</label><input type="datetime-local" name="due_date"></div>
+      </div>
+
+      <!-- Target classes -->
+      <div class="form-group" style="margin-bottom:16px;">
+        <label>Target Classes</label>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+          {% for cls in staff_classes %}
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;text-transform:none;letter-spacing:0;font-size:13px;font-weight:600;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:6px 12px;">
+            <input type="checkbox" name="target_classes" value="{{ cls }}" {% if cls==active_class %}checked{% endif %} style="width:auto;accent-color:var(--accent);">
+            {{ cls }}
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Questions builder -->
+      <div style="border-top:1px solid var(--border);padding-top:16px;margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <div style="font-family:'Orbitron',monospace;font-size:12px;color:var(--accent);">QUESTIONS</div>
+          <div style="display:flex;gap:8px;">
+            <button type="button" onclick="addQuestion('mcq')"           class="btn btn-sm" style="background:rgba(0,180,216,0.15);color:var(--blue);border:1px solid rgba(0,180,216,0.4);">+ MCQ</button>
+            <button type="button" onclick="addQuestion('multi_select')"  class="btn btn-sm" style="background:rgba(124,58,237,0.15);color:#a78bfa;border:1px solid rgba(124,58,237,0.4);">+ Multi-Select</button>
+            <button type="button" onclick="addQuestion('short_answer')"  class="btn btn-sm" style="background:rgba(0,255,136,0.1);color:var(--green);border:1px solid rgba(0,255,136,0.3);">+ Short Ans</button>
+            <button type="button" onclick="addQuestion('long_answer')"   class="btn btn-sm" style="background:rgba(255,215,0,0.1);color:var(--gold);border:1px solid rgba(255,215,0,0.3);">+ Long Ans</button>
+          </div>
+        </div>
+        <div id="questionsContainer">
+          <div style="text-align:center;padding:30px;color:var(--text2);font-size:13px;" id="emptyMsg">
+            Click a button above to add questions.
+          </div>
+        </div>
+        <div style="margin-top:10px;font-size:13px;color:var(--text2);">
+          Total: <span id="qCount" style="color:var(--accent);font-weight:700;">0</span> questions ·
+          <span id="mTotal" style="color:var(--gold);font-weight:700;">0</span> marks
+        </div>
+      </div>
+
+      <button type="button" onclick="submitQuiz()" class="btn btn-primary" style="width:100%;padding:13px;font-family:'Orbitron',monospace;letter-spacing:1px;">
+        ✓ CREATE QUIZ
+      </button>
+    </form>
+  </div>
+</div>
+
+<style>
+.q-card { background:var(--bg3); border:1px solid var(--border); border-radius:10px; padding:16px; margin-bottom:12px; }
+.q-card .q-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+.q-type-badge { font-size:10px; padding:3px 10px; border-radius:20px; font-weight:700; letter-spacing:1px; }
+.opt-row { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+.opt-row input[type=text] { flex:1; }
+.opt-row input[type=checkbox], .opt-row input[type=radio] { width:auto; flex-shrink:0; }
+</style>
+
+<script>
+let questions = [];
+let qCounter  = 0;
+
+const TYPE_META = {
+  mcq:          { label:'Multiple Choice',  color:'var(--blue)',   bg:'rgba(0,180,216,0.15)' },
+  multi_select: { label:'Multi-Select',     color:'#a78bfa',       bg:'rgba(124,58,237,0.15)' },
+  short_answer: { label:'Short Answer',     color:'var(--green)',  bg:'rgba(0,255,136,0.1)' },
+  long_answer:  { label:'Long Answer',      color:'var(--gold)',   bg:'rgba(255,215,0,0.1)' }
+};
+
+function addQuestion(type) {
+  document.getElementById('emptyMsg') && (document.getElementById('emptyMsg').style.display='none');
+  const id = ++qCounter;
+  const meta = TYPE_META[type];
+  const container = document.getElementById('questionsContainer');
+
+  const div = document.createElement('div');
+  div.className = 'q-card';
+  div.id = 'qcard_'+id;
+
+  let optionsHtml = '';
+  if (type === 'mcq') {
+    optionsHtml = `
+      <div style="margin-top:10px;">
+        <div style="font-size:11px;color:var(--text2);margin-bottom:6px;">OPTIONS (select correct answer)</div>
+        ${[1,2,3,4].map(i => `
+        <div class="opt-row">
+          <input type="radio" name="correct_${id}" value="${i}" ${i===1?'checked':''}>
+          <input type="text" id="opt_${id}_${i}" placeholder="Option ${i}" style="padding:6px 10px;border-radius:6px;">
+        </div>`).join('')}
+      </div>`;
+  } else if (type === 'multi_select') {
+    optionsHtml = `
+      <div style="margin-top:10px;">
+        <div style="font-size:11px;color:var(--text2);margin-bottom:6px;">OPTIONS (check all correct answers)</div>
+        ${[1,2,3,4].map(i => `
+        <div class="opt-row">
+          <input type="checkbox" id="correct_${id}_${i}">
+          <input type="text" id="opt_${id}_${i}" placeholder="Option ${i}" style="padding:6px 10px;border-radius:6px;">
+        </div>`).join('')}
+      </div>`;
+  } else {
+    optionsHtml = `<div style="margin-top:8px;font-size:12px;color:var(--text2);padding:8px;background:rgba(255,255,255,0.03);border-radius:6px;">
+      📝 Students will type their answer. You will grade this manually.
+    </div>`;
+  }
+
+  div.innerHTML = `
+    <div class="q-header">
+      <span class="q-type-badge" style="color:${meta.color};background:${meta.bg};">${meta.label.toUpperCase()}</span>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <label style="font-size:12px;color:var(--text2);text-transform:none;letter-spacing:0;">
+          Marks: <input type="number" id="marks_${id}" value="1" min="0" max="100" onchange="updateTotal()"
+          style="width:60px;padding:4px 8px;border-radius:6px;font-size:13px;display:inline;">
+        </label>
+        <button type="button" onclick="removeQuestion(${id})" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:16px;">✕</button>
+      </div>
+    </div>
+    <input type="text" id="qtxt_${id}" placeholder="Question ${id}" required
+      style="width:100%;padding:8px 12px;border-radius:8px;font-size:13px;box-sizing:border-box;">
+    ${optionsHtml}
+  `;
+
+  container.appendChild(div);
+  questions.push({ id, type });
+  updateTotal();
+}
+
+function removeQuestion(id) {
+  document.getElementById('qcard_'+id)?.remove();
+  questions = questions.filter(q => q.id !== id);
+  updateTotal();
+}
+
+function updateTotal() {
+  let marks = 0;
+  questions.forEach(q => {
+    marks += parseInt(document.getElementById('marks_'+q.id)?.value || 0);
+  });
+  document.getElementById('qCount').textContent = questions.length;
+  document.getElementById('mTotal').textContent = marks;
+}
+
+function submitQuiz() {
+  if (questions.length === 0) { alert('Add at least one question!'); return; }
+
+  const built = questions.map(q => {
+    const type = q.type;
+    const text = document.getElementById('qtxt_'+q.id)?.value?.trim();
+    const marks = parseInt(document.getElementById('marks_'+q.id)?.value || 1);
+    if (!text) { alert('Fill in all question text!'); throw 'empty'; }
+
+    let options = [], correct = [];
+
+    if (type === 'mcq') {
+      for (let i=1;i<=4;i++) {
+        const v = document.getElementById('opt_'+q.id+'_'+i)?.value?.trim();
+        if (v) options.push(v);
+      }
+      const sel = document.querySelector(`input[name="correct_${q.id}"]:checked`);
+      correct = sel ? [parseInt(sel.value)-1] : [0];
+    } else if (type === 'multi_select') {
+      for (let i=1;i<=4;i++) {
+        const v = document.getElementById('opt_'+q.id+'_'+i)?.value?.trim();
+        if (v) options.push(v);
+      }
+      for (let i=1;i<=4;i++) {
+        if (document.getElementById('correct_'+q.id+'_'+i)?.checked) correct.push(i-1);
+      }
+    }
+    return { type, text, options, correct, marks };
+  });
+
+  document.getElementById('questionsJson').value = JSON.stringify(built);
+  document.getElementById('quizForm').submit();
+}
+</script>
+{% endblock %}

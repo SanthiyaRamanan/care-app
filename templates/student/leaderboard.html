@@ -1,0 +1,252 @@
+{% set current_user = user %}
+{% extends "base.html" %}
+{% block head %}
+
+<style id="mobile-global-fix">
+/* ═══════════════════════════════════════
+   CARE — Global Mobile Fixes
+   Applied to all pages
+═══════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* ── Layout ── */
+  body { overflow-x: hidden !important; }
+
+  /* ── Cards ── */
+  .card { padding: 14px !important; }
+  .card-title { font-size: 11px !important; letter-spacing: 1px !important; }
+
+  /* ── Stats grid ── */
+  .stats-grid { grid-template-columns: repeat(2,1fr) !important; gap: 10px !important; }
+  .stat-card { padding: 12px !important; }
+  .stat-value { font-size: 20px !important; }
+  .stat-label { font-size: 10px !important; }
+
+  /* ── Grids ── */
+  .grid-2, .grid-3 { grid-template-columns: 1fr !important; gap: 12px !important; }
+
+  /* ── Tables ── */
+  .table-wrap { overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; border-radius: 8px !important; }
+  table { font-size: 12px !important; min-width: 420px; }
+  th, td { padding: 8px 10px !important; white-space: nowrap !important; }
+
+  /* ── Forms ── */
+  input, select, textarea { font-size: 16px !important; } /* prevent iOS zoom */
+
+  /* ── Buttons ── */
+  .btn { padding: 8px 13px !important; font-size: 13px !important; }
+  .btn-sm { padding: 5px 10px !important; font-size: 11px !important; }
+
+  /* ── Flex rows → stack ── */
+  .filter-bar,
+  .flex-row,
+  [style*="display:flex"][style*="gap"],
+  [style*="display: flex"][style*="gap"] { flex-wrap: wrap !important; }
+
+  /* ── Inline width overrides ── */
+  [style*="min-width:260px"],[style*="min-width: 260px"] { min-width:0 !important; width:100% !important; }
+  [style*="min-width:180px"],[style*="min-width: 180px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="min-width:160px"],[style*="min-width: 160px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="min-width:130px"],[style*="min-width: 130px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="width:900px"],[style*="width: 900px"] { width:100% !important; max-width:100% !important; }
+
+  /* ── Modal ── */
+  .modal { max-width: 95vw !important; padding: 16px !important; margin: 8px !important; }
+  .modal-title { font-size: 13px !important; }
+
+  /* ── XP Toast ── */
+  .xp-toast { bottom: calc(var(--nav-h) + 10px) !important; right: 8px !important; min-width: 180px !important; padding: 10px 14px !important; }
+
+  /* ── Class tab rows ── */
+  .class-tab-row { flex-wrap: wrap !important; gap: 6px !important; }
+  .class-tab-row .btn { min-width: 72px !important; font-size: 11px !important; padding: 7px 8px !important; }
+
+  /* ── Hero card ── */
+  .hero-card { padding: 16px !important; }
+  .hero-name { font-size: 16px !important; }
+  .stars-big { font-size: 26px !important; }
+
+  /* ── Section headers ── */
+  h2, .section-title { font-size: 14px !important; }
+
+  /* ── Podium on leaderboard ── */
+  .podium-wrap { gap: 8px !important; padding: 12px 0 !important; }
+  .podium-item { width: 80px !important; }
+  .podium-avatar { width: 44px !important; height: 44px !important; font-size: 16px !important; }
+  .podium-bar { margin-top: 6px !important; }
+
+  /* ── Staff dashboard student cards ── */
+  .student-mini-card { padding: 10px !important; }
+
+  /* ── Attendance step buttons ── */
+  .period-btn { min-width: 0 !important; flex: 1 1 45% !important; }
+
+  /* ── Quiz grade buttons ── */
+  .grade-btn-row { flex-wrap: wrap !important; gap: 6px !important; }
+}
+</style>
+
+<style>
+@media (max-width: 768px) {
+  body { overflow-x: hidden; }
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .lb-table td:nth-child(4), .lb-table th:nth-child(4) { display: none; }
+}
+</style>
+{% endblock %}
+{% block title %}Leaderboard{% endblock %}
+{% block page_title %}🏆 LEADERBOARD{% endblock %}
+{% block content %}
+
+<!-- TOP 5 PODIUM -->
+<div style="margin-bottom:28px;">
+  <div style="text-align:center;margin-bottom:20px;">
+    <div style="font-family:'Orbitron',monospace;font-size:18px;color:var(--gold);letter-spacing:3px;text-shadow:0 0 20px rgba(255,215,0,0.5);">⚡ HALL OF CHAMPIONS ⚡</div>
+    <div style="color:var(--text2);font-size:13px;margin-top:4px;">Top 5 students — Class {{ user.class_name }}</div>
+  </div>
+
+  {% if top5 %}
+  <div style="display:flex;justify-content:center;align-items:flex-end;gap:16px;padding:24px 0;">
+    {% for s in top5 %}
+      {% set heights = ['180px','160px','140px','120px','100px'] %}
+
+      {# ── Rank-based badge (1=Gold, 2-3=Silver, 4-5=Bronze) ── #}
+      {% if loop.index == 1 %}
+        {% set bname = 'Gold' %}
+        {% set bcls  = 'badge-gold' %}
+        {% set bcolor_a = '#ffd700' %}
+        {% set bcolor_b = '#f5a623' %}
+        {% set border_c = 'var(--gold)' %}
+        {% set bar_c_a  = 'rgba(255,215,0,0.3)' %}
+        {% set bar_c_b  = 'rgba(255,215,0,0.1)' %}
+        {% set bar_bdr  = 'rgba(255,215,0,0.3)' %}
+        {% set icon %}👑{% endset %}
+        {% set icon_sz = '40px' %}
+      {% elif loop.index == 2 or loop.index == 3 %}
+        {% set bname = 'Silver' %}
+        {% set bcls  = 'badge-silver' %}
+        {% set bcolor_a = '#c0c0c0' %}
+        {% set bcolor_b = '#a0a0a0' %}
+        {% set border_c = 'var(--silver)' %}
+        {% set bar_c_a  = 'rgba(192,192,192,0.3)' %}
+        {% set bar_c_b  = 'rgba(192,192,192,0.1)' %}
+        {% set bar_bdr  = 'rgba(192,192,192,0.3)' %}
+        {% set icon %}🥈{% endset %}
+        {% set icon_sz = '32px' %}
+      {% else %}
+        {% set bname = 'Bronze' %}
+        {% set bcls  = 'badge-bronze' %}
+        {% set bcolor_a = '#cd7f32' %}
+        {% set bcolor_b = '#8b4513' %}
+        {% set border_c = 'var(--bronze)' %}
+        {% set bar_c_a  = 'rgba(205,127,50,0.3)' %}
+        {% set bar_c_b  = 'rgba(205,127,50,0.1)' %}
+        {% set bar_bdr  = 'rgba(205,127,50,0.3)' %}
+        {% set icon %}🥉{% endset %}
+        {% set icon_sz = '28px' %}
+      {% endif %}
+
+      <div style="text-align:center;width:130px;">
+        <!-- Medal icon -->
+        <div style="margin-bottom:8px;">
+          <div style="font-size:{{ icon_sz }};">{{ icon }}</div>
+        </div>
+        <!-- Avatar circle -->
+        <div style="width:60px;height:60px;border-radius:50%;
+          background:linear-gradient(135deg,{{ bcolor_a }},{{ bcolor_b }});
+          display:flex;align-items:center;justify-content:center;
+          font-weight:700;font-size:22px;color:white;margin:0 auto 8px;
+          border:3px solid {{ border_c }};
+          {% if s.id==user.id %}box-shadow:0 0 20px rgba(233,69,96,0.7){% endif %};">
+          {{ s.name[0] }}
+        </div>
+        <!-- Name -->
+        <div style="font-weight:700;font-size:13px;{% if s.id==user.id %}color:var(--accent){% endif %}">
+          {{ s.name.split()[0] }}
+        </div>
+        <!-- Stars -->
+        <div style="font-size:11px;color:var(--gold);font-family:'Share Tech Mono',monospace;">⭐ {{ s.streak_stars }}</div>
+        <!-- Podium bar -->
+        <div style="height:{{ heights[loop.index0] }};
+          background:linear-gradient(180deg,{{ bar_c_a }},{{ bar_c_b }});
+          border-radius:8px 8px 0 0;margin-top:8px;
+          border:1px solid {{ bar_bdr }};
+          display:flex;align-items:center;justify-content:center;">
+          <span class="badge {{ bcls }}">{{ bname }}</span>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+<!-- YOUR RANK -->
+{% if rank %}
+<div class="card" style="margin-bottom:20px;border-color:rgba(233,69,96,0.4);">
+  <div style="display:flex;justify-content:space-between;align-items:center;">
+    <div>
+      <div style="font-family:'Orbitron',monospace;font-size:14px;color:var(--accent);">YOUR POSITION</div>
+      <div style="color:var(--text2);font-size:13px;">Keep earning to climb the ranks!</div>
+    </div>
+    <div style="text-align:right;">
+      <div style="font-family:'Orbitron',monospace;font-size:32px;color:var(--accent);">#{{ rank }}</div>
+      <div style="color:var(--gold);font-size:13px;">⭐ {{ user.streak_stars }} stars</div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- FULL STANDINGS TABLE -->
+<div class="card">
+  <div class="card-title"><i class="fas fa-list"></i> CLASS STANDINGS</div>
+  <div class="table-wrap">
+    <table class="lb-table">
+      <thead>
+        <tr>
+          <th>Rank</th>
+          <th>Student</th>
+          <th>Stars</th>
+          <th>Level</th>
+          <th>Badge</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in all_students %}
+        <tr {% if s.id==user.id %}style="background:rgba(233,69,96,0.05);"{% endif %}>
+          <!-- Rank -->
+          <td style="font-family:'Share Tech Mono',monospace;">
+            {% if loop.index == 1 %}🥇
+            {% elif loop.index == 2 %}🥈
+            {% elif loop.index == 3 %}🥉
+            {% else %}#{{ loop.index }}{% endif %}
+          </td>
+          <!-- Name -->
+          <td>
+            <div style="font-weight:600;{% if s.id==user.id %}color:var(--accent){% endif %}">
+              {{ s.name }}
+              {% if s.id==user.id %}<span style="font-size:10px;color:var(--accent);">(YOU)</span>{% endif %}
+            </div>
+            <div style="font-size:11px;color:var(--text2);">{{ s.roll_number or '' }}</div>
+          </td>
+          <!-- Stars -->
+          <td style="font-family:'Share Tech Mono',monospace;color:var(--gold);">⭐ {{ s.streak_stars }}</td>
+          <!-- Level -->
+          <td><span class="badge badge-blue">Lvl {{ s.level }}</span></td>
+          <!-- Badge: Gold=1, Silver=2&3, Bronze=4&5 -->
+          <td>
+            {% if loop.index == 1 %}
+              <span class="badge badge-gold">Gold</span>
+            {% elif loop.index == 2 or loop.index == 3 %}
+              <span class="badge badge-silver">Silver</span>
+            {% elif loop.index == 4 or loop.index == 5 %}
+              <span class="badge badge-bronze">Bronze</span>
+            {% else %}
+              <span style="color:var(--text2);">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+{% block head %}
+
+<style id="mobile-global-fix">
+/* ═══════════════════════════════════════
+   CARE — Global Mobile Fixes
+   Applied to all pages
+═══════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* ── Layout ── */
+  body { overflow-x: hidden !important; }
+
+  /* ── Cards ── */
+  .card { padding: 14px !important; }
+  .card-title { font-size: 11px !important; letter-spacing: 1px !important; }
+
+  /* ── Stats grid ── */
+  .stats-grid { grid-template-columns: repeat(2,1fr) !important; gap: 10px !important; }
+  .stat-card { padding: 12px !important; }
+  .stat-value { font-size: 20px !important; }
+  .stat-label { font-size: 10px !important; }
+
+  /* ── Grids ── */
+  .grid-2, .grid-3 { grid-template-columns: 1fr !important; gap: 12px !important; }
+
+  /* ── Tables ── */
+  .table-wrap { overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; border-radius: 8px !important; }
+  table { font-size: 12px !important; min-width: 420px; }
+  th, td { padding: 8px 10px !important; white-space: nowrap !important; }
+
+  /* ── Forms ── */
+  input, select, textarea { font-size: 16px !important; } /* prevent iOS zoom */
+
+  /* ── Buttons ── */
+  .btn { padding: 8px 13px !important; font-size: 13px !important; }
+  .btn-sm { padding: 5px 10px !important; font-size: 11px !important; }
+
+  /* ── Flex rows → stack ── */
+  .filter-bar,
+  .flex-row,
+  [style*="display:flex"][style*="gap"],
+  [style*="display: flex"][style*="gap"] { flex-wrap: wrap !important; }
+
+  /* ── Inline width overrides ── */
+  [style*="min-width:260px"],[style*="min-width: 260px"] { min-width:0 !important; width:100% !important; }
+  [style*="min-width:180px"],[style*="min-width: 180px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="min-width:160px"],[style*="min-width: 160px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="min-width:130px"],[style*="min-width: 130px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="width:900px"],[style*="width: 900px"] { width:100% !important; max-width:100% !important; }
+
+  /* ── Modal ── */
+  .modal { max-width: 95vw !important; padding: 16px !important; margin: 8px !important; }
+  .modal-title { font-size: 13px !important; }
+
+  /* ── XP Toast ── */
+  .xp-toast { bottom: calc(var(--nav-h) + 10px) !important; right: 8px !important; min-width: 180px !important; padding: 10px 14px !important; }
+
+  /* ── Class tab rows ── */
+  .class-tab-row { flex-wrap: wrap !important; gap: 6px !important; }
+  .class-tab-row .btn { min-width: 72px !important; font-size: 11px !important; padding: 7px 8px !important; }
+
+  /* ── Hero card ── */
+  .hero-card { padding: 16px !important; }
+  .hero-name { font-size: 16px !important; }
+  .stars-big { font-size: 26px !important; }
+
+  /* ── Section headers ── */
+  h2, .section-title { font-size: 14px !important; }
+
+  /* ── Podium on leaderboard ── */
+  .podium-wrap { gap: 8px !important; padding: 12px 0 !important; }
+  .podium-item { width: 80px !important; }
+  .podium-avatar { width: 44px !important; height: 44px !important; font-size: 16px !important; }
+  .podium-bar { margin-top: 6px !important; }
+
+  /* ── Staff dashboard student cards ── */
+  .student-mini-card { padding: 10px !important; }
+
+  /* ── Attendance step buttons ── */
+  .period-btn { min-width: 0 !important; flex: 1 1 45% !important; }
+
+  /* ── Quiz grade buttons ── */
+  .grade-btn-row { flex-wrap: wrap !important; gap: 6px !important; }
+}
+</style>
+
+<style>
+@media (max-width: 768px) {
+  body { overflow-x: hidden; }
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .table-wrap table { min-width: 600px; }
+  input, select { font-size: 16px !important; }
+}
+</style>
+{% endblock %}
+{% block title %}{{ 'Y'+year|string+' — ' if year else '' }}{{ class_name }} — Class View{% endblock %}
+{% block page_title %}👥 CLASS: {% if year %}Y{{ year }} — {% endif %}{{ class_name }}{% endblock %}
+{% block content %}
+
+<div style="display:flex;gap:10px;margin-bottom:20px;">
+  <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline btn-sm"><i class="fas fa-arrow-left"></i> Back</a>
+</div>
+
+<div class="card" style="margin-bottom:20px;">
+  <div class="card-title"><i class="fas fa-users"></i> STUDENTS — {{ students|length }} enrolled</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Student</th><th>Roll No</th><th>Stars</th><th>Level</th><th>Attendance</th><th>Certs</th><th>Projects</th><th>Submissions</th><th>Status</th></tr></thead>
+      <tbody>
+      {% for s in students %}
+      {% set att_pct = ((s.present_count / s.total_att) * 100)|round(1) if s.total_att and s.total_att > 0 else 0 %}
+      <tr onclick="openModal('student_{{ s.id }}')" style="cursor:pointer;" onmouseover="this.style.background='rgba(233,69,96,0.05)'" onmouseout="this.style.background=''">
+        <td style="font-family:'Share Tech Mono',monospace;color:var(--text2);">{{ loop.index }}</td>
+        <td>
+          <div style="font-weight:600;color:var(--accent);">{{ s.name }}</div>
+          <div style="font-size:11px;color:var(--text2);">{{ s.email }}</div>
+        </td>
+        <td style="font-family:'Share Tech Mono',monospace;font-size:12px;">{{ s.roll_number or '—' }}</td>
+        <td style="color:var(--gold);font-family:'Share Tech Mono',monospace;">⭐ {{ s.streak_stars }}</td>
+        <td><span class="badge badge-blue">Lvl {{ s.level }}</span></td>
+        <td>
+          {% if s.total_att and s.total_att > 0 %}
+            <span style="color:{% if att_pct>=75 %}var(--green){% elif att_pct>=60 %}var(--gold){% else %}var(--accent){% endif %}">{{ att_pct }}%</span>
+          {% else %}—{% endif %}
+        </td>
+        <td style="color:var(--blue);">{{ s.certs }}</td>
+        <td>{{ s.projects_count }}</td>
+        <td>{{ s.submissions_count }}</td>
+        <td>
+          {% if s.total_att == 0 or s.total_att == None %}
+            <span class="badge badge-green">Present</span>
+          {% elif s.streak_stars < 100 %}<span class="badge badge-red">⚠ Low</span>
+          {% elif s.streak_stars < 500 %}<span class="badge badge-blue">Active</span>
+          {% else %}<span class="badge badge-green">🔥 Top</span>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+      {% if not students %}
+      <tr><td colspan="10" style="text-align:center;color:var(--text2);padding:30px;">No students in this class yet.</td></tr>
+      {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── STUDENT DETAIL MODALS ── -->
+{% for s in students %}
+{% set att_pct = ((s.present_count / s.total_att) * 100)|round(1) if s.total_att and s.total_att > 0 else 0 %}
+<div class="modal-overlay" id="student_{{ s.id }}">
+  <div class="modal" style="max-width:560px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--purple));display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:white;border:2px solid var(--accent);">
+          {{ s.name[0].upper() }}
+        </div>
+        <div>
+          <div style="font-family:'Orbitron',monospace;font-size:16px;">{{ s.name }}</div>
+          <div style="color:var(--text2);font-size:12px;">{{ s.department or '' }} · {{ s.class_name }}</div>
+        </div>
+      </div>
+      <button class="modal-close" onclick="closeModal('student_{{ s.id }}')">×</button>
+    </div>
+
+    <!-- Stats grid -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px;">
+      <div style="background:var(--bg3);border-radius:8px;padding:12px;text-align:center;border:1px solid var(--border);">
+        <div style="font-family:'Orbitron',monospace;font-size:18px;color:var(--gold);">{{ s.streak_stars }}</div>
+        <div style="font-size:9px;color:var(--text2);margin-top:2px;">STARS</div>
+      </div>
+      <div style="background:var(--bg3);border-radius:8px;padding:12px;text-align:center;border:1px solid var(--border);">
+        <div style="font-family:'Orbitron',monospace;font-size:18px;color:var(--accent);">{{ s.level }}</div>
+        <div style="font-size:9px;color:var(--text2);margin-top:2px;">LEVEL</div>
+      </div>
+      <div style="background:var(--bg3);border-radius:8px;padding:12px;text-align:center;border:1px solid var(--border);">
+        <div style="font-family:'Orbitron',monospace;font-size:18px;color:{% if att_pct>=75 %}var(--green){% elif att_pct>=60 %}var(--gold){% else %}var(--accent){% endif %};">{{ att_pct }}%</div>
+        <div style="font-size:9px;color:var(--text2);margin-top:2px;">ATTENDANCE</div>
+      </div>
+      <div style="background:var(--bg3);border-radius:8px;padding:12px;text-align:center;border:1px solid var(--border);">
+        <div style="font-family:'Orbitron',monospace;font-size:18px;color:var(--blue);">{{ s.certs }}</div>
+        <div style="font-size:9px;color:var(--text2);margin-top:2px;">CERTS</div>
+      </div>
+    </div>
+
+    <!-- Attendance bar -->
+    <div style="margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;">
+        <span style="color:var(--text2);">Attendance Progress</span>
+        <span style="color:{% if att_pct>=75 %}var(--green){% else %}var(--accent){% endif %};">{{ s.present_count or 0 }} / {{ s.total_att or 0 }} classes</span>
+      </div>
+      <div style="height:8px;background:var(--border);border-radius:4px;overflow:hidden;">
+        <div style="height:100%;width:{{ att_pct }}%;background:{% if att_pct>=75 %}var(--green){% elif att_pct>=60 %}var(--gold){% else %}var(--accent){% endif %};border-radius:4px;transition:width 1s;"></div>
+      </div>
+      {% if att_pct < 75 %}<div style="font-size:10px;color:var(--accent);margin-top:4px;">⚠️ Below 75% — needs attention</div>{% endif %}
+    </div>
+
+    <!-- Info rows -->
+    <div style="background:var(--bg3);border-radius:10px;padding:14px;margin-bottom:14px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px;">
+        <div><span style="color:var(--text2);font-size:11px;">ROLL NO</span><div style="font-family:'Share Tech Mono',monospace;">{{ s.roll_number or '—' }}</div></div>
+        <div><span style="color:var(--text2);font-size:11px;">YEAR</span><div>Year {{ s.year or '—' }}</div></div>
+        <div><span style="color:var(--text2);font-size:11px;">EMAIL</span><div style="font-size:12px;">{{ s.email }}</div></div>
+        <div><span style="color:var(--text2);font-size:11px;">PHONE</span><div>{{ s.phone or '—' }}</div></div>
+        <div><span style="color:var(--text2);font-size:11px;">PROJECTS</span><div style="color:var(--blue);">{{ s.projects_count }}</div></div>
+        <div><span style="color:var(--text2);font-size:11px;">SUBMISSIONS</span><div style="color:var(--green);">{{ s.submissions_count }}</div></div>
+      </div>
+    </div>
+
+    <!-- XP bar -->
+    <div style="margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text2);margin-bottom:4px;">
+        <span>Level {{ s.level }} Progress</span>
+        <span>{{ (s.streak_stars or 0) % 1000 }} / 1000 → Level {{ (s.level or 1) + 1 }}</span>
+      </div>
+      <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden;">
+        <div style="height:100%;width:{{ ((s.streak_stars or 0) % 1000) / 10 }}%;background:linear-gradient(90deg,var(--accent),var(--gold));border-radius:3px;"></div>
+      </div>
+    </div>
+
+    <!-- Status badge -->
+    <div style="text-align:center;">
+      {% if s.streak_stars < 100 %}
+      <span class="badge badge-red" style="font-size:12px;padding:6px 16px;">⚠ Low Engagement — Needs Intervention</span>
+      {% elif att_pct < 75 %}
+      <span class="badge" style="background:rgba(255,165,0,0.2);color:orange;border:1px solid orange;font-size:12px;padding:6px 16px;">📉 Low Attendance</span>
+      {% elif s.streak_stars >= 500 %}
+      <span class="badge badge-green" style="font-size:12px;padding:6px 16px;">🔥 Top Performer</span>
+      {% else %}
+      <span class="badge badge-blue" style="font-size:12px;padding:6px 16px;">✓ Active Student</span>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+<div class="card">
+  <div class="card-title"><i class="fas fa-calendar-check"></i> RECENT ATTENDANCE RECORDS</div>
+  {% if att_records %}
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Date</th><th>Student</th><th>Subject</th><th>Period</th><th>Staff</th><th>Status</th><th>Swap</th></tr></thead>
+      <tbody>
+      {% for a in att_records[:50] %}
+      <tr>
+        <td style="font-size:12px;">{{ a.date }}</td>
+        <td style="font-weight:600;font-size:13px;">{{ a.student_name }}</td>
+        <td style="font-size:12px;">{{ a.subject }}</td>
+        <td style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--blue);">P{{ a.period }}</td>
+        <td style="font-size:12px;color:var(--text2);">{{ a.staff_name }}</td>
+        <td><span class="badge {% if a.status=='present' %}badge-green{% elif a.status=='absent' %}badge-red{% else %}badge-gold{% endif %}">{{ a.status.title() }}</span></td>
+        <td>{% if a.is_swap %}<span style="color:#a78bfa;font-size:11px;">🔄 {{ a.swap_note or 'Swap' }}</span>{% else %}—{% endif %}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="text-align:center;padding:30px;color:var(--text2);">No attendance records yet.</div>
+  {% endif %}
+</div>
+{% endblock %}

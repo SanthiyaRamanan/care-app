@@ -1,0 +1,347 @@
+{% set current_user = user %}
+{% extends "base.html" %}
+{% block head %}
+
+<style id="mobile-global-fix">
+/* ═══════════════════════════════════════
+   CARE — Global Mobile Fixes
+   Applied to all pages
+═══════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* ── Layout ── */
+  body { overflow-x: hidden !important; }
+
+  /* ── Cards ── */
+  .card { padding: 14px !important; }
+  .card-title { font-size: 11px !important; letter-spacing: 1px !important; }
+
+  /* ── Stats grid ── */
+  .stats-grid { grid-template-columns: repeat(2,1fr) !important; gap: 10px !important; }
+  .stat-card { padding: 12px !important; }
+  .stat-value { font-size: 20px !important; }
+  .stat-label { font-size: 10px !important; }
+
+  /* ── Grids ── */
+  .grid-2, .grid-3 { grid-template-columns: 1fr !important; gap: 12px !important; }
+
+  /* ── Tables ── */
+  .table-wrap { overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; border-radius: 8px !important; }
+  table { font-size: 12px !important; min-width: 420px; }
+  th, td { padding: 8px 10px !important; white-space: nowrap !important; }
+
+  /* ── Forms ── */
+  input, select, textarea { font-size: 16px !important; } /* prevent iOS zoom */
+
+  /* ── Buttons ── */
+  .btn { padding: 8px 13px !important; font-size: 13px !important; }
+  .btn-sm { padding: 5px 10px !important; font-size: 11px !important; }
+
+  /* ── Flex rows → stack ── */
+  .filter-bar,
+  .flex-row,
+  [style*="display:flex"][style*="gap"],
+  [style*="display: flex"][style*="gap"] { flex-wrap: wrap !important; }
+
+  /* ── Inline width overrides ── */
+  [style*="min-width:260px"],[style*="min-width: 260px"] { min-width:0 !important; width:100% !important; }
+  [style*="min-width:180px"],[style*="min-width: 180px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="min-width:160px"],[style*="min-width: 160px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="min-width:130px"],[style*="min-width: 130px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="width:900px"],[style*="width: 900px"] { width:100% !important; max-width:100% !important; }
+
+  /* ── Modal ── */
+  .modal { max-width: 95vw !important; padding: 16px !important; margin: 8px !important; }
+  .modal-title { font-size: 13px !important; }
+
+  /* ── XP Toast ── */
+  .xp-toast { bottom: calc(var(--nav-h) + 10px) !important; right: 8px !important; min-width: 180px !important; padding: 10px 14px !important; }
+
+  /* ── Class tab rows ── */
+  .class-tab-row { flex-wrap: wrap !important; gap: 6px !important; }
+  .class-tab-row .btn { min-width: 72px !important; font-size: 11px !important; padding: 7px 8px !important; }
+
+  /* ── Hero card ── */
+  .hero-card { padding: 16px !important; }
+  .hero-name { font-size: 16px !important; }
+  .stars-big { font-size: 26px !important; }
+
+  /* ── Section headers ── */
+  h2, .section-title { font-size: 14px !important; }
+
+  /* ── Podium on leaderboard ── */
+  .podium-wrap { gap: 8px !important; padding: 12px 0 !important; }
+  .podium-item { width: 80px !important; }
+  .podium-avatar { width: 44px !important; height: 44px !important; font-size: 16px !important; }
+  .podium-bar { margin-top: 6px !important; }
+
+  /* ── Staff dashboard student cards ── */
+  .student-mini-card { padding: 10px !important; }
+
+  /* ── Attendance step buttons ── */
+  .period-btn { min-width: 0 !important; flex: 1 1 45% !important; }
+
+  /* ── Quiz grade buttons ── */
+  .grade-btn-row { flex-wrap: wrap !important; gap: 6px !important; }
+}
+</style>
+
+<style>
+@media (max-width: 768px) {
+  input, select, textarea { font-size: 16px !important; }
+  body { overflow-x: hidden; }
+  .select-period-form { flex-direction: column !important; gap: 10px !important; }
+  .select-period-form .form-group { width: 100% !important; min-width: 0 !important; flex: none !important; }
+  .select-period-form button { width: 100% !important; padding: 12px !important; }
+  .slot-info-row { flex-direction: column !important; gap: 8px !important; }
+  .mark-header { flex-direction: column !important; align-items: flex-start !important; }
+  .mark-btns { width: 100%; display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; }
+  .mark-btns .btn { width: 100%; justify-content: center; }
+  .manual-grid { grid-template-columns: 1fr !important; }
+  .date-grid { grid-template-columns: 1fr !important; }
+  .att-status-btns { gap: 4px !important; }
+  .att-status-btns label { padding: 5px 8px !important; font-size: 11px !important; }
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .table-wrap table { min-width: 480px; }
+}
+</style>
+{% endblock %}
+{% block title %}Mark Attendance{% endblock %}
+{% block page_title %}📋 MARK ATTENDANCE{% endblock %}
+{% block content %}
+
+<!-- STEP 1: Choose Class -->
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-title"><i class="fas fa-layer-group"></i> STEP 1 — SELECT CLASS</div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;">
+    {% for cls in staff_classes %}
+    <a href="{{ url_for('staff_attendance') }}?class={{ cls }}"
+       class="btn {% if cls == sel_class %}btn-primary{% else %}btn-outline{% endif %}"
+       style="min-width:90px;justify-content:center;font-family:'Orbitron',monospace;font-size:12px;">
+      {{ cls }}
+    </a>
+    {% endfor %}
+    {% if not staff_classes %}
+    <div style="color:var(--text2);font-size:13px;padding:10px;">
+      No classes assigned. Update your <a href="{{ url_for('profile') }}" style="color:var(--accent);">profile</a>.
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% if sel_class %}
+<!-- STEP 2: Choose Period -->
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-title"><i class="fas fa-clock"></i> STEP 2 — SELECT PERIOD &amp; CLICK OK</div>
+  <form method="GET" action="{{ url_for('staff_attendance') }}" class="select-period-form" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
+    <input type="hidden" name="class" value="{{ sel_class }}">
+    <input type="hidden" name="confirmed" value="1">
+    <div class="form-group" style="margin-bottom:0;flex:1;min-width:200px;">
+      <label>Period (Today: {{ today.strftime('%A') }})</label>
+      <select name="period" required style="width:100%;">
+        <option value="">— Select Period —</option>
+        {% for slot in today_slots %}
+        <option value="{{ slot.period }}" {% if sel_period == slot.period %}selected{% endif %}>
+          Period {{ slot.period }} — {{ slot.subject }} ({{ slot.start_time }}–{{ slot.end_time }})
+        </option>
+        {% endfor %}
+        <option value="99" {% if sel_period == 99 %}selected{% endif %}>📝 Manual Entry</option>
+      </select>
+    </div>
+    <button type="submit" class="btn btn-primary" style="padding:10px 28px;font-family:'Orbitron',monospace;letter-spacing:1px;">OK →</button>
+  </form>
+
+  {% if sel_slot %}
+  <div style="margin-top:14px;background:rgba(0,180,216,0.08);border:1px solid rgba(0,180,216,0.3);border-radius:10px;padding:12px 16px;display:flex;gap:24px;flex-wrap:wrap;align-items:center;" class="slot-info-row">
+    <div><span style="font-size:10px;color:var(--text2);">SUBJECT</span><div style="font-weight:700;color:var(--blue);">{{ sel_slot.subject }}</div></div>
+    <div><span style="font-size:10px;color:var(--text2);">PERIOD</span><div style="font-family:'Orbitron',monospace;color:var(--accent);">P{{ sel_slot.period }}</div></div>
+    <div><span style="font-size:10px;color:var(--text2);">TIME</span><div style="color:var(--green);">{{ sel_slot.start_time }} – {{ sel_slot.end_time }}</div></div>
+    <div><span style="font-size:10px;color:var(--text2);">CLASS</span><div style="font-weight:600;">{{ sel_class }}</div></div>
+  </div>
+  {% elif sel_period == 99 %}
+  <div style="margin-top:14px;background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.3);border-radius:10px;padding:12px 16px;">
+    <div style="color:#a78bfa;font-size:13px;font-weight:600;">📝 Manual Entry Mode</div>
+    <div style="color:var(--text2);font-size:12px;">Enter subject and period manually below.</div>
+  </div>
+  {% elif sel_period and not today_slots %}
+  <div style="margin-top:12px;background:rgba(255,165,0,0.08);border:1px solid rgba(255,165,0,0.3);border-radius:8px;padding:10px 14px;font-size:13px;color:orange;">
+    ⚠️ No timetable set for today ({{ today.strftime('%A') }}). You can still mark manually.
+  </div>
+  {% endif %}
+</div>
+
+{% if confirmed and (sel_slot or sel_period == 99) %}
+<!-- STEP 3: Attendance Table -->
+<div class="card" style="margin-bottom:16px;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;" class="mark-header">
+    <div class="card-title" style="margin-bottom:0;"><i class="fas fa-user-check"></i> STEP 3 — MARK ATTENDANCE — {{ sel_class }} ({{ students|length }} students)</div>
+    <div class="mark-btns" style="display:flex;gap:8px;">
+      <button type="button" onclick="markAll('present')" class="btn btn-sm" style="background:rgba(0,255,136,0.15);color:var(--green);border:1px solid rgba(0,255,136,0.4);">✓ All Present</button>
+      <button type="button" onclick="markAll('absent')"  class="btn btn-sm" style="background:rgba(233,69,96,0.15);color:var(--accent);border:1px solid rgba(233,69,96,0.4);">✗ All Absent</button>
+      <button type="button" onclick="markAll('late')"    class="btn btn-sm" style="background:rgba(255,215,0,0.1);color:var(--gold);border:1px solid rgba(255,215,0,0.4);">⏰ All Late</button>
+    </div>
+  </div>
+
+  <form method="POST" autocomplete="off">
+    <input type="hidden" name="class_name"   value="{{ sel_class }}">
+    <input type="hidden" name="period"        value="{{ sel_slot.period if sel_slot else sel_period }}">
+    <input type="hidden" name="timetable_id"  value="{{ sel_slot.id if sel_slot else '' }}">
+
+    {% if sel_slot %}
+    <input type="hidden" name="subject" value="{{ sel_slot.subject }}">
+    {% else %}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;" class="manual-grid">
+      <div class="form-group" style="margin-bottom:0;">
+        <label>Subject</label>
+        <input type="text" name="subject" required placeholder="Subject name">
+      </div>
+      <div class="form-group" style="margin-bottom:0;">
+        <label>Period No.</label>
+        <select name="period_manual">
+          {% for i in range(1,9) %}<option value="{{ i }}" {% if sel_period==i %}selected{% endif %}>Period {{ i }}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+    {% endif %}
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;" class="manual-grid">
+      <div class="form-group" style="margin-bottom:0;">
+        <label>Date</label>
+        <input type="date" name="date" value="{{ today }}" required>
+      </div>
+      <div style="display:flex;align-items:flex-end;padding-bottom:4px;">
+        <label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:13px;font-weight:600;cursor:pointer;">
+          <input type="checkbox" name="is_swap" value="1" id="swapCheck" onchange="toggleSwap()" style="width:auto;accent-color:var(--accent);">
+          🔄 Period Swap / Manual Override
+        </label>
+      </div>
+    </div>
+    <div id="swapNote" style="display:none;margin-bottom:14px;">
+      <div class="form-group" style="margin-bottom:0;">
+        <label>Swap Note (visible to Admin)</label>
+        <input type="text" name="swap_note" placeholder="e.g. Swapped P3 with Mr. Arun — Data Structures">
+      </div>
+    </div>
+
+    {% if students %}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:44px;text-align:center;">#</th>
+            <th style="width:130px;">Roll No</th>
+            <th>Student Name</th>
+            <th style="width:170px;">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for s in students %}
+        <tr id="row_{{ s.id }}" style="background:rgba(0,255,136,0.04);">
+          <td style="text-align:center;font-family:'Share Tech Mono',monospace;color:var(--text2);font-size:12px;">{{ loop.index }}</td>
+          <td style="font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--blue);font-weight:600;">{{ s.roll_number or '—' }}</td>
+          <td>
+            <input type="hidden" name="student_ids[]" value="{{ s.id }}">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--purple));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:white;flex-shrink:0;">{{ s.name[0].upper() }}</div>
+              <span style="font-weight:600;font-size:13px;">{{ s.name }}</span>
+            </div>
+          </td>
+          <td>
+            <div class="att-status-btns" style="display:flex;gap:6px;">
+              <label style="display:flex;align-items:center;gap:4px;padding:6px 12px;border-radius:8px;cursor:pointer;border:2px solid #00ff88;background:rgba(0,255,136,0.12);color:#00ff88;font-weight:700;font-size:12px;" id="lbl_{{ s.id }}_present">
+                <input type="radio" name="status_{{ s.id }}" value="present" checked style="display:none;" onchange="radioChange({{ s.id }})"> ✓ P
+              </label>
+              <label style="display:flex;align-items:center;gap:4px;padding:6px 12px;border-radius:8px;cursor:pointer;border:2px solid var(--border);background:transparent;color:var(--text2);font-weight:700;font-size:12px;" id="lbl_{{ s.id }}_absent">
+                <input type="radio" name="status_{{ s.id }}" value="absent" style="display:none;" onchange="radioChange({{ s.id }})"> ✗ A
+              </label>
+              <label style="display:flex;align-items:center;gap:4px;padding:6px 12px;border-radius:8px;cursor:pointer;border:2px solid var(--border);background:transparent;color:var(--text2);font-weight:700;font-size:12px;" id="lbl_{{ s.id }}_late">
+                <input type="radio" name="status_{{ s.id }}" value="late" style="display:none;" onchange="radioChange({{ s.id }})"> ⏰ L
+              </label>
+            </div>
+            {# hidden field carries the value for POST #}
+            <input type="hidden" name="statuses[]" id="hst_{{ s.id }}" value="present">
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <button type="submit" class="btn btn-primary" style="width:100%;margin-top:16px;padding:13px;font-family:'Orbitron',monospace;letter-spacing:2px;font-size:14px;">
+      ⚡ SAVE ATTENDANCE
+    </button>
+    {% else %}
+    <div style="text-align:center;padding:40px;color:var(--text2);">
+      No students found in {{ sel_class }}. Students need to self-register and select this class.
+    </div>
+    {% endif %}
+  </form>
+</div>
+{% endif %}
+
+<!-- Today's records -->
+{% if today_att %}
+<div class="card">
+  <div class="card-title"><i class="fas fa-history"></i> TODAY'S RECORDS — {{ sel_class }}</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Roll No</th><th>Student</th><th>Subject</th><th>Period</th><th>Status</th><th>Swap</th></tr></thead>
+      <tbody>
+      {% for a in today_att %}
+      <tr>
+        <td style="font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--blue);">{{ a.roll_number }}</td>
+        <td style="font-weight:600;font-size:13px;">{{ a.student_name }}</td>
+        <td style="font-size:12px;color:var(--text2);">{{ a.subject }}</td>
+        <td style="font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--blue);">P{{ a.period }}</td>
+        <td><span class="badge {% if a.status=='present' %}badge-green{% elif a.status=='absent' %}badge-red{% else %}badge-gold{% endif %}">{{ a.status.title() }}</span></td>
+        <td>{% if a.is_swap %}<span style="color:#a78bfa;font-size:11px;">🔄 {{ a.swap_note or 'Swap' }}</span>{% else %}—{% endif %}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endif %}
+
+<script>
+function radioChange(sid) {
+  const radios = document.querySelectorAll(`input[name="status_${sid}"]`);
+  let val = 'present';
+  radios.forEach(r => { if (r.checked) val = r.value; });
+  document.getElementById('hst_' + sid).value = val;
+
+  const styles = {
+    present: { border:'#00ff88', bg:'rgba(0,255,136,0.12)', color:'#00ff88', row:'rgba(0,255,136,0.04)' },
+    absent:  { border:'#e94560', bg:'rgba(233,69,96,0.12)',  color:'#e94560', row:'rgba(233,69,96,0.04)' },
+    late:    { border:'#ffd700', bg:'rgba(255,215,0,0.12)',  color:'#ffd700', row:'rgba(255,215,0,0.04)' }
+  };
+  ['present','absent','late'].forEach(v => {
+    const lbl = document.getElementById(`lbl_${sid}_${v}`);
+    if (!lbl) return;
+    if (v === val) {
+      lbl.style.border     = `2px solid ${styles[v].border}`;
+      lbl.style.background = styles[v].bg;
+      lbl.style.color      = styles[v].color;
+    } else {
+      lbl.style.border     = '2px solid var(--border)';
+      lbl.style.background = 'transparent';
+      lbl.style.color      = 'var(--text2)';
+    }
+  });
+  const row = document.getElementById('row_' + sid);
+  if (row) row.style.background = styles[val].row;
+}
+
+function markAll(status) {
+  document.querySelectorAll(`input[type=radio][value="${status}"]`).forEach(r => {
+    r.checked = true;
+    radioChange(parseInt(r.name.replace('status_','')));
+  });
+}
+
+function toggleSwap() {
+  document.getElementById('swapNote').style.display =
+    document.getElementById('swapCheck').checked ? 'block' : 'none';
+}
+</script>
+{% endblock %}

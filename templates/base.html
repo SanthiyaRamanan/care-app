@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>{% block title %}CARE{% endblock %} — Campus Achievement & Recognition Engine</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        :root {
+            --bg:#0a0a14; --bg2:#0f0f1e; --bg3:#141428;
+            --card:#1a1a2e; --card2:#16213e; --border:#2a2a4a;
+            --accent:#e94560; --accent2:#0f3460;
+            --gold:#ffd700; --silver:#c0c0c0; --bronze:#cd7f32;
+            --green:#00ff88; --blue:#00b4d8; --purple:#7c3aed;
+            --text:#e8e8f0; --text2:#9090b0;
+            --glow:0 0 20px rgba(233,69,96,0.4);
+            --glow-gold:0 0 20px rgba(255,215,0,0.5);
+            --nav-h:62px;
+        }
+        *{margin:0;padding:0;box-sizing:border-box;}
+        html{scroll-behavior:smooth;}
+        body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;min-height:100vh;
+            background-image:radial-gradient(ellipse at 20% 20%,rgba(233,69,96,0.04) 0%,transparent 50%),
+            radial-gradient(ellipse at 80% 80%,rgba(15,52,96,0.08) 0%,transparent 50%);}
+
+        /* ══ DESKTOP SIDEBAR ══ */
+        .sidebar{position:fixed;left:0;top:0;bottom:0;width:235px;background:var(--card);
+            border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:100;
+            transition:transform 0.3s;}
+        .sidebar-logo{padding:20px 18px;border-bottom:1px solid var(--border);}
+        .logo-text{font-family:'Orbitron',monospace;font-size:26px;font-weight:900;color:var(--accent);
+            text-shadow:var(--glow);letter-spacing:4px;}
+        .logo-sub{font-size:8px;color:var(--text2);letter-spacing:2px;margin-top:2px;}
+        .sidebar-user{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+        .user-avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--purple));
+            display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;color:white;
+            border:2px solid var(--accent);overflow:hidden;flex-shrink:0;}
+        .user-avatar img{width:100%;height:100%;object-fit:cover;}
+        .user-info .name{font-weight:700;font-size:13px;color:var(--text);}
+        .user-info .stars-mini{font-size:11px;color:var(--gold);font-family:'Share Tech Mono',monospace;}
+        .level-bar-wrap{padding:10px 18px;border-bottom:1px solid var(--border);}
+        .level-label{display:flex;justify-content:space-between;font-size:10px;color:var(--text2);margin-bottom:5px;font-family:'Share Tech Mono',monospace;}
+        .level-bar{height:5px;background:var(--border);border-radius:3px;overflow:hidden;}
+        .level-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--gold));border-radius:3px;
+            transition:width 1.5s ease;box-shadow:0 0 8px rgba(233,69,96,0.5);}
+        .sidebar-nav{flex:1;overflow-y:auto;padding:10px 0;}
+        .nav-section{font-size:9px;color:var(--text2);letter-spacing:2px;padding:8px 18px 3px;text-transform:uppercase;}
+        .nav-link{display:flex;align-items:center;gap:10px;padding:9px 18px;color:var(--text2);
+            text-decoration:none;font-size:13px;font-weight:500;transition:all 0.2s;border-left:3px solid transparent;}
+        .nav-link:hover,.nav-link.active{color:var(--text);background:rgba(233,69,96,0.08);border-left-color:var(--accent);}
+        .nav-link i{width:16px;font-size:13px;}
+        .nav-badge{margin-left:auto;background:var(--accent);color:white;font-size:9px;
+            padding:2px 6px;border-radius:10px;font-family:'Share Tech Mono',monospace;}
+
+        /* ══ MAIN CONTENT ══ */
+        .main{margin-left:235px;min-height:100vh;transition:margin 0.3s;}
+        .topbar{position:sticky;top:0;z-index:50;background:rgba(10,10,20,0.92);
+            backdrop-filter:blur(12px);border-bottom:1px solid var(--border);
+            padding:0 26px;height:58px;display:flex;align-items:center;justify-content:space-between;}
+        .page-title{font-family:'Orbitron',monospace;font-size:15px;color:var(--text);letter-spacing:2px;}
+        .topbar-right{display:flex;align-items:center;gap:14px;}
+        .notif-btn{position:relative;background:var(--card);border:1px solid var(--border);
+            color:var(--text2);padding:7px 12px;border-radius:8px;text-decoration:none;transition:all 0.2s;}
+        .notif-btn:hover{border-color:var(--accent);color:var(--accent);}
+        .notif-dot{position:absolute;top:-4px;right:-4px;background:var(--accent);color:white;
+            font-size:9px;min-width:16px;height:16px;border-radius:8px;display:flex;
+            align-items:center;justify-content:center;font-family:'Share Tech Mono',monospace;}
+        .content{padding:24px;}
+
+        /* ══ MOBILE TOP BAR + HAMBURGER ══ */
+        .mobile-topbar{display:none;position:fixed;top:0;left:0;right:0;height:54px;
+            background:rgba(10,10,20,0.97);backdrop-filter:blur(14px);
+            border-bottom:1px solid var(--border);z-index:400;
+            align-items:center;justify-content:space-between;padding:0 16px;
+            box-shadow:0 2px 20px rgba(0,0,0,0.4);}
+        .mobile-logo{font-family:'Orbitron',monospace;font-size:20px;color:var(--accent);letter-spacing:3px;text-shadow:var(--glow);}
+        .mobile-topbar-right{display:flex;align-items:center;gap:10px;}
+        .mobile-stars{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--gold);}
+        .hamburger-btn{background:none;border:1px solid var(--border);color:var(--text);
+            width:38px;height:38px;border-radius:8px;cursor:pointer;
+            display:flex;align-items:center;justify-content:center;
+            font-size:16px;transition:all 0.2s;flex-shrink:0;}
+        .hamburger-btn:hover,.hamburger-btn.open{border-color:var(--accent);color:var(--accent);background:rgba(233,69,96,0.08);}
+
+        /* ══ SIDE DRAWER (slide from left) ══ */
+        .drawer-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);
+            z-index:500;backdrop-filter:blur(3px);}
+        .drawer-overlay.open{display:block;}
+        .side-drawer{position:fixed;top:0;left:0;bottom:0;width:280px;
+            background:var(--card);border-right:1px solid var(--border);
+            z-index:501;overflow-y:auto;
+            transform:translateX(-100%);transition:transform 0.32s cubic-bezier(0.4,0,0.2,1);
+            display:flex;flex-direction:column;}
+        .side-drawer.open{transform:translateX(0);}
+
+        /* Drawer header */
+        .drawer-header{padding:18px 16px 14px;border-bottom:1px solid var(--border);
+            display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+        .drawer-logo{font-family:'Orbitron',monospace;font-size:22px;font-weight:900;
+            color:var(--accent);text-shadow:var(--glow);letter-spacing:4px;}
+        .drawer-close{background:none;border:1px solid var(--border);color:var(--text2);
+            width:32px;height:32px;border-radius:6px;cursor:pointer;font-size:14px;
+            display:flex;align-items:center;justify-content:center;transition:all 0.2s;}
+        .drawer-close:hover{border-color:var(--accent);color:var(--accent);}
+
+        /* Drawer user card */
+        .drawer-user{padding:12px 16px;border-bottom:1px solid var(--border);
+            display:flex;align-items:center;gap:10px;background:rgba(233,69,96,0.04);}
+        .drawer-avatar{width:40px;height:40px;border-radius:50%;
+            background:linear-gradient(135deg,var(--accent),var(--purple));
+            display:flex;align-items:center;justify-content:center;
+            font-weight:700;font-size:16px;color:white;border:2px solid var(--accent);
+            overflow:hidden;flex-shrink:0;}
+        .drawer-avatar img{width:100%;height:100%;object-fit:cover;}
+        .drawer-user-info .dname{font-weight:700;font-size:13px;color:var(--text);}
+        .drawer-user-info .dstars{font-size:11px;color:var(--gold);font-family:'Share Tech Mono',monospace;margin-top:1px;}
+
+        /* Drawer nav links */
+        .drawer-nav{flex:1;padding:8px 0;overflow-y:auto;}
+        .drawer-section{font-size:9px;color:var(--text2);letter-spacing:2px;
+            padding:10px 16px 4px;text-transform:uppercase;}
+        .drawer-link{display:flex;align-items:center;gap:11px;padding:11px 16px;
+            color:var(--text2);text-decoration:none;font-size:14px;font-weight:500;
+            transition:all 0.18s;border-left:3px solid transparent;
+            border-radius:0 8px 8px 0;margin:1px 8px 1px 0;}
+        .drawer-link:hover,.drawer-link.active{color:var(--text);
+            background:rgba(233,69,96,0.1);border-left-color:var(--accent);}
+        .drawer-link i{width:18px;font-size:14px;text-align:center;flex-shrink:0;}
+        .drawer-link.logout-link{color:var(--accent);margin-top:4px;}
+        .drawer-link.logout-link:hover{background:rgba(233,69,96,0.15);}
+
+        /* Drawer footer */
+        .drawer-footer{padding:12px 16px;border-top:1px solid var(--border);
+            font-size:10px;color:var(--text2);letter-spacing:1px;flex-shrink:0;}
+
+        /* ══ CARDS / COMPONENTS ══ */
+        .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:22px;transition:border-color 0.2s;}
+        .card:hover{border-color:rgba(233,69,96,0.25);}
+        .card-title{font-family:'Orbitron',monospace;font-size:12px;letter-spacing:2px;color:var(--text);
+            margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+        .card-title i{color:var(--accent);}
+        .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:20px;}
+        .stat-card{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:18px;
+            position:relative;overflow:hidden;cursor:default;transition:transform 0.2s,box-shadow 0.2s;}
+        .stat-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.3);}
+        .stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;
+            background:linear-gradient(90deg,var(--accent),var(--gold));}
+        .stat-icon{font-size:26px;margin-bottom:8px;}
+        .stat-value{font-family:'Orbitron',monospace;font-size:24px;font-weight:700;color:var(--accent);}
+        .stat-label{font-size:11px;color:var(--text2);letter-spacing:1px;margin-top:3px;}
+        .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+        .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;}
+        .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;}
+        .badge-gold{background:rgba(255,215,0,0.15);color:var(--gold);border:1px solid rgba(255,215,0,0.3);}
+        .badge-silver{background:rgba(192,192,192,0.15);color:var(--silver);border:1px solid rgba(192,192,192,0.3);}
+        .badge-bronze{background:rgba(205,127,50,0.15);color:var(--bronze);border:1px solid rgba(205,127,50,0.3);}
+        .badge-green{background:rgba(0,255,136,0.15);color:var(--green);border:1px solid rgba(0,255,136,0.3);}
+        .badge-red{background:rgba(233,69,96,0.15);color:var(--accent);border:1px solid rgba(233,69,96,0.3);}
+        .badge-blue{background:rgba(0,180,216,0.15);color:var(--blue);border:1px solid rgba(0,180,216,0.3);}
+        .btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:8px;
+            font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:600;cursor:pointer;border:none;
+            transition:all 0.2s;text-decoration:none;letter-spacing:0.5px;}
+        .btn-primary{background:var(--accent);color:white;}
+        .btn-primary:hover{background:#c73252;box-shadow:var(--glow);transform:translateY(-1px);}
+        .btn-outline{background:transparent;color:var(--text2);border:1px solid var(--border);}
+        .btn-outline:hover{border-color:var(--accent);color:var(--accent);}
+        .btn-gold{background:linear-gradient(135deg,#f5a623,var(--gold));color:#1a1a1a;}
+        .btn-sm{padding:5px 12px;font-size:11px;}
+        table{width:100%;border-collapse:collapse;}
+        th{background:var(--bg3);padding:9px 13px;text-align:left;font-size:10px;color:var(--text2);
+            letter-spacing:1.5px;text-transform:uppercase;border-bottom:1px solid var(--border);font-family:'Share Tech Mono',monospace;}
+        td{padding:11px 13px;border-bottom:1px solid var(--border);font-size:13px;color:var(--text);}
+        tr:hover td{background:rgba(255,255,255,0.015);}
+        .table-wrap{overflow-x:auto;}
+        .form-group{margin-bottom:14px;}
+        label{display:block;font-size:11px;color:var(--text2);letter-spacing:1px;margin-bottom:5px;text-transform:uppercase;}
+        input,select,textarea{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);
+            padding:9px 13px;border-radius:8px;font-family:'Rajdhani',sans-serif;font-size:14px;transition:border-color 0.2s;}
+        input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(233,69,96,0.1);}
+        textarea{resize:vertical;min-height:70px;}
+        .alert{padding:11px 15px;border-radius:8px;margin-bottom:14px;font-size:13px;display:flex;align-items:center;gap:9px;}
+        .alert-success{background:rgba(0,255,136,0.08);border:1px solid rgba(0,255,136,0.25);color:var(--green);}
+        .alert-danger{background:rgba(233,69,96,0.08);border:1px solid rgba(233,69,96,0.25);color:var(--accent);}
+        .alert-warning{background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.25);color:var(--gold);}
+        .alert-info{background:rgba(0,180,216,0.08);border:1px solid rgba(0,180,216,0.25);color:var(--blue);}
+        .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:1000;
+            align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+        .modal-overlay.open{display:flex;}
+        .modal{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;
+            width:100%;max-width:540px;max-height:90vh;overflow-y:auto;animation:modalIn 0.3s ease;}
+        @keyframes modalIn{from{transform:translateY(-20px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+        .modal-title{font-family:'Orbitron',monospace;font-size:15px;color:var(--accent);margin-bottom:18px;letter-spacing:2px;}
+        .modal-close{float:right;background:none;border:none;color:var(--text2);font-size:22px;cursor:pointer;margin-top:-4px;}
+        ::-webkit-scrollbar{width:4px;}
+        ::-webkit-scrollbar-track{background:var(--bg);}
+        ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+
+        /* ══ GAME ANIMATIONS ══ */
+        #star-burst-container{position:fixed;inset:0;pointer-events:none;z-index:9999;}
+        .star-particle{position:absolute;font-size:22px;animation:starFly 1.2s ease-out forwards;pointer-events:none;}
+        @keyframes starFly{
+            0%{transform:translate(0,0) scale(0) rotate(0deg);opacity:1;}
+            50%{opacity:1;transform:translate(var(--tx),var(--ty)) scale(1.4) rotate(180deg);}
+            100%{transform:translate(calc(var(--tx)*2),calc(var(--ty)*2 - 80px)) scale(0) rotate(360deg);opacity:0;}
+        }
+        .xp-toast{position:fixed;bottom:80px;right:24px;z-index:9998;
+            background:linear-gradient(135deg,var(--card),#1f1f3a);
+            border:1px solid var(--gold);border-radius:14px;
+            padding:14px 20px;display:flex;align-items:center;gap:12px;
+            box-shadow:0 0 30px rgba(255,215,0,0.3);
+            animation:xpSlideIn 0.4s ease, xpFadeOut 0.5s ease 3.5s forwards;min-width:220px;}
+        @keyframes xpSlideIn{from{transform:translateX(120%);opacity:0;}to{transform:translateX(0);opacity:1;}}
+        @keyframes xpFadeOut{from{opacity:1;}to{opacity:0;transform:translateX(80px);}}
+        .xp-icon{font-size:32px;animation:xpSpin 0.6s ease;}
+        @keyframes xpSpin{0%{transform:scale(0) rotate(-180deg);}100%{transform:scale(1) rotate(0deg);}}
+        .xp-text .xp-amount{font-family:'Orbitron',monospace;font-size:20px;color:var(--gold);font-weight:900;}
+        .xp-text .xp-label{font-size:11px;color:var(--text2);letter-spacing:1px;}
+
+        /* Level up banner */
+        .levelup-banner{position:fixed;inset:0;z-index:9999;pointer-events:none;
+            display:flex;align-items:center;justify-content:center;
+            background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);}
+        .levelup-card{background:linear-gradient(135deg,#1a1a2e,#0f0f1e);
+            border:2px solid var(--gold);border-radius:24px;padding:48px 60px;text-align:center;
+            box-shadow:0 0 60px rgba(255,215,0,0.4);
+            animation:levelPop 0.6s cubic-bezier(0.175,0.885,0.32,1.275);pointer-events:all;}
+        @keyframes levelPop{from{transform:scale(0.5) rotate(-5deg);opacity:0;}to{transform:scale(1) rotate(0deg);opacity:1;}}
+        .levelup-emoji{font-size:72px;animation:bounce 0.8s ease infinite alternate;display:block;margin-bottom:8px;}
+        @keyframes bounce{from{transform:translateY(0);}to{transform:translateY(-12px);}}
+        .levelup-title{font-family:'Orbitron',monospace;font-size:36px;color:var(--gold);
+            text-shadow:var(--glow-gold);letter-spacing:4px;margin-bottom:8px;}
+        .levelup-sub{color:var(--text2);font-size:14px;letter-spacing:2px;}
+
+        /* Confetti */
+        .confetti-piece{position:fixed;width:10px;height:10px;pointer-events:none;z-index:9998;
+            animation:confettiFall linear forwards;}
+        @keyframes confettiFall{0%{transform:translateY(-20px) rotate(0deg);opacity:1;}
+            100%{transform:translateY(110vh) rotate(720deg);opacity:0;}}
+
+        /* Star loss duck */
+        .sad-duck-wrap{position:fixed;bottom:var(--nav-h);left:0;z-index:9990;pointer-events:none;
+            animation:duckWalk 4s linear forwards;}
+        @keyframes duckWalk{
+            0%{transform:translateX(-80px);}
+            40%{transform:translateX(60vw);}
+            60%{transform:translateX(60vw);}
+            100%{transform:translateX(-80px);}
+        }
+        .sad-duck{font-size:40px;display:block;animation:duckBob 0.4s ease infinite alternate;}
+        .sad-duck-msg{background:var(--card);border:1px solid var(--accent);border-radius:8px;
+            padding:4px 10px;font-size:11px;color:var(--accent);white-space:nowrap;margin-bottom:4px;
+            animation:msgPop 0.3s ease;}
+        @keyframes msgPop{from{transform:scale(0);}to{transform:scale(1);}}
+        @keyframes duckBob{from{transform:translateY(0) scaleX(1);}to{transform:translateY(-4px) scaleX(1);}}
+
+        /* Streak fire */
+        .streak-fire{display:inline-block;animation:firePulse 0.8s ease infinite alternate;font-size:inherit;}
+        @keyframes firePulse{from{transform:scale(1);}to{transform:scale(1.25);filter:brightness(1.3);}}
+
+        /* Avatar walking on streak bar */
+        #avatar-bar-wrap{position:relative;height:28px;margin:6px 0 2px;overflow:visible;}
+        #avatar-bar-track{height:6px;background:var(--border);border-radius:3px;margin-top:11px;overflow:hidden;}
+        #avatar-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--gold));border-radius:3px;
+            transition:width 1.5s ease;box-shadow:0 0 8px rgba(233,69,96,0.5);}
+        #avatar-walker{position:absolute;top:-2px;font-size:22px;transition:left 1.5s ease;
+            animation:walkerBob 0.5s ease infinite alternate;transform:translateX(-50%);}
+        @keyframes walkerBob{from{top:-2px;}to{top:-7px;}}
+
+        /* Speech bubble */
+        .speech-bubble{position:fixed;z-index:9995;background:var(--card2);border:1px solid var(--gold);
+            border-radius:12px;padding:10px 14px;font-size:12px;color:var(--text);max-width:200px;
+            pointer-events:none;animation:bubblePop 0.3s ease, bubbleFade 0.5s ease 4s forwards;}
+        .speech-bubble::after{content:'';position:absolute;bottom:-8px;left:20px;
+            border-left:8px solid transparent;border-right:8px solid transparent;
+            border-top:8px solid var(--gold);}
+        @keyframes bubblePop{from{transform:scale(0);opacity:0;}to{transform:scale(1);opacity:1;}}
+        @keyframes bubbleFade{from{opacity:1;}to{opacity:0;}}
+
+        /* Sleeping zzz */
+        .sleep-overlay{position:fixed;bottom:var(--nav-h);right:16px;z-index:9990;pointer-events:none;text-align:center;}
+        .sleep-char{font-size:36px;}
+        .sleep-zzz{font-family:'Share Tech Mono',monospace;color:var(--blue);font-size:14px;
+            animation:zzzFloat 2s ease infinite;}
+        @keyframes zzzFloat{0%,100%{opacity:0;transform:translateY(0);}50%{opacity:1;transform:translateY(-12px);}}
+
+        /* Energy pulse */
+        @keyframes glowPulse{0%,100%{box-shadow:0 0 8px rgba(233,69,96,0.3);}50%{box-shadow:0 0 20px rgba(233,69,96,0.7);}}
+        .glow-pulse{animation:glowPulse 2s infinite;}
+
+        /* Ambient stars */
+        .ambient-star{position:fixed;pointer-events:none;z-index:0;opacity:0;animation:ambientFloat linear infinite;}
+        @keyframes ambientFloat{0%{transform:translateY(100vh) scale(0);opacity:0;}10%{opacity:0.4;}
+            90%{opacity:0.15;}100%{transform:translateY(-50px) scale(1);opacity:0;}}
+
+        /* ══ RESPONSIVE ══ */
+        @media (max-width:768px){
+            .sidebar{display:none;}
+            .main{margin-left:0;padding-top:54px;padding-bottom:20px;}
+            .topbar{display:none;}
+            .mobile-topbar{display:flex;}
+            .content{padding:12px;}
+            .grid-2,.grid-3{grid-template-columns:1fr;}
+            .stats-grid{grid-template-columns:repeat(2,1fr);}
+            .modal{max-width:95vw;padding:16px;margin:8px;}
+            .modal-title{font-size:13px;}
+            .xp-toast{bottom:16px;right:8px;min-width:180px;padding:10px 14px;}
+            .xp-amount{font-size:16px;}
+            .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:8px;}
+            table{font-size:12px;}
+            th,td{padding:7px 9px;white-space:nowrap;}
+            input,select,textarea{font-size:16px!important;}
+            .btn{padding:8px 13px;font-size:13px;}
+            .btn-sm{padding:5px 10px;font-size:11px;}
+            .card{padding:13px;}
+            .card-title{font-size:11px;letter-spacing:1px;}
+            .stat-card{padding:12px;}
+            .stat-value{font-size:20px;}
+            body{overflow-x:hidden;}
+            .main{overflow-x:hidden;}
+            .filter-bar{flex-direction:column!important;gap:8px!important;}
+            .filter-bar .form-group{width:100%!important;min-width:0!important;}
+            .class-tab-row{flex-wrap:wrap!important;gap:6px!important;}
+            [style*="min-width:260px"],[style*="min-width: 260px"]{min-width:100%!important;width:100%!important;}
+            [style*="min-width:180px"],[style*="min-width: 180px"]{min-width:0!important;flex:1 1 100%!important;}
+            [style*="min-width:160px"],[style*="min-width: 160px"]{min-width:0!important;flex:1 1 100%!important;}
+            [style*="min-width:130px"],[style*="min-width: 130px"]{min-width:0!important;flex:1 1 100%!important;}
+        }
+        @media (min-width:769px){
+            .side-drawer,.drawer-overlay,.mobile-topbar{display:none!important;}
+        }
+    </style>
+    {% block head %}{% endblock %}
+
+<style id="mobile-global-fix">
+/* ═══════════════════════════════════════
+   CARE — Global Mobile Fixes
+   Applied to all pages
+═══════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* ── Layout ── */
+  body { overflow-x: hidden !important; }
+
+  /* ── Cards ── */
+  .card { padding: 14px !important; }
+  .card-title { font-size: 11px !important; letter-spacing: 1px !important; }
+
+  /* ── Stats grid ── */
+  .stats-grid { grid-template-columns: repeat(2,1fr) !important; gap: 10px !important; }
+  .stat-card { padding: 12px !important; }
+  .stat-value { font-size: 20px !important; }
+  .stat-label { font-size: 10px !important; }
+
+  /* ── Grids ── */
+  .grid-2, .grid-3 { grid-template-columns: 1fr !important; gap: 12px !important; }
+
+  /* ── Tables ── */
+  .table-wrap { overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; border-radius: 8px !important; }
+  table { font-size: 12px !important; min-width: 420px; }
+  th, td { padding: 8px 10px !important; white-space: nowrap !important; }
+
+  /* ── Forms ── */
+  input, select, textarea { font-size: 16px !important; } /* prevent iOS zoom */
+
+  /* ── Buttons ── */
+  .btn { padding: 8px 13px !important; font-size: 13px !important; }
+  .btn-sm { padding: 5px 10px !important; font-size: 11px !important; }
+
+  /* ── Flex rows → stack ── */
+  .filter-bar,
+  .flex-row,
+  [style*="display:flex"][style*="gap"],
+  [style*="display: flex"][style*="gap"] { flex-wrap: wrap !important; }
+
+  /* ── Inline width overrides ── */
+  [style*="min-width:260px"],[style*="min-width: 260px"] { min-width:0 !important; width:100% !important; }
+  [style*="min-width:180px"],[style*="min-width: 180px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="min-width:160px"],[style*="min-width: 160px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="min-width:130px"],[style*="min-width: 130px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="width:900px"],[style*="width: 900px"] { width:100% !important; max-width:100% !important; }
+
+  /* ── Modal ── */
+  .modal { max-width: 95vw !important; padding: 16px !important; margin: 8px !important; }
+  .modal-title { font-size: 13px !important; }
+
+  /* ── XP Toast ── */
+  .xp-toast { bottom: calc(var(--nav-h) + 10px) !important; right: 8px !important; min-width: 180px !important; padding: 10px 14px !important; }
+
+  /* ── Class tab rows ── */
+  .class-tab-row { flex-wrap: wrap !important; gap: 6px !important; }
+  .class-tab-row .btn { min-width: 72px !important; font-size: 11px !important; padding: 7px 8px !important; }
+
+  /* ── Hero card ── */
+  .hero-card { padding: 16px !important; }
+  .hero-name { font-size: 16px !important; }
+  .stars-big { font-size: 26px !important; }
+
+  /* ── Section headers ── */
+  h2, .section-title { font-size: 14px !important; }
+
+  /* ── Podium on leaderboard ── */
+  .podium-wrap { gap: 8px !important; padding: 12px 0 !important; }
+  .podium-item { width: 80px !important; }
+  .podium-avatar { width: 44px !important; height: 44px !important; font-size: 16px !important; }
+  .podium-bar { margin-top: 6px !important; }
+
+  /* ── Staff dashboard student cards ── */
+  .student-mini-card { padding: 10px !important; }
+
+  /* ── Attendance step buttons ── */
+  .period-btn { min-width: 0 !important; flex: 1 1 45% !important; }
+
+  /* ── Quiz grade buttons ── */
+  .grade-btn-row { flex-wrap: wrap !important; gap: 6px !important; }
+}
+</style>
+</head>
+<body>
+
+<!-- Particles -->
+<div id="star-burst-container"></div>
+<div class="ambient-star" style="left:8%;font-size:14px;animation-duration:12s;animation-delay:0s;">⭐</div>
+<div class="ambient-star" style="left:22%;font-size:10px;animation-duration:9s;animation-delay:3s;">✨</div>
+<div class="ambient-star" style="left:65%;font-size:12px;animation-duration:14s;animation-delay:6s;">🌟</div>
+<div class="ambient-star" style="left:85%;font-size:9px;animation-duration:11s;animation-delay:1s;">⭐</div>
+
+<!-- ══ MOBILE TOP BAR ══ -->
+<div class="mobile-topbar" id="mobileTopbar">
+    <button class="hamburger-btn" id="hamburgerBtn" onclick="openSideDrawer()" aria-label="Menu">
+        <i class="fas fa-bars" id="hamburgerIcon"></i>
+    </button>
+    <div class="mobile-logo">C.A.R.E</div>
+    <div class="mobile-topbar-right">
+        {% if current_user %}
+        <span class="mobile-stars">⭐ {{ current_user.streak_stars }}</span>
+        {% endif %}
+        {% if session.get('user_id') %}
+        <a href="{{ url_for('notifications') }}" class="notif-btn" style="padding:5px 9px;font-size:13px;">
+            <i class="fas fa-bell"></i>
+            {% if notif_count and notif_count > 0 %}<span class="notif-dot">{{ notif_count }}</span>{% endif %}
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ══ DESKTOP SIDEBAR ══ -->
+<aside class="sidebar">
+    <div class="sidebar-logo">
+        <div class="logo-text">C.A.R.E</div>
+        <div class="logo-sub">Campus Achievement Engine</div>
+    </div>
+    {% if current_user %}
+    <div class="sidebar-user">
+        <div class="user-avatar">
+            {% if current_user.profile_pic %}<img src="{{ url_for('static', filename=current_user.profile_pic) }}" alt="">
+            {% else %}{{ current_user.name[0].upper() }}{% endif %}
+        </div>
+        <div class="user-info">
+            <div class="name">{{ current_user.name.split()[0] }}</div>
+            <div class="stars-mini">⭐ {{ current_user.streak_stars }} | LVL {{ current_user.level }}</div>
+        </div>
+    </div>
+    <!-- Avatar streak bar -->
+    <div style="padding:10px 18px;border-bottom:1px solid var(--border);">
+        <div class="level-label">
+            <span>LEVEL {{ current_user.level }}</span>
+            <span>{{ current_user.streak_stars % 1000 }}/1000</span>
+        </div>
+        <div id="avatar-bar-wrap">
+            <div id="avatar-bar-track"><div id="avatar-bar-fill" style="width:{{ (current_user.streak_stars % 1000) / 10 }}%;"></div></div>
+            <div id="avatar-walker" style="left:{{ (current_user.streak_stars % 1000) / 10 }}%;">
+                {% if session.get('role') == 'student' %}🧑‍🎓
+                {% elif session.get('role') == 'staff' %}👩‍🏫
+                {% else %}👑{% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    <nav class="sidebar-nav">
+        <!-- NAV INLINE -->
+        {% if session.get('role') == 'student' %}
+            <div class="nav-section">Main</div>
+            <a href="{{ url_for('dashboard') }}" class="nav-link {% if request.endpoint=='dashboard' %}active{% endif %}"><i class="fas fa-gamepad"></i><span>Dashboard</span></a>
+            <a href="{{ url_for('leaderboard') }}" class="nav-link {% if request.endpoint=='leaderboard' %}active{% endif %}"><i class="fas fa-trophy"></i><span>Leaderboard</span></a>
+            <div class="nav-section">Academics</div>
+            <a href="{{ url_for('student_attendance') }}" class="nav-link {% if request.endpoint=='student_attendance' %}active{% endif %}"><i class="fas fa-calendar-check"></i><span>Attendance</span></a>
+            <a href="{{ url_for('student_assignments') }}" class="nav-link {% if request.endpoint=='student_assignments' %}active{% endif %}"><i class="fas fa-file-alt"></i><span>Assignments</span></a>
+            <a href="{{ url_for('student_results') }}" class="nav-link {% if request.endpoint=='student_results' %}active{% endif %}"><i class="fas fa-chart-bar"></i><span>Results</span></a>
+            <div class="nav-section">Activities</div>
+            <a href="{{ url_for('student_certificates') }}" class="nav-link {% if request.endpoint=='student_certificates' %}active{% endif %}"><i class="fas fa-certificate"></i><span>Certificates</span></a>
+            <a href="{{ url_for('student_projects') }}" class="nav-link {% if request.endpoint=='student_projects' %}active{% endif %}"><i class="fab fa-github"></i><span>Projects</span></a>
+            <a href="{{ url_for('student_seminars') }}" class="nav-link {% if request.endpoint=='student_seminars' %}active{% endif %}"><i class="fas fa-microphone"></i><span>Seminars</span></a>
+            <div class="nav-section">Profile</div>
+            <a href="{{ url_for('student_profile') }}" class="nav-link {% if request.endpoint=='student_profile' %}active{% endif %}"><i class="fas fa-user"></i><span>My Profile</span></a>
+            <a href="{{ url_for('generate_resume_page') }}" class="nav-link"><i class="fas fa-file-pdf"></i><span>Resume</span></a>
+        {% elif session.get('role') == 'admin' %}
+            <div class="nav-section">Admin</div>
+            <a href="{{ url_for('admin_dashboard') }}" class="nav-link {% if request.endpoint=='admin_dashboard' %}active{% endif %}"><i class="fas fa-shield-alt"></i><span>Dashboard</span></a>
+            <a href="{{ url_for('admin_timetable') }}" class="nav-link {% if request.endpoint=='admin_timetable' %}active{% endif %}"><i class="fas fa-clock"></i><span>Timetable</span></a>
+            <a href="{{ url_for('admin_attendance') }}" class="nav-link {% if request.endpoint=='admin_attendance' %}active{% endif %}"><i class="fas fa-calendar-check"></i><span>Attendance</span></a>
+            <a href="{{ url_for('admin_staff') }}" class="nav-link {% if request.endpoint=='admin_staff' %}active{% endif %}"><i class="fas fa-users-cog"></i><span>Staff</span></a>
+            <a href="{{ url_for('admin_subjects') }}" class="nav-link {% if request.endpoint=='admin_subjects' %}active{% endif %}"><i class="fas fa-book-open"></i><span>Subjects</span></a>
+            <div class="nav-section">Classes</div>
+            <div style="display:flex;gap:4px;padding:4px 10px 8px;flex-wrap:wrap;">
+              {% for yr in [1,2,3,4] %}
+              <button onclick="showYear({{ yr }})" id="yrbtn_{{ yr }}"
+                style="flex:1;padding:5px 2px;border-radius:6px;font-size:10px;font-family:'Orbitron',monospace;font-weight:700;cursor:pointer;border:1px solid var(--border);transition:all 0.2s;background:{% if loop.first %}var(--accent){% else %}var(--bg3){% endif %};color:{% if loop.first %}white{% else %}var(--text2){% endif %};">Y{{ yr }}</button>
+              {% endfor %}
+            </div>
+            {% for yr, cls_list in classes_by_year.items() %}
+            <div id="yrclasses_{{ yr }}" style="display:{% if yr == 1 %}block{% else %}none{% endif %};">
+              {% for cls in cls_list %}
+              {% set cls_url = url_for('admin_class_view', class_name=cls) if yr==1 else url_for('admin_class_view', class_name=cls, year=yr) %}
+              <a href="{{ cls_url }}" class="nav-link {% if request.endpoint=='admin_class_view' and request.view_args.get('class_name')==cls %}active{% endif %}" style="font-size:12px;padding-left:22px;">
+                <i class="fas fa-users"></i><span><span style="font-size:9px;color:var(--text2);margin-right:3px;">Y{{ yr }}</span>{{ cls }}</span>
+              </a>
+              {% endfor %}
+            </div>
+            {% endfor %}
+            <script>
+            function showYear(yr){[1,2,3,4].forEach(function(y){var el=document.getElementById('yrclasses_'+y),btn=document.getElementById('yrbtn_'+y);if(el)el.style.display=(y===yr)?'block':'none';if(btn){btn.style.background=(y===yr)?'var(--accent)':'var(--bg3)';btn.style.color=(y===yr)?'white':'var(--text2)';}});}
+            (function(){var a=document.querySelector('.sidebar-nav .nav-link.active');if(a){var w=a.closest('[id^="yrclasses_"]');if(w){var yr=parseInt(w.id.replace('yrclasses_',''));if(yr)showYear(yr);}}})();
+            </script>
+            <div class="nav-section">Account</div>
+            <a href="{{ url_for('profile') }}" class="nav-link {% if request.endpoint=='profile' %}active{% endif %}"><i class="fas fa-user"></i><span>Profile</span></a>
+        {% elif session.get('role') == 'staff' %}
+            <div class="nav-section">Main</div>
+            <a href="{{ url_for('staff_dashboard') }}" class="nav-link {% if request.endpoint=='staff_dashboard' %}active{% endif %}"><i class="fas fa-tachometer-alt"></i><span>Dashboard</span></a>
+            <div class="nav-section">Teaching</div>
+            <a href="{{ url_for('staff_attendance') }}" class="nav-link {% if request.endpoint=='staff_attendance' %}active{% endif %}"><i class="fas fa-user-check"></i><span>Attendance</span></a>
+            <a href="{{ url_for('staff_assignments') }}" class="nav-link {% if request.endpoint=='staff_assignments' %}active{% endif %}"><i class="fas fa-tasks"></i><span>Assignments</span></a>
+            <a href="{{ url_for('staff_quiz') }}" class="nav-link {% if request.endpoint=='staff_quiz' %}active{% endif %}"><i class="fas fa-question-circle"></i><span>Quiz Maker</span></a>
+            <a href="{{ url_for('staff_results') }}" class="nav-link {% if request.endpoint=='staff_results' %}active{% endif %}"><i class="fas fa-graduation-cap"></i><span>CAT Marks</span></a>
+            <a href="{{ url_for('staff_timetable') }}" class="nav-link {% if request.endpoint=='staff_timetable' %}active{% endif %}"><i class="fas fa-clock"></i><span>Timetable</span></a>
+            <div class="nav-section">Tools</div>
+            <a href="{{ url_for('verify_certificates_page') }}" class="nav-link {% if request.endpoint=='verify_certificates_page' %}active{% endif %}"><i class="fas fa-shield-alt"></i><span>Certificates</span></a>
+            <a href="{{ url_for('staff_analytics') }}" class="nav-link {% if request.endpoint=='staff_analytics' %}active{% endif %}"><i class="fas fa-chart-line"></i><span>Analytics</span></a>
+            <a href="{{ url_for('staff_research') }}" class="nav-link {% if request.endpoint=='staff_research' %}active{% endif %}"><i class="fas fa-flask"></i><span>Research</span></a>
+            <div class="nav-section">Account</div>
+            <a href="{{ url_for('profile') }}" class="nav-link {% if request.endpoint=='profile' %}active{% endif %}"><i class="fas fa-user"></i><span>Profile</span></a>
+        {% elif session.get('role') == 'library' %}
+            <div class="nav-section">Library</div>
+            <a href="{{ url_for('library_dashboard') }}" class="nav-link {% if request.endpoint=='library_dashboard' %}active{% endif %}"><i class="fas fa-book"></i><span>Dashboard</span></a>
+            <div class="nav-section">Account</div>
+            <a href="{{ url_for('profile') }}" class="nav-link {% if request.endpoint=='profile' %}active{% endif %}"><i class="fas fa-user"></i><span>Profile</span></a>
+        {% endif %}
+        <div class="nav-section">System</div>
+        <a href="{{ url_for('logout') }}" class="nav-link"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a>
+    </nav>
+</aside>
+
+<!-- ══ MAIN ══ -->
+<main class="main">
+    <div class="topbar">
+        <div class="page-title">{% block page_title %}CARE{% endblock %}</div>
+        <div class="topbar-right">
+            {% if session.get('user_id') %}
+            <a href="{{ url_for('notifications') }}" class="notif-btn">
+                <i class="fas fa-bell"></i>
+                {% if notif_count and notif_count > 0 %}<span class="notif-dot">{{ notif_count }}</span>{% endif %}
+            </a>
+            {% endif %}
+            <div style="font-size:12px;color:var(--text2);">{{ session.get('name','') }}<span style="color:var(--accent);margin-left:4px;">[{{ session.get('role','').upper() }}]</span></div>
+        </div>
+    </div>
+    <div class="content">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">
+                <i class="fas fa-{% if category=='success' %}check-circle{% elif category=='danger' %}exclamation-circle{% elif category=='warning' %}exclamation-triangle{% else %}info-circle{% endif %}"></i>
+                {{ message }}
+            </div>
+            {% endfor %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+    </div>
+</main>
+
+<!-- ══ MOBILE SIDE DRAWER ══ -->
+{% set role = session.get('role','') %}
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeSideDrawer()"></div>
+
+<nav class="side-drawer" id="sideDrawer">
+    <!-- Header -->
+    <div class="drawer-header">
+        <div class="drawer-logo">C.A.R.E</div>
+        <button class="drawer-close" onclick="closeSideDrawer()"><i class="fas fa-times"></i></button>
+    </div>
+
+    <!-- User info -->
+    {% if current_user %}
+    <div class="drawer-user">
+        <div class="drawer-avatar">
+            {% if current_user.profile_pic %}
+            <img src="{{ url_for('static', filename=current_user.profile_pic) }}" alt="">
+            {% else %}{{ current_user.name[0].upper() }}{% endif %}
+        </div>
+        <div class="drawer-user-info">
+            <div class="dname">{{ current_user.name.split()[0] }}</div>
+            <div class="dstars">⭐ {{ current_user.streak_stars }} &nbsp;|&nbsp; LVL {{ current_user.level }}</div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Nav links -->
+    <div class="drawer-nav">
+        {% if role == 'student' %}
+            <div class="drawer-section">Main</div>
+            <a href="{{ url_for('dashboard') }}" class="drawer-link {% if request.endpoint=='dashboard' %}active{% endif %}"><i class="fas fa-gamepad"></i>Dashboard</a>
+            <a href="{{ url_for('leaderboard') }}" class="drawer-link {% if request.endpoint=='leaderboard' %}active{% endif %}"><i class="fas fa-trophy"></i>Leaderboard</a>
+            <div class="drawer-section">Academics</div>
+            <a href="{{ url_for('student_attendance') }}" class="drawer-link {% if request.endpoint=='student_attendance' %}active{% endif %}"><i class="fas fa-calendar-check"></i>Attendance</a>
+            <a href="{{ url_for('student_assignments') }}" class="drawer-link {% if request.endpoint=='student_assignments' %}active{% endif %}"><i class="fas fa-file-alt"></i>Assignments</a>
+            <a href="{{ url_for('student_results') }}" class="drawer-link {% if request.endpoint=='student_results' %}active{% endif %}"><i class="fas fa-chart-bar"></i>Results</a>
+            <div class="drawer-section">Activities</div>
+            <a href="{{ url_for('student_certificates') }}" class="drawer-link {% if request.endpoint=='student_certificates' %}active{% endif %}"><i class="fas fa-certificate"></i>Certificates</a>
+            <a href="{{ url_for('student_projects') }}" class="drawer-link {% if request.endpoint=='student_projects' %}active{% endif %}"><i class="fab fa-github"></i>Projects</a>
+            <a href="{{ url_for('student_seminars') }}" class="drawer-link {% if request.endpoint=='student_seminars' %}active{% endif %}"><i class="fas fa-microphone"></i>Seminars</a>
+            <div class="drawer-section">Account</div>
+            <a href="{{ url_for('student_profile') }}" class="drawer-link {% if request.endpoint=='student_profile' %}active{% endif %}"><i class="fas fa-user"></i>My Profile</a>
+            <a href="{{ url_for('generate_resume_page') }}" class="drawer-link"><i class="fas fa-file-pdf"></i>Resume</a>
+            <a href="{{ url_for('notifications') }}" class="drawer-link"><i class="fas fa-bell"></i>Notifications</a>
+
+        {% elif role == 'staff' %}
+            <div class="drawer-section">Main</div>
+            <a href="{{ url_for('staff_dashboard') }}" class="drawer-link {% if request.endpoint=='staff_dashboard' %}active{% endif %}"><i class="fas fa-tachometer-alt"></i>Dashboard</a>
+            <div class="drawer-section">Teaching</div>
+            <a href="{{ url_for('staff_attendance') }}" class="drawer-link {% if request.endpoint=='staff_attendance' %}active{% endif %}"><i class="fas fa-user-check"></i>Attendance</a>
+            <a href="{{ url_for('staff_assignments') }}" class="drawer-link {% if request.endpoint=='staff_assignments' %}active{% endif %}"><i class="fas fa-tasks"></i>Assignments</a>
+            <a href="{{ url_for('staff_quiz') }}" class="drawer-link {% if request.endpoint=='staff_quiz' %}active{% endif %}"><i class="fas fa-question-circle"></i>Quiz Maker</a>
+            <a href="{{ url_for('staff_results') }}" class="drawer-link {% if request.endpoint=='staff_results' %}active{% endif %}"><i class="fas fa-graduation-cap"></i>CAT Marks</a>
+            <a href="{{ url_for('staff_timetable') }}" class="drawer-link {% if request.endpoint=='staff_timetable' %}active{% endif %}"><i class="fas fa-clock"></i>Timetable</a>
+            <div class="drawer-section">Tools</div>
+            <a href="{{ url_for('verify_certificates_page') }}" class="drawer-link"><i class="fas fa-shield-alt"></i>Certificates</a>
+            <a href="{{ url_for('staff_analytics') }}" class="drawer-link {% if request.endpoint=='staff_analytics' %}active{% endif %}"><i class="fas fa-chart-line"></i>Analytics</a>
+            <a href="{{ url_for('staff_research') }}" class="drawer-link {% if request.endpoint=='staff_research' %}active{% endif %}"><i class="fas fa-flask"></i>Research</a>
+            <div class="drawer-section">Account</div>
+            <a href="{{ url_for('profile') }}" class="drawer-link {% if request.endpoint=='profile' %}active{% endif %}"><i class="fas fa-user"></i>Profile</a>
+            <a href="{{ url_for('notifications') }}" class="drawer-link"><i class="fas fa-bell"></i>Notifications</a>
+
+        {% elif role == 'admin' %}
+            <div class="drawer-section">Admin</div>
+            <a href="{{ url_for('admin_dashboard') }}" class="drawer-link {% if request.endpoint=='admin_dashboard' %}active{% endif %}"><i class="fas fa-shield-alt"></i>Dashboard</a>
+            <a href="{{ url_for('admin_timetable') }}" class="drawer-link {% if request.endpoint=='admin_timetable' %}active{% endif %}"><i class="fas fa-clock"></i>Timetable</a>
+            <a href="{{ url_for('admin_attendance') }}" class="drawer-link {% if request.endpoint=='admin_attendance' %}active{% endif %}"><i class="fas fa-calendar-check"></i>Attendance</a>
+            <a href="{{ url_for('admin_staff') }}" class="drawer-link {% if request.endpoint=='admin_staff' %}active{% endif %}"><i class="fas fa-users-cog"></i>Staff</a>
+            <a href="{{ url_for('admin_subjects') }}" class="drawer-link {% if request.endpoint=='admin_subjects' %}active{% endif %}"><i class="fas fa-book-open"></i>Subjects</a>
+            <div class="drawer-section">Account</div>
+            <a href="{{ url_for('profile') }}" class="drawer-link {% if request.endpoint=='profile' %}active{% endif %}"><i class="fas fa-user"></i>Profile</a>
+            <a href="{{ url_for('notifications') }}" class="drawer-link"><i class="fas fa-bell"></i>Notifications</a>
+
+        {% elif role == 'library' %}
+            <div class="drawer-section">Library</div>
+            <a href="{{ url_for('library_dashboard') }}" class="drawer-link {% if request.endpoint=='library_dashboard' %}active{% endif %}"><i class="fas fa-book"></i>Dashboard</a>
+            <div class="drawer-section">Account</div>
+            <a href="{{ url_for('profile') }}" class="drawer-link {% if request.endpoint=='profile' %}active{% endif %}"><i class="fas fa-user"></i>Profile</a>
+            <a href="{{ url_for('notifications') }}" class="drawer-link"><i class="fas fa-bell"></i>Notifications</a>
+        {% endif %}
+
+        <a href="{{ url_for('logout') }}" class="drawer-link logout-link"><i class="fas fa-sign-out-alt"></i>Logout</a>
+    </div>
+
+    <div class="drawer-footer">CARE v2 &nbsp;·&nbsp; Campus Achievement Engine</div>
+</nav>
+
+<!-- ══ GAME ENGINE JS ══ -->
+<script>
+// ── Alerts auto-hide
+setTimeout(()=>{document.querySelectorAll('.alert').forEach(a=>{a.style.transition='opacity 0.5s';a.style.opacity='0';setTimeout(()=>a.remove(),500);});},4000);
+
+// ── Modals
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.addEventListener('click',e=>{if(e.target.classList.contains('modal-overlay'))e.target.classList.remove('open');});
+
+// ── Side Drawer
+function openSideDrawer(){
+    document.getElementById('sideDrawer').classList.add('open');
+    document.getElementById('drawerOverlay').classList.add('open');
+    document.getElementById('hamburgerBtn').classList.add('open');
+    document.getElementById('hamburgerIcon').className='fas fa-times';
+    document.body.style.overflow='hidden';
+}
+function closeSideDrawer(){
+    document.getElementById('sideDrawer').classList.remove('open');
+    document.getElementById('drawerOverlay').classList.remove('open');
+    document.getElementById('hamburgerBtn').classList.remove('open');
+    document.getElementById('hamburgerIcon').className='fas fa-bars';
+    document.body.style.overflow='';
+}
+// Close on ESC
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSideDrawer();});
+// Swipe left to close
+(function(){
+    let sx=0;
+    document.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;},{passive:true});
+    document.addEventListener('touchend',e=>{
+        if(sx<60 && e.changedTouches[0].clientX-sx>60)openSideDrawer();
+        if(sx<280 && sx-e.changedTouches[0].clientX>60)closeSideDrawer();
+    },{passive:true});
+})();
+
+// ── Star burst
+function burstStars(x,y,count=12){
+    const c=document.getElementById('star-burst-container');
+    const em=['⭐','🌟','✨','💫'];
+    for(let i=0;i<count;i++){
+        const el=document.createElement('div');el.className='star-particle';
+        el.textContent=em[Math.floor(Math.random()*em.length)];
+        const a=(i/count)*360,d=80+Math.random()*60;
+        el.style.setProperty('--tx',Math.cos(a*Math.PI/180)*d+'px');
+        el.style.setProperty('--ty',Math.sin(a*Math.PI/180)*d+'px');
+        el.style.left=x+'px';el.style.top=y+'px';
+        el.style.animationDelay=Math.random()*0.2+'s';
+        c.appendChild(el);setTimeout(()=>el.remove(),1400);
+    }
+}
+
+// ── XP Toast
+function showXPToast(amount,label='Stars Earned!',isLoss=false){
+    const old=document.querySelector('.xp-toast');if(old)old.remove();
+    const t=document.createElement('div');t.className='xp-toast';
+    if(isLoss)t.style.borderColor='var(--accent)';
+    t.innerHTML=`<div class="xp-icon">${isLoss?'💔':'⭐'}</div>
+        <div class="xp-text">
+            <div class="xp-amount" style="color:${isLoss?'var(--accent)':'var(--gold)'};">${isLoss?'':'+'}${amount} ⭐</div>
+            <div class="xp-label">${label}</div>
+        </div>`;
+    document.body.appendChild(t);setTimeout(()=>t.remove(),4200);
+}
+
+// ── Confetti
+function launchConfetti(count=60){
+    const cols=['#ffd700','#e94560','#00ff88','#00b4d8','#7c3aed','#ff6b6b'];
+    for(let i=0;i<count;i++){
+        const el=document.createElement('div');el.className='confetti-piece';
+        el.style.cssText=`left:${Math.random()*100}vw;background:${cols[Math.floor(Math.random()*cols.length)]};
+            border-radius:${Math.random()>0.5?'50%':'2px'};width:${6+Math.random()*8}px;height:${6+Math.random()*8}px;
+            animation-duration:${2+Math.random()*2}s;animation-delay:${Math.random()*0.5}s;`;
+        document.body.appendChild(el);setTimeout(()=>el.remove(),4000);
+    }
+}
+
+// ── Level up banner
+function showLevelUp(level){
+    const d=document.createElement('div');d.className='levelup-banner';
+    d.innerHTML=`<div class="levelup-card">
+        <span class="levelup-emoji">🏆</span>
+        <div class="levelup-title">LEVEL UP!</div>
+        <div class="levelup-sub">YOU REACHED LEVEL ${level}</div>
+        <div style="margin-top:20px;color:#ffd700;font-size:24px;letter-spacing:4px;">${'⭐'.repeat(Math.min(level,5))}</div>
+        <button onclick="this.closest('.levelup-banner').remove()"
+            style="margin-top:24px;padding:12px 32px;background:var(--gold);color:#1a1a1a;
+            border:none;border-radius:8px;font-family:'Orbitron',monospace;font-size:13px;
+            cursor:pointer;letter-spacing:2px;">CONTINUE ⚡</button>
+    </div>`;
+    document.body.appendChild(d);launchConfetti(80);
+}
+
+// ── Sad duck on star loss
+function showSadDuck(){
+    const msgs=["My stars... gone 😭","Not fair!","I'll get them back...","Nooo ⭐"];
+    const wrap=document.createElement('div');wrap.className='sad-duck-wrap';
+    wrap.innerHTML=`<div class="sad-duck-msg">${msgs[Math.floor(Math.random()*msgs.length)]}</div>
+        <div class="sad-duck">🦆</div>`;
+    document.body.appendChild(wrap);setTimeout(()=>wrap.remove(),4500);
+}
+
+// ── Avatar speech bubble
+function showSpeech(msg,x,y){
+    const old=document.querySelector('.speech-bubble');if(old)old.remove();
+    const b=document.createElement('div');b.className='speech-bubble';
+    b.textContent=msg;b.style.left=x+'px';b.style.bottom=(window.innerHeight-y+40)+'px';
+    document.body.appendChild(b);setTimeout(()=>b.remove(),4600);
+}
+
+// ── Sleeping character (inactive)
+function showSleepyChar(){
+    const s=document.createElement('div');s.className='sleep-overlay';
+    s.innerHTML=`<div class="sleep-char">😴</div><div class="sleep-zzz">z z z</div>`;
+    document.body.appendChild(s);setTimeout(()=>s.remove(),5000);
+}
+
+// ── Parse flash messages → trigger animations
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% for cat, msg in messages %}
+(function(){
+    const m={{ msg|tojson }};
+    const cat='{{ cat }}';
+    {% if cat == 'success' %}
+    const starM=m.match(/\+(\d+)\s*[⭐stars]/i)||m.match(/\+(\d+)/i);
+    if(starM){
+        const n=parseInt(starM[1]);
+        setTimeout(()=>{
+            const cx=window.innerWidth-150,cy=window.innerHeight-120;
+            burstStars(cx,cy,16);showXPToast(n,'Stars Earned!',false);
+        },600);
+    }
+    if(m.toLowerCase().includes('level')){
+        const lv=m.match(/level\s*(\d+)/i);if(lv)setTimeout(()=>showLevelUp(lv[1]),900);
+    }
+    {% elif cat == 'warning' or cat == 'danger' %}
+    if(m.includes('star')||m.includes('⭐')){
+        setTimeout(()=>{showSadDuck();showXPToast('',m,true);},500);
+    }
+    {% endif %}
+})();
+{% endfor %}
+{% endwith %}
+
+// ── Milestone check on load
+(function(){
+    {% if current_user %}
+    const stars={{ current_user.streak_stars|default(0) }};
+    const milestones=[100,500,1000,2000,5000];
+    milestones.forEach(m=>{
+        if(stars===m||stars===m+1){
+            setTimeout(()=>{launchConfetti(100);showXPToast(m,'🎉 MILESTONE REACHED!');},1200);
+        }
+    });
+    // Streak fire on sidebar if stars > 50
+    if(stars>=50){
+        const lb=document.querySelector('.level-fill');
+        if(lb)lb.style.boxShadow='0 0 20px rgba(255,100,0,0.8)';
+    }
+    {% endif %}
+})();
+
+// ── Avatar idle speech
+(function(){
+    {% if current_user %}
+    const stars={{ current_user.streak_stars|default(0) }};
+    const walker=document.getElementById('avatar-walker');
+    if(!walker)return;
+    const idleMsgs=stars<10?["I want to reach level 2 😢","Help me earn stars!","So few stars..."]
+        :stars<100?["Getting there! 💪","Keep going!","Almost 100 stars!"]
+        :["I'm on fire! 🔥","Hooray! ⭐","Top of the leaderboard soon!"];
+    setTimeout(()=>{
+        const r=walker.getBoundingClientRect();
+        const msg=idleMsgs[Math.floor(Math.random()*idleMsgs.length)];
+        if(window.innerWidth>768)showSpeech(msg,r.left,r.top);
+    },3000);
+    {% endif %}
+})();
+
+// ── Submit button burst
+document.addEventListener('click',e=>{
+    const btn=e.target.closest('.btn-primary');
+    if(btn){const r=btn.getBoundingClientRect();burstStars(r.left+r.width/2,r.top+r.height/2,8);}
+});
+
+// ── Notif poll
+{% if session.get('user_id') %}
+setInterval(async()=>{
+    try{const r=await fetch('/api/notifications/count');const d=await r.json();
+    let dot=document.querySelector('.notif-dot');
+    if(d.count>0){if(!dot){const btn=document.querySelector('.notif-btn');dot=document.createElement('span');dot.className='notif-dot';btn.appendChild(dot);}dot.textContent=d.count;}
+    }catch(e){}
+},30000);
+{% endif %}
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,102 @@
+/* ═══════════════════════════════════════════════
+   C.A.R.E  — Mobile Override Stylesheet
+   Loaded on ALL pages via base.html
+═══════════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  /* ── Layout ── */
+  .content { padding: 10px 10px 80px !important; }
+  .grid-2, .grid-3 { grid-template-columns: 1fr !important; gap: 12px !important; }
+  .stats-grid { grid-template-columns: repeat(2,1fr) !important; gap: 10px !important; }
+  .card { padding: 14px !important; border-radius: 10px !important; }
+
+  /* ── Tables → horizontal scroll ── */
+  .table-wrap, table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  th, td { padding: 8px 10px !important; font-size: 12px !important; white-space: nowrap; }
+
+  /* ── Forms ── */
+  input, select, textarea { font-size: 16px !important; } /* prevent iOS zoom */
+  .form-group { margin-bottom: 10px !important; }
+  form [style*="display:grid"], form [style*="display: grid"] {
+    display: flex !important; flex-direction: column !important;
+  }
+
+  /* ── Buttons ── */
+  .btn { padding: 9px 14px !important; font-size: 13px !important; }
+  .btn-sm { padding: 6px 11px !important; font-size: 11px !important; }
+
+  /* ── Flex rows → wrap ── */
+  [style*="display:flex"] { flex-wrap: wrap; }
+
+  /* ── Hero card ── */
+  .hero-top { flex-direction: column !important; gap: 10px !important; }
+  .stars-display { text-align: left !important; }
+  .stars-big { font-size: 28px !important; }
+  .hero-stats { grid-template-columns: repeat(2,1fr) !important; }
+  .hero-stat-val { font-size: 16px !important; }
+
+  /* ── Podium ── */
+  .podium-wrap { gap: 6px !important; padding: 4px 0 10px !important; }
+  .podium-avatar { width: 38px !important; height: 38px !important; font-size: 14px !important; }
+  .podium-block { width: 52px !important; }
+  .podium-name { font-size: 10px !important; max-width: 54px !important; }
+
+  /* ── Timetable ── */
+  #ttTable { min-width: 700px; font-size: 11px !important; }
+  .tt-cell { min-width: 80px !important; padding: 4px !important; }
+
+  /* ── Attendance marks ── */
+  .att-row { flex-direction: row !important; flex-wrap: nowrap !important; }
+  .att-name { font-size: 12px !important; }
+  .att-select { padding: 5px 6px !important; font-size: 12px !important; }
+
+  /* ── Step cards ── */
+  [style*="min-width:260px"] { min-width: 100% !important; width: 100% !important; }
+  [style*="min-width:180px"] { min-width: 100% !important; }
+
+  /* ── Admin class cards ── */
+  .class-grid { grid-template-columns: 1fr !important; }
+
+  /* ── Modal ── */
+  .modal { max-width: 96vw !important; padding: 16px !important; margin: 8px !important; }
+  .modal-title { font-size: 13px !important; }
+
+  /* ── XP toast position ── */
+  .xp-toast { bottom: 74px !important; right: 8px !important; min-width: 180px !important; padding: 10px 14px !important; }
+  .xp-amount { font-size: 16px !important; }
+
+  /* ── Card titles ── */
+  .card-title { font-size: 11px !important; margin-bottom: 10px !important; }
+
+  /* ── Stat cards ── */
+  .stat-card { padding: 12px !important; }
+  .stat-value { font-size: 20px !important; }
+  .stat-icon { font-size: 22px !important; margin-bottom: 5px !important; }
+
+  /* ── Page title (topbar) ── */
+  .page-title { font-size: 13px !important; }
+
+  /* ── Inline row → column ── */
+  .flex-mobile-col { flex-direction: column !important; }
+
+  /* ── Hide non-essential desktop chrome ── */
+  .desktop-only { display: none !important; }
+
+  /* ── Leaderboard table ── */
+  .leaderboard-table th:nth-child(3),
+  .leaderboard-table td:nth-child(3) { display: none; }
+
+  /* ── Subject cards ── */
+  .subject-grid { grid-template-columns: 1fr !important; }
+
+  /* ── Quiz options ── */
+  .quiz-option { padding: 10px 12px !important; font-size: 13px !important; }
+
+  /* ── Results grade buttons ── */
+  .grade-btn-group { flex-wrap: wrap !important; gap: 6px !important; }
+  .grade-btn { padding: 6px 10px !important; font-size: 12px !important; }
+
+  /* ── Overflow fix ── */
+  body { overflow-x: hidden !important; }
+  .main { overflow-x: hidden !important; }
+}

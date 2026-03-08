@@ -1,0 +1,221 @@
+
+<style id="mobile-global-fix">
+/* ═══════════════════════════════════════
+   CARE — Global Mobile Fixes
+   Applied to all pages
+═══════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* ── Layout ── */
+  body { overflow-x: hidden !important; }
+
+  /* ── Cards ── */
+  .card { padding: 14px !important; }
+  .card-title { font-size: 11px !important; letter-spacing: 1px !important; }
+
+  /* ── Stats grid ── */
+  .stats-grid { grid-template-columns: repeat(2,1fr) !important; gap: 10px !important; }
+  .stat-card { padding: 12px !important; }
+  .stat-value { font-size: 20px !important; }
+  .stat-label { font-size: 10px !important; }
+
+  /* ── Grids ── */
+  .grid-2, .grid-3 { grid-template-columns: 1fr !important; gap: 12px !important; }
+
+  /* ── Tables ── */
+  .table-wrap { overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; border-radius: 8px !important; }
+  table { font-size: 12px !important; min-width: 420px; }
+  th, td { padding: 8px 10px !important; white-space: nowrap !important; }
+
+  /* ── Forms ── */
+  input, select, textarea { font-size: 16px !important; } /* prevent iOS zoom */
+
+  /* ── Buttons ── */
+  .btn { padding: 8px 13px !important; font-size: 13px !important; }
+  .btn-sm { padding: 5px 10px !important; font-size: 11px !important; }
+
+  /* ── Flex rows → stack ── */
+  .filter-bar,
+  .flex-row,
+  [style*="display:flex"][style*="gap"],
+  [style*="display: flex"][style*="gap"] { flex-wrap: wrap !important; }
+
+  /* ── Inline width overrides ── */
+  [style*="min-width:260px"],[style*="min-width: 260px"] { min-width:0 !important; width:100% !important; }
+  [style*="min-width:180px"],[style*="min-width: 180px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="min-width:160px"],[style*="min-width: 160px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="min-width:130px"],[style*="min-width: 130px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="width:900px"],[style*="width: 900px"] { width:100% !important; max-width:100% !important; }
+
+  /* ── Modal ── */
+  .modal { max-width: 95vw !important; padding: 16px !important; margin: 8px !important; }
+  .modal-title { font-size: 13px !important; }
+
+  /* ── XP Toast ── */
+  .xp-toast { bottom: calc(var(--nav-h) + 10px) !important; right: 8px !important; min-width: 180px !important; padding: 10px 14px !important; }
+
+  /* ── Class tab rows ── */
+  .class-tab-row { flex-wrap: wrap !important; gap: 6px !important; }
+  .class-tab-row .btn { min-width: 72px !important; font-size: 11px !important; padding: 7px 8px !important; }
+
+  /* ── Hero card ── */
+  .hero-card { padding: 16px !important; }
+  .hero-name { font-size: 16px !important; }
+  .stars-big { font-size: 26px !important; }
+
+  /* ── Section headers ── */
+  h2, .section-title { font-size: 14px !important; }
+
+  /* ── Podium on leaderboard ── */
+  .podium-wrap { gap: 8px !important; padding: 12px 0 !important; }
+  .podium-item { width: 80px !important; }
+  .podium-avatar { width: 44px !important; height: 44px !important; font-size: 16px !important; }
+  .podium-bar { margin-top: 6px !important; }
+
+  /* ── Staff dashboard student cards ── */
+  .student-mini-card { padding: 10px !important; }
+
+  /* ── Attendance step buttons ── */
+  .period-btn { min-width: 0 !important; flex: 1 1 45% !important; }
+
+  /* ── Quiz grade buttons ── */
+  .grade-btn-row { flex-wrap: wrap !important; gap: 6px !important; }
+}
+</style>
+{% set current_user = user %}
+{% extends "base.html" %}
+{% block title %}Profile{% endblock %}
+{% block page_title %}👤 MY PROFILE{% endblock %}
+{% block content %}
+<div class="grid-2">
+<div class="card">
+  <div class="card-title"><i class="fas fa-user"></i> PROFILE INFO</div>
+  <div style="text-align:center;margin-bottom:24px;">
+    <div style="width:90px;height:90px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--purple));display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:700;color:white;margin:0 auto 12px;border:3px solid var(--accent);overflow:hidden;">
+      {% if user.profile_pic %}<img src="{{ url_for('static', filename=user.profile_pic) }}" style="width:100%;height:100%;object-fit:cover;" alt="">
+      {% else %}{{ user.name[0].upper() }}{% endif %}
+    </div>
+    <div style="font-family:'Orbitron',monospace;font-size:18px;">{{ user.name }}</div>
+    <div style="color:var(--text2);font-size:13px;">{{ user.role.title() }} · {{ user.department }}</div>
+    {% if user.class_name %}<div style="color:var(--accent);font-size:12px;margin-top:4px;">Class: {{ user.class_name }}</div>{% endif %}
+  </div>
+
+  {% if user.role != 'admin' %}
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">
+    <div style="background:var(--bg3);border-radius:8px;padding:14px;text-align:center;">
+      <div style="font-family:'Orbitron',monospace;font-size:22px;color:var(--gold);">{{ user.streak_stars }}</div>
+      <div style="font-size:11px;color:var(--text2);">STREAK STARS</div>
+    </div>
+    <div style="background:var(--bg3);border-radius:8px;padding:14px;text-align:center;">
+      <div style="font-family:'Orbitron',monospace;font-size:22px;color:var(--accent);">{{ user.level }}</div>
+      <div style="font-size:11px;color:var(--text2);">LEVEL</div>
+    </div>
+  </div>
+  {% endif %}
+
+  <form method="POST" enctype="multipart/form-data">
+    <div class="form-group"><label>Phone</label><input type="tel" name="phone" value="{{ user.phone or '' }}" placeholder="+91 XXXXX XXXXX"></div>
+    <div class="form-group"><label>Profile Picture</label><input type="file" name="profile_pic" accept=".jpg,.jpeg,.png"></div>
+
+    {% if user.role in ('staff', 'admin') %}
+    <!-- CLASS SELECTION FOR STAFF -->
+    <div class="form-group">
+      <label>MY CLASSES (Select up to 5)</label>
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px;">
+        <div style="font-size:11px;color:var(--text2);margin-bottom:10px;">Choose the classes you handle (none selected by default — pick yours):</div>
+
+        <div style="margin-bottom:12px;">
+          <div style="font-size:11px;color:var(--gold);letter-spacing:1px;margin-bottom:6px;">1ST YEAR</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;">
+            {% for cls in ['I-A','I-B','I-C','I-D','I-E','I-F','I-G'] %}
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;text-transform:none;letter-spacing:0;font-size:13px;font-weight:600;
+                          background:{% if cls in my_classes %}rgba(233,69,96,0.15){% else %}var(--bg3){% endif %};
+                          border:1px solid {% if cls in my_classes %}var(--accent){% else %}var(--border){% endif %};
+                          border-radius:8px;padding:6px 12px;transition:all 0.15s;" id="lbl_{{ cls }}"
+                  onclick="toggleClass(this, '{{ cls }}')">
+              <input type="checkbox" name="staff_classes" value="{{ cls }}"
+                     {% if cls in my_classes %}checked{% endif %}
+                     style="width:auto;accent-color:var(--accent);">
+              {{ cls }}
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size:11px;color:var(--blue);letter-spacing:1px;margin-bottom:6px;">2ND – 4TH YEAR</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;">
+            {% for cls in ['CS-A','CS-B','CE-A','MECH-A','AD-A','AD-B','ECE-A'] %}
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;text-transform:none;letter-spacing:0;font-size:13px;font-weight:600;
+                          background:{% if cls in my_classes %}rgba(233,69,96,0.15){% else %}var(--bg3){% endif %};
+                          border:1px solid {% if cls in my_classes %}var(--accent){% else %}var(--border){% endif %};
+                          border-radius:8px;padding:6px 12px;transition:all 0.15s;" id="lbl_{{ cls }}"
+                  onclick="toggleClass(this, '{{ cls }}')">
+              <input type="checkbox" name="staff_classes" value="{{ cls }}"
+                     {% if cls in my_classes %}checked{% endif %}
+                     style="width:auto;accent-color:var(--accent);">
+              {{ cls }}
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div id="classCount" style="font-size:11px;color:var(--text2);margin-top:10px;">
+          Selected: <span id="countNum" style="color:var(--accent);font-weight:700;">{{ my_classes|length }}</span> / 5
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <button type="submit" class="btn btn-primary" style="width:100%;">✓ Update Profile</button>
+  </form>
+
+  {% if user.role == 'student' %}
+  <a href="{{ url_for('generate_resume_page') }}" class="btn btn-gold" style="width:100%;text-align:center;justify-content:center;margin-top:12px;">
+    <i class="fas fa-file-pdf"></i> Generate Resume PDF
+  </a>
+  {% endif %}
+</div>
+
+<div class="card">
+  <div class="card-title"><i class="fas fa-history"></i> {% if user.role == 'admin' %}ACTIVITY LOG{% else %}STREAK HISTORY{% endif %}</div>
+  {% if streak_history %}
+  {% for log in streak_history %}
+  <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
+    <div style="font-size:18px;">{% if log.stars_earned > 0 %}⭐{% else %}⚠️{% endif %}</div>
+    <div style="flex:1;">
+      <div style="font-size:13px;">{{ log.reason }}</div>
+      <div style="font-size:11px;color:var(--text2);">{{ log.created_at.strftime('%d %b %Y %H:%M') if log.created_at else '' }}</div>
+    </div>
+    {% if user.role != 'admin' %}
+    <div style="font-family:'Share Tech Mono',monospace;font-size:13px;{% if log.stars_earned > 0 %}color:var(--green){% else %}color:var(--accent){% endif %}">
+      {% if log.stars_earned > 0 %}+{{ log.stars_earned }}{% else %}-{{ log.stars_deducted }}{% endif %}
+    </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+  {% else %}
+  <div style="text-align:center;padding:30px;color:var(--text2);">No activity yet.</div>
+  {% endif %}
+</div>
+</div>
+
+<script>
+let maxClasses = 5;
+function toggleClass(label, cls) {
+  const cb = label.querySelector('input[type=checkbox]');
+  const checked = document.querySelectorAll('input[name="staff_classes"]:checked').length;
+  if (!cb.checked && checked >= maxClasses) {
+    alert('Maximum 5 classes allowed!');
+    event.preventDefault();
+    return false;
+  }
+  setTimeout(() => {
+    const isChecked = cb.checked;
+    label.style.background = isChecked ? 'rgba(233,69,96,0.15)' : '';
+    label.style.borderColor = isChecked ? 'var(--accent)' : 'var(--border)';
+    document.getElementById('countNum').textContent =
+      document.querySelectorAll('input[name="staff_classes"]:checked').length;
+  }, 10);
+}
+</script>
+{% endblock %}

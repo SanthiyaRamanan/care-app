@@ -1,0 +1,270 @@
+{% set current_user = user %}
+{% extends "base.html" %}
+{% block head %}
+
+<style id="mobile-global-fix">
+/* ═══════════════════════════════════════
+   CARE — Global Mobile Fixes
+   Applied to all pages
+═══════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* ── Layout ── */
+  body { overflow-x: hidden !important; }
+
+  /* ── Cards ── */
+  .card { padding: 14px !important; }
+  .card-title { font-size: 11px !important; letter-spacing: 1px !important; }
+
+  /* ── Stats grid ── */
+  .stats-grid { grid-template-columns: repeat(2,1fr) !important; gap: 10px !important; }
+  .stat-card { padding: 12px !important; }
+  .stat-value { font-size: 20px !important; }
+  .stat-label { font-size: 10px !important; }
+
+  /* ── Grids ── */
+  .grid-2, .grid-3 { grid-template-columns: 1fr !important; gap: 12px !important; }
+
+  /* ── Tables ── */
+  .table-wrap { overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; border-radius: 8px !important; }
+  table { font-size: 12px !important; min-width: 420px; }
+  th, td { padding: 8px 10px !important; white-space: nowrap !important; }
+
+  /* ── Forms ── */
+  input, select, textarea { font-size: 16px !important; } /* prevent iOS zoom */
+
+  /* ── Buttons ── */
+  .btn { padding: 8px 13px !important; font-size: 13px !important; }
+  .btn-sm { padding: 5px 10px !important; font-size: 11px !important; }
+
+  /* ── Flex rows → stack ── */
+  .filter-bar,
+  .flex-row,
+  [style*="display:flex"][style*="gap"],
+  [style*="display: flex"][style*="gap"] { flex-wrap: wrap !important; }
+
+  /* ── Inline width overrides ── */
+  [style*="min-width:260px"],[style*="min-width: 260px"] { min-width:0 !important; width:100% !important; }
+  [style*="min-width:180px"],[style*="min-width: 180px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="min-width:160px"],[style*="min-width: 160px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="min-width:130px"],[style*="min-width: 130px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="width:900px"],[style*="width: 900px"] { width:100% !important; max-width:100% !important; }
+
+  /* ── Modal ── */
+  .modal { max-width: 95vw !important; padding: 16px !important; margin: 8px !important; }
+  .modal-title { font-size: 13px !important; }
+
+  /* ── XP Toast ── */
+  .xp-toast { bottom: calc(var(--nav-h) + 10px) !important; right: 8px !important; min-width: 180px !important; padding: 10px 14px !important; }
+
+  /* ── Class tab rows ── */
+  .class-tab-row { flex-wrap: wrap !important; gap: 6px !important; }
+  .class-tab-row .btn { min-width: 72px !important; font-size: 11px !important; padding: 7px 8px !important; }
+
+  /* ── Hero card ── */
+  .hero-card { padding: 16px !important; }
+  .hero-name { font-size: 16px !important; }
+  .stars-big { font-size: 26px !important; }
+
+  /* ── Section headers ── */
+  h2, .section-title { font-size: 14px !important; }
+
+  /* ── Podium on leaderboard ── */
+  .podium-wrap { gap: 8px !important; padding: 12px 0 !important; }
+  .podium-item { width: 80px !important; }
+  .podium-avatar { width: 44px !important; height: 44px !important; font-size: 16px !important; }
+  .podium-bar { margin-top: 6px !important; }
+
+  /* ── Staff dashboard student cards ── */
+  .student-mini-card { padding: 10px !important; }
+
+  /* ── Attendance step buttons ── */
+  .period-btn { min-width: 0 !important; flex: 1 1 45% !important; }
+
+  /* ── Quiz grade buttons ── */
+  .grade-btn-row { flex-wrap: wrap !important; gap: 6px !important; }
+}
+</style>
+
+<style>
+@media (max-width: 768px) {
+  body { overflow-x: hidden; }
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .table-wrap table { min-width: 420px; }
+  .sub-cards { grid-template-columns: 1fr !important; }
+}
+</style>
+{% endblock %}
+{% block title %}My Attendance{% endblock %}
+{% block page_title %}📋 MY ATTENDANCE{% endblock %}
+{% block content %}
+
+<!-- Summary Cards -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:20px;">
+  {% set total_present = records|selectattr('status','equalto','present')|list|length %}
+  {% set total_absent  = records|selectattr('status','equalto','absent')|list|length %}
+  {% set total_late    = records|selectattr('status','equalto','late')|list|length %}
+  {% set total_all     = records|length %}
+  {% set pct = ((total_present / total_all * 100)|round(1)) if total_all > 0 else 0 %}
+
+  <div class="card" style="text-align:center;padding:16px 10px;border-top:3px solid var(--blue);">
+    <div style="font-size:26px;font-weight:900;font-family:'Orbitron',monospace;color:var(--blue);">{{ total_all }}</div>
+    <div style="font-size:10px;color:var(--text2);margin-top:4px;letter-spacing:1px;">TOTAL PERIODS</div>
+  </div>
+  <div class="card" style="text-align:center;padding:16px 10px;border-top:3px solid #00ff88;">
+    <div style="font-size:26px;font-weight:900;font-family:'Orbitron',monospace;color:#00ff88;">{{ total_present }}</div>
+    <div style="font-size:10px;color:var(--text2);margin-top:4px;letter-spacing:1px;">PRESENT</div>
+  </div>
+  <div class="card" style="text-align:center;padding:16px 10px;border-top:3px solid #e94560;">
+    <div style="font-size:26px;font-weight:900;font-family:'Orbitron',monospace;color:#e94560;">{{ total_absent }}</div>
+    <div style="font-size:10px;color:var(--text2);margin-top:4px;letter-spacing:1px;">ABSENT</div>
+  </div>
+  <div class="card" style="text-align:center;padding:16px 10px;border-top:3px solid #ffd700;">
+    <div style="font-size:26px;font-weight:900;font-family:'Orbitron',monospace;color:#ffd700;">{{ total_late }}</div>
+    <div style="font-size:10px;color:var(--text2);margin-top:4px;letter-spacing:1px;">LATE</div>
+  </div>
+  <div class="card" style="text-align:center;padding:16px 10px;border-top:3px solid {% if pct >= 75 %}#00ff88{% elif pct >= 60 %}#ffd700{% else %}#e94560{% endif %};">
+    <div style="font-size:26px;font-weight:900;font-family:'Orbitron',monospace;color:{% if pct >= 75 %}#00ff88{% elif pct >= 60 %}#ffd700{% else %}#e94560{% endif %};">{{ pct }}%</div>
+    <div style="font-size:10px;color:var(--text2);margin-top:4px;letter-spacing:1px;">OVERALL %</div>
+  </div>
+</div>
+
+<!-- Subject-wise summary -->
+{% if subject_summary %}
+<div class="card" style="margin-bottom:20px;">
+  <div class="card-title"><i class="fas fa-book"></i> SUBJECT-WISE SUMMARY</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;">
+    {% for s in subject_summary %}
+    {% set spct = ((s.present / s.total * 100)|round(1)) if s.total > 0 else 0 %}
+    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px;cursor:pointer;"
+         onclick="filterBySubject('{{ s.subject }}')">
+      <div style="font-weight:700;font-size:13px;margin-bottom:8px;">{{ s.subject }}</div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-bottom:6px;">
+        <span>{{ s.present }}/{{ s.total }} periods</span>
+        <span style="font-weight:700;color:{% if spct >= 75 %}#00ff88{% elif spct >= 60 %}#ffd700{% else %}#e94560{% endif %};">{{ spct }}%</span>
+      </div>
+      <div style="height:5px;background:var(--border);border-radius:3px;overflow:hidden;">
+        <div style="height:100%;width:{{ spct }}%;background:{% if spct >= 75 %}#00ff88{% elif spct >= 60 %}#ffd700{% else %}#e94560{% endif %};border-radius:3px;"></div>
+      </div>
+      {% if spct < 75 %}
+      <div style="font-size:10px;color:#e94560;margin-top:5px;">⚠ Below 75% attendance</div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Filters -->
+<div class="card" style="margin-bottom:14px;padding:12px 18px;">
+  <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+    <div>
+      <label style="font-size:10px;color:var(--text2);letter-spacing:1px;display:block;margin-bottom:4px;">SUBJECT</label>
+      <select id="filterSubject" onchange="applyFilters()" style="padding:7px 12px;border-radius:8px;background:var(--bg3);border:1px solid var(--border);color:var(--text);font-size:13px;min-width:180px;">
+        <option value="">All Subjects</option>
+        {% for s in subject_summary %}<option value="{{ s.subject }}">{{ s.subject }}</option>{% endfor %}
+      </select>
+    </div>
+    <div>
+      <label style="font-size:10px;color:var(--text2);letter-spacing:1px;display:block;margin-bottom:4px;">STATUS</label>
+      <select id="filterStatus" onchange="applyFilters()" style="padding:7px 12px;border-radius:8px;background:var(--bg3);border:1px solid var(--border);color:var(--text);font-size:13px;">
+        <option value="">All</option>
+        <option value="present">✓ Present</option>
+        <option value="absent">✗ Absent</option>
+        <option value="late">⏰ Late</option>
+      </select>
+    </div>
+    <button onclick="clearFilters()" class="btn btn-outline btn-sm" style="margin-top:18px;">✕ Clear</button>
+    <div style="margin-left:auto;font-size:12px;color:var(--text2);margin-top:18px;" id="recordCount"></div>
+  </div>
+</div>
+
+<!-- Date-wise Period Records -->
+<div class="card">
+  <div class="card-title"><i class="fas fa-calendar-alt"></i> DATE-WISE PERIOD ATTENDANCE</div>
+  {% if records %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="min-width:110px;">DATE</th>
+          <th style="width:50px;text-align:center;">PERIOD</th>
+          <th>SUBJECT</th>
+          <th style="min-width:130px;">MARKED BY</th>
+          <th style="width:80px;text-align:center;">TIME</th>
+          <th style="width:100px;text-align:center;">STATUS</th>
+        </tr>
+      </thead>
+      <tbody id="attBody">
+      {% for r in records %}
+      <tr class="att-row"
+          data-subject="{{ r.subject }}"
+          data-status="{{ r.status }}"
+          style="background:{% if r.status=='present' %}rgba(0,255,136,0.03){% elif r.status=='absent' %}rgba(233,69,96,0.04){% else %}rgba(255,215,0,0.03){% endif %};">
+        <td style="font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--blue);white-space:nowrap;">
+          {{ r.date.strftime('%d %b %Y') if r.date else '—' }}
+          <div style="font-size:10px;color:var(--text2);">{{ r.date.strftime('%A') if r.date else '' }}</div>
+        </td>
+        <td style="text-align:center;">
+          <span style="font-family:'Orbitron',monospace;font-size:12px;color:var(--text2);background:var(--bg3);padding:3px 8px;border-radius:6px;">P{{ r.period }}</span>
+        </td>
+        <td style="font-weight:600;font-size:13px;">{{ r.subject or '—' }}</td>
+        <td style="font-size:12px;color:var(--text2);">
+          {% if r.staff_name %}<i class="fas fa-chalkboard-teacher" style="color:var(--blue);margin-right:5px;font-size:10px;"></i>{{ r.staff_name }}{% else %}—{% endif %}
+        </td>
+        <td style="text-align:center;font-size:11px;color:var(--text2);font-family:'Share Tech Mono',monospace;">
+          {{ r.start_time if r.start_time else '—' }}
+        </td>
+        <td style="text-align:center;">
+          {% if r.status == 'present' %}
+            <span style="background:rgba(0,255,136,0.15);color:#00ff88;border:1px solid rgba(0,255,136,0.4);padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;">✓ Present</span>
+          {% elif r.status == 'absent' %}
+            <span style="background:rgba(233,69,96,0.15);color:#e94560;border:1px solid rgba(233,69,96,0.4);padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;">✗ Absent</span>
+          {% else %}
+            <span style="background:rgba(255,215,0,0.15);color:#ffd700;border:1px solid rgba(255,215,0,0.4);padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;">⏰ Late</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div id="noResults" style="display:none;text-align:center;padding:40px;color:var(--text2);">No records match the filter.</div>
+  {% else %}
+  <div style="text-align:center;padding:60px;color:var(--text2);">
+    <div style="font-size:48px;margin-bottom:12px;">📭</div>
+    <div style="font-family:'Orbitron',monospace;font-size:14px;">NO ATTENDANCE RECORDS YET</div>
+    <div style="font-size:13px;margin-top:8px;">Your attendance will appear here once staff mark it.</div>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+function applyFilters() {
+  const subj   = document.getElementById('filterSubject').value;
+  const status = document.getElementById('filterStatus').value;
+  const rows   = document.querySelectorAll('.att-row');
+  let visible  = 0;
+  rows.forEach(row => {
+    const show = (!subj || row.dataset.subject === subj) && (!status || row.dataset.status === status);
+    row.style.display = show ? '' : 'none';
+    if (show) visible++;
+  });
+  document.getElementById('recordCount').textContent = `Showing ${visible} of ${rows.length} records`;
+  document.getElementById('noResults').style.display = visible === 0 && rows.length > 0 ? 'block' : 'none';
+}
+
+function filterBySubject(subj) {
+  document.getElementById('filterSubject').value = subj;
+  applyFilters();
+  document.getElementById('attBody').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function clearFilters() {
+  document.getElementById('filterSubject').value = '';
+  document.getElementById('filterStatus').value  = '';
+  applyFilters();
+}
+
+applyFilters();
+</script>
+{% endblock %}

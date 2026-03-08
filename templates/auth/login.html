@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>CARE — Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        :root{--bg:#0a0a14;--card:#1a1a2e;--border:#2a2a4a;--accent:#e94560;--gold:#ffd700;--text:#e8e8f0;--text2:#9090b0;--glow:0 0 30px rgba(233,69,96,0.5);}
+        *{margin:0;padding:0;box-sizing:border-box;}
+        html{height:100%;}
+        body{background:var(--bg);font-family:'Rajdhani',sans-serif;min-height:100vh;overflow-x:hidden;background-image:radial-gradient(ellipse at 10% 90%,rgba(233,69,96,0.08) 0%,transparent 50%),radial-gradient(ellipse at 90% 10%,rgba(124,58,237,0.08) 0%,transparent 50%);}
+        .bg-grid{position:fixed;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(42,42,74,0.3) 1px,transparent 1px),linear-gradient(90deg,rgba(42,42,74,0.3) 1px,transparent 1px);background-size:40px 40px;animation:gridMove 20s linear infinite;}
+        @keyframes gridMove{from{transform:translateY(0);}to{transform:translateY(40px);}}
+        .floating-star{position:fixed;font-size:20px;animation:floatUp 6s linear infinite;opacity:0;pointer-events:none;z-index:0;}
+        @keyframes floatUp{0%{transform:translateY(100vh) rotate(0deg);opacity:0;}10%{opacity:0.6;}90%{opacity:0.3;}100%{transform:translateY(-100px) rotate(360deg);opacity:0;}}
+        .page-wrap{position:relative;z-index:1;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+        .container{display:flex;width:900px;max-width:100%;min-height:550px;border-radius:16px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,0.5);}
+        .left-panel{flex:1;background:linear-gradient(135deg,#1a1a2e,#0f0f1e);border:1px solid var(--border);border-right:none;border-radius:16px 0 0 16px;padding:48px 40px;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden;}
+        .left-panel::before{content:'';position:absolute;bottom:-80px;left:-80px;width:300px;height:300px;background:radial-gradient(circle,rgba(233,69,96,0.15),transparent 70%);border-radius:50%;pointer-events:none;}
+        .game-logo{font-family:'Orbitron',monospace;font-size:52px;font-weight:900;color:var(--accent);text-shadow:var(--glow);letter-spacing:8px;margin-bottom:8px;}
+        .game-tagline{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text2);letter-spacing:2px;margin-bottom:36px;line-height:1.7;}
+        .feature-list{list-style:none;}
+        .feature-list li{display:flex;align-items:center;gap:10px;color:var(--text2);font-size:14px;padding:8px 0;border-bottom:1px solid rgba(42,42,74,0.5);}
+        .feature-list li i{color:var(--accent);width:18px;}
+        .stat-pills{display:flex;gap:12px;margin-top:32px;flex-wrap:wrap;}
+        .stat-pill{background:rgba(233,69,96,0.1);border:1px solid rgba(233,69,96,0.2);border-radius:20px;padding:6px 14px;font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--accent);}
+        .right-panel{width:380px;background:var(--card);border:1px solid var(--border);border-radius:0 16px 16px 0;padding:48px 36px;display:flex;flex-direction:column;justify-content:center;}
+        .form-title{font-family:'Orbitron',monospace;font-size:18px;color:var(--text);margin-bottom:6px;letter-spacing:2px;}
+        .form-sub{color:var(--text2);font-size:13px;margin-bottom:32px;}
+        .form-group{margin-bottom:18px;}
+        label{display:block;font-size:11px;color:var(--text2);letter-spacing:1.5px;margin-bottom:6px;text-transform:uppercase;}
+        .input-wrap{position:relative;}
+        .input-wrap i{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text2);font-size:14px;pointer-events:none;}
+        input{width:100%;background:#0f0f1e;border:1px solid var(--border);color:var(--text);padding:12px 14px 12px 38px;border-radius:8px;font-family:'Rajdhani',sans-serif;font-size:16px;transition:all 0.2s;}
+        input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(233,69,96,0.1);}
+        .btn-login{width:100%;padding:13px;background:var(--accent);color:white;border:none;border-radius:8px;font-family:'Orbitron',monospace;font-size:13px;letter-spacing:2px;cursor:pointer;margin-top:8px;transition:all 0.2s;}
+        .btn-login:hover{background:#c73252;box-shadow:var(--glow);transform:translateY(-1px);}
+        .divider{text-align:center;color:var(--text2);font-size:12px;margin:20px 0;position:relative;}
+        .divider::before,.divider::after{content:'';position:absolute;top:50%;width:35%;height:1px;background:var(--border);}
+        .divider::before{left:0;}.divider::after{right:0;}
+        .btn-register{width:100%;padding:12px;background:transparent;color:var(--text2);border:1px solid var(--border);border-radius:8px;font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:600;cursor:pointer;text-align:center;text-decoration:none;display:block;transition:all 0.2s;}
+        .btn-register:hover{border-color:var(--accent);color:var(--accent);}
+        .alert{padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px;background:rgba(233,69,96,0.1);border:1px solid rgba(233,69,96,0.3);color:var(--accent);}
+
+        /* ══ MOBILE ══ */
+        @media(max-width:700px){
+            .bg-grid,.floating-star{display:none;}
+            .page-wrap{padding:0;align-items:stretch;min-height:100vh;}
+            .container{flex-direction:column;width:100%;max-width:100%;min-height:100vh;border-radius:0;box-shadow:none;}
+            .left-panel{flex:none;border-radius:0;border-right:1px solid var(--border);border-bottom:none;padding:18px 20px;flex-direction:row;align-items:center;gap:14px;}
+            .left-panel::before{display:none;}
+            .game-logo{font-size:26px;letter-spacing:4px;margin-bottom:0;}
+            .game-tagline{font-size:9px;margin-bottom:0;letter-spacing:1px;}
+            .left-logo-wrap{flex:1;}
+            .feature-list,.stat-pills{display:none;}
+            .right-panel{flex:1;width:100%;border-radius:0;border-left:none;border-top:1px solid var(--border);padding:28px 20px 48px;justify-content:flex-start;}
+            .form-title{font-size:16px;}
+            .form-sub{margin-bottom:20px;}
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-grid"></div>
+    <div class="floating-star" style="left:10%;animation-delay:0s;animation-duration:8s">⭐</div>
+    <div class="floating-star" style="left:25%;animation-delay:2s;animation-duration:6s">🌟</div>
+    <div class="floating-star" style="left:70%;animation-delay:1s;animation-duration:9s">⭐</div>
+    <div class="floating-star" style="left:85%;animation-delay:3s;animation-duration:7s">✨</div>
+
+    <div class="page-wrap">
+        <div class="container">
+            <div class="left-panel">
+                <div class="left-logo-wrap">
+                    <div class="game-logo">CARE</div>
+                    <div class="game-tagline">CAMPUS ACHIEVEMENT<br>&amp; RECOGNITION ENGINE</div>
+                </div>
+                <ul class="feature-list">
+                    <li><i class="fas fa-star"></i> Earn streak stars for every activity</li>
+                    <li><i class="fas fa-trophy"></i> Level up every 1000 stars</li>
+                    <li><i class="fas fa-shield-alt"></i> AI-verified certificates</li>
+                    <li><i class="fas fa-chart-line"></i> Track your growth visually</li>
+                    <li><i class="fas fa-medal"></i> Compete for Gold, Silver &amp; Bronze</li>
+                    <li><i class="fas fa-file-pdf"></i> Auto-generate your resume</li>
+                </ul>
+                <div class="stat-pills">
+                    <div class="stat-pill">⭐ 1000 = LEVEL UP</div>
+                    <div class="stat-pill">🥇 TOP 5 ONLY</div>
+                </div>
+            </div>
+            <div class="right-panel">
+                <div class="form-title">ENTER THE ARENA</div>
+                <div class="form-sub">Sign in to continue your journey</div>
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% for category, message in messages %}
+                    <div class="alert">{{ message }}</div>
+                    {% endfor %}
+                {% endwith %}
+                <form method="POST">
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <div class="input-wrap">
+                            <i class="fas fa-envelope"></i>
+                            <input type="email" name="email" required placeholder="you@college.edu" autocomplete="email">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <div class="input-wrap">
+                            <i class="fas fa-lock"></i>
+                            <input type="password" name="password" required placeholder="••••••••" autocomplete="current-password">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-login">⚡ LAUNCH</button>
+                </form>
+                <div class="divider">New to CARE?</div>
+                <a href="{{ url_for('register') }}" class="btn-register">Create Account</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

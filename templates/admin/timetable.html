@@ -1,0 +1,388 @@
+
+<style id="mobile-global-fix">
+/* ═══════════════════════════════════════
+   CARE — Global Mobile Fixes
+   Applied to all pages
+═══════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* ── Layout ── */
+  body { overflow-x: hidden !important; }
+
+  /* ── Cards ── */
+  .card { padding: 14px !important; }
+  .card-title { font-size: 11px !important; letter-spacing: 1px !important; }
+
+  /* ── Stats grid ── */
+  .stats-grid { grid-template-columns: repeat(2,1fr) !important; gap: 10px !important; }
+  .stat-card { padding: 12px !important; }
+  .stat-value { font-size: 20px !important; }
+  .stat-label { font-size: 10px !important; }
+
+  /* ── Grids ── */
+  .grid-2, .grid-3 { grid-template-columns: 1fr !important; gap: 12px !important; }
+
+  /* ── Tables ── */
+  .table-wrap { overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; border-radius: 8px !important; }
+  table { font-size: 12px !important; min-width: 420px; }
+  th, td { padding: 8px 10px !important; white-space: nowrap !important; }
+
+  /* ── Forms ── */
+  input, select, textarea { font-size: 16px !important; } /* prevent iOS zoom */
+
+  /* ── Buttons ── */
+  .btn { padding: 8px 13px !important; font-size: 13px !important; }
+  .btn-sm { padding: 5px 10px !important; font-size: 11px !important; }
+
+  /* ── Flex rows → stack ── */
+  .filter-bar,
+  .flex-row,
+  [style*="display:flex"][style*="gap"],
+  [style*="display: flex"][style*="gap"] { flex-wrap: wrap !important; }
+
+  /* ── Inline width overrides ── */
+  [style*="min-width:260px"],[style*="min-width: 260px"] { min-width:0 !important; width:100% !important; }
+  [style*="min-width:180px"],[style*="min-width: 180px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="min-width:160px"],[style*="min-width: 160px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="min-width:130px"],[style*="min-width: 130px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="width:900px"],[style*="width: 900px"] { width:100% !important; max-width:100% !important; }
+
+  /* ── Modal ── */
+  .modal { max-width: 95vw !important; padding: 16px !important; margin: 8px !important; }
+  .modal-title { font-size: 13px !important; }
+
+  /* ── XP Toast ── */
+  .xp-toast { bottom: calc(var(--nav-h) + 10px) !important; right: 8px !important; min-width: 180px !important; padding: 10px 14px !important; }
+
+  /* ── Class tab rows ── */
+  .class-tab-row { flex-wrap: wrap !important; gap: 6px !important; }
+  .class-tab-row .btn { min-width: 72px !important; font-size: 11px !important; padding: 7px 8px !important; }
+
+  /* ── Hero card ── */
+  .hero-card { padding: 16px !important; }
+  .hero-name { font-size: 16px !important; }
+  .stars-big { font-size: 26px !important; }
+
+  /* ── Section headers ── */
+  h2, .section-title { font-size: 14px !important; }
+
+  /* ── Podium on leaderboard ── */
+  .podium-wrap { gap: 8px !important; padding: 12px 0 !important; }
+  .podium-item { width: 80px !important; }
+  .podium-avatar { width: 44px !important; height: 44px !important; font-size: 16px !important; }
+  .podium-bar { margin-top: 6px !important; }
+
+  /* ── Staff dashboard student cards ── */
+  .student-mini-card { padding: 10px !important; }
+
+  /* ── Attendance step buttons ── */
+  .period-btn { min-width: 0 !important; flex: 1 1 45% !important; }
+
+  /* ── Quiz grade buttons ── */
+  .grade-btn-row { flex-wrap: wrap !important; gap: 6px !important; }
+}
+</style>
+{% extends "base.html" %}
+{% block title %}Timetable Management{% endblock %}
+{% block page_title %}⏰ TIMETABLE MANAGEMENT{% endblock %}
+{% block content %}
+
+<!-- Filter bar -->
+<div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;align-items:flex-end;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 20px;">
+  <div class="form-group" style="margin-bottom:0;min-width:130px;">
+    <label>Year</label>
+    <select id="filterYear" onchange="updateClassDropdown()" style="padding:8px 12px;border-radius:8px;font-size:13px;background:var(--bg3);border:1px solid var(--border);color:var(--text);width:100%;">
+      <option value="">— Year —</option>
+      <option value="1" {% if selected_year==1 %}selected{% endif %}>1st Year (Sem 1–2)</option>
+      <option value="2" {% if selected_year==2 %}selected{% endif %}>2nd Year (Sem 3–4)</option>
+      <option value="3" {% if selected_year==3 %}selected{% endif %}>3rd Year (Sem 5–6)</option>
+      <option value="4" {% if selected_year==4 %}selected{% endif %}>4th Year (Sem 7–8)</option>
+    </select>
+  </div>
+  <div class="form-group" style="margin-bottom:0;min-width:160px;">
+    <label>Class</label>
+    <select id="filterClass" onchange="applyFilter()" style="padding:8px 12px;border-radius:8px;font-size:13px;background:var(--bg3);border:1px solid var(--border);color:var(--text);width:100%;">
+      <option value="">— Select Class —</option>
+    </select>
+  </div>
+  <div class="form-group" style="margin-bottom:0;min-width:160px;">
+    <label>Staff Filter</label>
+    <select id="filterStaff" onchange="applyFilter()" style="padding:8px 12px;border-radius:8px;font-size:13px;background:var(--bg3);border:1px solid var(--border);color:var(--text);width:100%;">
+      <option value="">All Staff</option>
+      {% for s in staff_list %}<option value="{{ s.id }}" {% if selected_staff==s.id %}selected{% endif %}>{{ s.name }}</option>{% endfor %}
+    </select>
+  </div>
+  {% if selected_class and selected_year and timetable %}
+  <button class="btn btn-outline" id="editBtn" onclick="enableEdit()" style="margin-left:auto;">✏️ Edit Timetable</button>
+  {% endif %}
+</div>
+
+<script>
+const CLASSES_BY_YEAR = {
+  1: {{ classes_by_year[1] | tojson }},
+  2: {{ classes_by_year[2] | tojson }},
+  3: {{ classes_by_year[3] | tojson }},
+  4: {{ classes_by_year[4] | tojson }}
+};
+const YEAR_PREFIX = {1:'', 2:'Y2 — ', 3:'Y3 — ', 4:'Y4 — '};
+
+function updateClassDropdown() {
+  const yr  = parseInt(document.getElementById('filterYear').value) || null;
+  const sel = document.getElementById('filterClass');
+  sel.innerHTML = '<option value="">— Select Class —</option>';
+  if (!yr) return;
+  (CLASSES_BY_YEAR[yr] || []).forEach(cls => {
+    const opt = document.createElement('option');
+    opt.value = cls;
+    opt.textContent = (YEAR_PREFIX[yr] || '') + cls;
+    if (cls === '{{ selected_class }}') opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+
+function applyFilter() {
+  const yr  = document.getElementById('filterYear').value;
+  const cls = document.getElementById('filterClass').value;
+  const stf = document.getElementById('filterStaff').value;
+  let url = '{{ url_for("admin_timetable") }}?';
+  if (yr)  url += 'year=' + yr + '&';
+  if (cls) url += 'class=' + cls + '&';
+  if (stf) url += 'staff_id=' + stf + '&';
+  window.location.href = url;
+}
+
+// Init on load
+updateClassDropdown();
+</script>
+
+{% if selected_class %}
+
+{% set days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'] %}
+{% set periods = [
+  {'num':1,'time':'09:00–09:45'},
+  {'num':2,'time':'09:45–10:40'},
+  {'num':'B','time':'10:40–10:55','break':true},
+  {'num':3,'time':'10:55–11:45'},
+  {'num':4,'time':'11:45–12:35'},
+  {'num':'L','time':'12:35–01:30','break':true},
+  {'num':5,'time':'01:30–02:20'},
+  {'num':6,'time':'02:20–03:10'},
+  {'num':'B2','time':'03:10–03:20','break':true},
+  {'num':7,'time':'03:20–04:10'},
+  {'num':8,'time':'04:10–05:00'}
+] %}
+
+{% set period_times = {
+  1: ('09:00','09:45'),
+  2: ('09:45','10:40'),
+  3: ('10:55','11:45'),
+  4: ('11:45','12:35'),
+  5: ('13:30','14:20'),
+  6: ('14:20','15:10'),
+  7: ('15:20','16:10'),
+  8: ('16:10','17:00')
+} %}
+
+{% set has_data = timetable|length > 0 %}
+
+<!-- ═══ VIEW MODE ═══ -->
+<div id="viewSection" style="display:{% if has_data %}block{% else %}none{% endif %};">
+<div style="overflow-x:auto;">
+<table style="width:100%;border-collapse:collapse;font-size:12px;min-width:900px;">
+  <thead>
+    <tr>
+      <th style="background:var(--card);border:1px solid var(--border);padding:10px 14px;font-family:'Orbitron',monospace;font-size:10px;color:var(--accent);letter-spacing:1px;min-width:90px;position:sticky;left:0;z-index:2;">DAY</th>
+      {% for p in periods %}
+      {% if p.get('break') %}
+      <th style="background:rgba(255,215,0,0.06);border:1px solid var(--border);padding:8px 4px;text-align:center;min-width:60px;">
+        <div style="font-size:9px;color:var(--gold);font-weight:700;letter-spacing:1px;">{% if p.num=='L' %}LUNCH{% else %}BREAK{% endif %}</div>
+        <div style="font-size:9px;color:var(--text2);margin-top:2px;">{{ p.time }}</div>
+      </th>
+      {% else %}
+      <th style="background:var(--card2);border:1px solid var(--border);padding:8px 6px;text-align:center;min-width:120px;">
+        <div style="font-family:'Orbitron',monospace;font-size:10px;color:var(--blue);font-weight:700;">P{{ p.num }}</div>
+        <div style="font-size:9px;color:var(--text2);margin-top:2px;">{{ p.time }}</div>
+      </th>
+      {% endif %}
+      {% endfor %}
+    </tr>
+  </thead>
+  <tbody>
+  {% for day in days %}
+  <tr>
+    <td style="background:var(--card);border:1px solid var(--border);padding:10px 14px;font-family:'Orbitron',monospace;font-size:10px;color:var(--text);letter-spacing:1px;position:sticky;left:0;z-index:1;font-weight:700;">{{ day[:3].upper() }}</td>
+    {% for p in periods %}
+    {% if p.get('break') %}
+    <td style="background:rgba(255,215,0,0.04);border:1px solid var(--border);text-align:center;vertical-align:middle;">
+      <div style="color:var(--gold);font-size:10px;font-weight:700;">{% if p.num=='L' %}🍱{% else %}☕{% endif %}</div>
+    </td>
+    {% else %}
+    {% set ns = namespace(slot=None) %}
+    {% for t in timetable %}{% if t.day==day and t.period|int==p.num|int %}{% set ns.slot = t %}{% endif %}{% endfor %}
+    <td style="border:1px solid var(--border);padding:6px;vertical-align:top;background:{% if ns.slot %}rgba(0,180,216,0.06){% else %}var(--bg){% endif %};">
+      {% if ns.slot %}
+      <div style="background:var(--card2);border:1px solid rgba(0,180,216,0.3);border-radius:8px;padding:8px 10px;">
+        <div style="font-weight:700;font-size:12px;color:var(--text);line-height:1.3;">{{ ns.slot.subject }}</div>
+        <div style="font-size:10px;color:var(--green);margin-top:3px;">👤 {{ ns.slot.staff_name }}</div>
+        <div style="font-size:9px;color:var(--text2);margin-top:2px;">{{ ns.slot.start_time }} – {{ ns.slot.end_time }}</div>
+      </div>
+      {% else %}
+      <div style="min-height:60px;display:flex;align-items:center;justify-content:center;opacity:0.2;">
+        <span style="font-size:14px;color:var(--text2);">—</span>
+      </div>
+      {% endif %}
+    </td>
+    {% endif %}
+    {% endfor %}
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+</div>
+
+<!-- ═══ EDIT MODE GRID ═══ -->
+<div id="editSection" style="display:{% if not has_data %}block{% else %}none{% endif %};">
+<div style="background:rgba(233,69,96,0.06);border:1px solid rgba(233,69,96,0.25);border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:var(--accent);">
+  ✏️ Fill in subjects and assign staff for each period slot. Click <strong>💾 Save Timetable</strong> when done — the grid will lock after saving.
+</div>
+
+<form method="POST" id="bulkForm">
+  <input type="hidden" name="action" value="bulk_save">
+  <input type="hidden" name="class_name" value="{{ selected_class }}">
+  <input type="hidden" name="year" value="{{ selected_year or 1 }}">
+
+  <div style="overflow-x:auto;">
+  <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:900px;">
+    <thead>
+      <tr>
+        <th style="background:var(--card);border:1px solid var(--border);padding:10px 14px;font-family:'Orbitron',monospace;font-size:10px;color:var(--accent);min-width:90px;position:sticky;left:0;z-index:2;">DAY</th>
+        {% for p in periods %}
+        {% if p.get('break') %}
+        <th style="background:rgba(255,215,0,0.06);border:1px solid var(--border);padding:8px 4px;text-align:center;min-width:60px;">
+          <div style="font-size:9px;color:var(--gold);font-weight:700;">{% if p.num=='L' %}🍱 LUNCH{% else %}☕ BREAK{% endif %}</div>
+          <div style="font-size:9px;color:var(--text2);margin-top:2px;">{{ p.time }}</div>
+        </th>
+        {% else %}
+        <th style="background:var(--card2);border:1px solid var(--border);padding:8px 6px;text-align:center;min-width:170px;">
+          <div style="font-family:'Orbitron',monospace;font-size:10px;color:var(--blue);font-weight:700;">P{{ p.num }}</div>
+          <div style="font-size:9px;color:var(--text2);margin-top:2px;">{{ p.time }}</div>
+        </th>
+        {% endif %}
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+    {% for day in days %}
+    <tr>
+      <td style="background:var(--card);border:1px solid var(--border);padding:10px 14px;font-family:'Orbitron',monospace;font-size:10px;color:var(--text);position:sticky;left:0;z-index:1;font-weight:700;">{{ day[:3].upper() }}</td>
+      {% for p in periods %}
+      {% if p.get('break') %}
+      <td style="background:rgba(255,215,0,0.04);border:1px solid var(--border);text-align:center;">
+        <div style="color:var(--gold);font-size:10px;">{% if p.num=='L' %}🍱{% else %}☕{% endif %}</div>
+      </td>
+      {% else %}
+      {% set ns2 = namespace(slot=None) %}
+      {% for t in timetable %}{% if t.day==day and t.period|int==p.num|int %}{% set ns2.slot = t %}{% endif %}{% endfor %}
+      {% set pt = period_times.get(p.num, ('','')) %}
+      <td style="border:1px solid var(--border);padding:5px;vertical-align:top;background:var(--bg);">
+        <div style="display:flex;flex-direction:column;gap:3px;">
+          <input type="text"
+            name="slot_{{ day }}_{{ p.num }}_subject"
+            placeholder="Subject"
+            value="{{ ns2.slot.subject if ns2.slot else '' }}"
+            style="width:100%;background:#0f0f1e;border:1px solid var(--border);color:var(--text);padding:5px 7px;border-radius:6px;font-size:11px;font-family:'Rajdhani',sans-serif;"
+            oninput="checkFill()">
+          <select name="slot_{{ day }}_{{ p.num }}_staff"
+            style="width:100%;background:#0f0f1e;border:1px solid var(--border);color:var(--text);padding:4px 6px;border-radius:6px;font-size:10px;"
+            onchange="checkFill()">
+            <option value="">— Staff —</option>
+            {% for s in staff_list %}<option value="{{ s.id }}" {% if ns2.slot and ns2.slot.staff_id==s.id %}selected{% endif %}>{{ s.name }}</option>{% endfor %}
+          </select>
+          <input type="hidden" name="slot_{{ day }}_{{ p.num }}_start" value="{{ ns2.slot.start_time if ns2.slot else pt[0] }}">
+          <input type="hidden" name="slot_{{ day }}_{{ p.num }}_end" value="{{ ns2.slot.end_time if ns2.slot else pt[1] }}">
+        </div>
+      </td>
+      {% endif %}
+      {% endfor %}
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+
+  <div style="display:flex;gap:12px;margin-top:16px;align-items:center;flex-wrap:wrap;">
+    <button type="submit" id="saveBtn" class="btn btn-primary" style="min-width:180px;">
+      💾 Save Timetable
+    </button>
+    {% if has_data %}
+    <button type="button" class="btn btn-outline" onclick="cancelEdit()">✕ Cancel</button>
+    {% endif %}
+    <span id="fillNote" style="font-size:12px;color:var(--text2);"></span>
+  </div>
+</form>
+</div>
+
+{% else %}
+<!-- No class selected -->
+<div class="card" style="text-align:center;padding:60px;color:var(--text2);">
+  <div style="font-size:48px;margin-bottom:12px;">📅</div>
+  <div style="font-family:'Orbitron',monospace;font-size:14px;margin-bottom:8px;">SELECT A CLASS ABOVE</div>
+  <div style="font-size:13px;">Choose a class to view or edit its timetable grid.</div>
+</div>
+{% endif %}
+
+<script>
+function enableEdit() {
+  document.getElementById('viewSection').style.display = 'none';
+  document.getElementById('editSection').style.display = 'block';
+  const btn = document.getElementById('editBtn');
+  if (btn) btn.style.display = 'none';
+}
+
+function cancelEdit() {
+  document.getElementById('editSection').style.display = 'none';
+  document.getElementById('viewSection').style.display = 'block';
+  const btn = document.getElementById('editBtn');
+  if (btn) btn.style.display = '';
+}
+
+function checkFill() {
+  const subjects  = document.querySelectorAll('#editSection input[type=text][placeholder="Subject"]');
+  const staffSels = document.querySelectorAll('#editSection select[name*="_staff"]');
+  let filled = 0, mismatched = 0;
+  subjects.forEach((inp, i) => {
+    const subj  = inp.value.trim();
+    const staff = staffSels[i] ? staffSels[i].value : '';
+    if (subj && staff) filled++;
+    else if (subj || staff) mismatched++;
+  });
+  const note = document.getElementById('fillNote');
+  if (!note) return;
+  if (mismatched > 0) {
+    note.textContent = `⚠ ${mismatched} slot(s) need both subject AND staff.`;
+    note.style.color = 'var(--gold)';
+  } else if (filled > 0) {
+    note.textContent = `✓ ${filled} slot(s) ready to save.`;
+    note.style.color = 'var(--green)';
+  } else {
+    note.textContent = '';
+  }
+}
+
+// Fill hidden time inputs from period defaults before submit
+const bulkForm = document.getElementById('bulkForm');
+if (bulkForm) {
+  bulkForm.addEventListener('submit', function() {
+    const pTimes = {1:['09:00','09:45'],2:['09:45','10:40'],3:['10:55','11:45'],4:['11:45','12:35'],5:['13:30','14:20'],6:['14:20','15:10'],7:['15:20','16:10'],8:['16:10','17:00']};
+    ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'].forEach(day => {
+      [1,2,3,4,5,6,7,8].forEach(p => {
+        const s = document.querySelector(`input[name="slot_${day}_${p}_start"]`);
+        const e = document.querySelector(`input[name="slot_${day}_${p}_end"]`);
+        if (s && !s.value && pTimes[p]) s.value = pTimes[p][0];
+        if (e && !e.value && pTimes[p]) e.value = pTimes[p][1];
+      });
+    });
+  });
+}
+</script>
+{% endblock %}

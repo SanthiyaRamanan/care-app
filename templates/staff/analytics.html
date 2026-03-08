@@ -1,0 +1,290 @@
+{% set current_user = user %}
+{% extends "base.html" %}
+{% block head %}
+
+<style id="mobile-global-fix">
+/* ═══════════════════════════════════════
+   CARE — Global Mobile Fixes
+   Applied to all pages
+═══════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* ── Layout ── */
+  body { overflow-x: hidden !important; }
+
+  /* ── Cards ── */
+  .card { padding: 14px !important; }
+  .card-title { font-size: 11px !important; letter-spacing: 1px !important; }
+
+  /* ── Stats grid ── */
+  .stats-grid { grid-template-columns: repeat(2,1fr) !important; gap: 10px !important; }
+  .stat-card { padding: 12px !important; }
+  .stat-value { font-size: 20px !important; }
+  .stat-label { font-size: 10px !important; }
+
+  /* ── Grids ── */
+  .grid-2, .grid-3 { grid-template-columns: 1fr !important; gap: 12px !important; }
+
+  /* ── Tables ── */
+  .table-wrap { overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; border-radius: 8px !important; }
+  table { font-size: 12px !important; min-width: 420px; }
+  th, td { padding: 8px 10px !important; white-space: nowrap !important; }
+
+  /* ── Forms ── */
+  input, select, textarea { font-size: 16px !important; } /* prevent iOS zoom */
+
+  /* ── Buttons ── */
+  .btn { padding: 8px 13px !important; font-size: 13px !important; }
+  .btn-sm { padding: 5px 10px !important; font-size: 11px !important; }
+
+  /* ── Flex rows → stack ── */
+  .filter-bar,
+  .flex-row,
+  [style*="display:flex"][style*="gap"],
+  [style*="display: flex"][style*="gap"] { flex-wrap: wrap !important; }
+
+  /* ── Inline width overrides ── */
+  [style*="min-width:260px"],[style*="min-width: 260px"] { min-width:0 !important; width:100% !important; }
+  [style*="min-width:180px"],[style*="min-width: 180px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="min-width:160px"],[style*="min-width: 160px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="min-width:130px"],[style*="min-width: 130px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="width:900px"],[style*="width: 900px"] { width:100% !important; max-width:100% !important; }
+
+  /* ── Modal ── */
+  .modal { max-width: 95vw !important; padding: 16px !important; margin: 8px !important; }
+  .modal-title { font-size: 13px !important; }
+
+  /* ── XP Toast ── */
+  .xp-toast { bottom: calc(var(--nav-h) + 10px) !important; right: 8px !important; min-width: 180px !important; padding: 10px 14px !important; }
+
+  /* ── Class tab rows ── */
+  .class-tab-row { flex-wrap: wrap !important; gap: 6px !important; }
+  .class-tab-row .btn { min-width: 72px !important; font-size: 11px !important; padding: 7px 8px !important; }
+
+  /* ── Hero card ── */
+  .hero-card { padding: 16px !important; }
+  .hero-name { font-size: 16px !important; }
+  .stars-big { font-size: 26px !important; }
+
+  /* ── Section headers ── */
+  h2, .section-title { font-size: 14px !important; }
+
+  /* ── Podium on leaderboard ── */
+  .podium-wrap { gap: 8px !important; padding: 12px 0 !important; }
+  .podium-item { width: 80px !important; }
+  .podium-avatar { width: 44px !important; height: 44px !important; font-size: 16px !important; }
+  .podium-bar { margin-top: 6px !important; }
+
+  /* ── Staff dashboard student cards ── */
+  .student-mini-card { padding: 10px !important; }
+
+  /* ── Attendance step buttons ── */
+  .period-btn { min-width: 0 !important; flex: 1 1 45% !important; }
+
+  /* ── Quiz grade buttons ── */
+  .grade-btn-row { flex-wrap: wrap !important; gap: 6px !important; }
+}
+</style>
+
+<style>
+@media (max-width: 768px) {
+  body { overflow-x: hidden; }
+  .class-tab-row { flex-wrap: wrap !important; gap: 6px !important; }
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .table-wrap table { min-width: 540px; }
+  .stats-grid { grid-template-columns: repeat(2,1fr) !important; }
+}
+</style>
+{% endblock %}
+{% block title %}Analytics{% endblock %}
+{% block page_title %}📈 CLASS ANALYTICS{% endblock %}
+{% block content %}
+
+<!-- Class tabs -->
+<div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;" class="class-tab-row">
+  {% for cls in staff_classes %}
+  <a href="?class={{ cls }}" class="btn {% if cls==active_class %}btn-primary{% else %}btn-outline{% endif %}"
+     style="min-width:90px;justify-content:center;font-family:'Orbitron',monospace;font-size:12px;">{{ cls }}</a>
+  {% endfor %}
+</div>
+
+{% if not active_class %}
+<div class="card" style="text-align:center;padding:50px;color:var(--text2);">No classes assigned to your profile.</div>
+{% else %}
+
+{% if low_engagement %}
+<div class="alert alert-warning" style="margin-bottom:16px;">
+  ⚠️ {{ low_engagement|length }} student(s) have attendance below 75% in your class. Consider early intervention!
+</div>
+{% endif %}
+
+<!-- Summary cards -->
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:20px;">
+  <div class="card" style="padding:14px;text-align:center;">
+    <div style="font-size:28px;font-weight:700;color:var(--accent);">{{ students|length }}</div>
+    <div style="font-size:11px;color:var(--text2);">STUDENTS</div>
+  </div>
+  {% if att_by_subject %}
+  {% set total_present = att_by_subject|sum(attribute='present') %}
+  {% set total_classes = att_by_subject|sum(attribute='total') %}
+  <div class="card" style="padding:14px;text-align:center;">
+    <div style="font-size:28px;font-weight:700;color:var(--green);">
+      {{ ((total_present/total_classes)*100)|round(1) if total_classes else 0 }}%
+    </div>
+    <div style="font-size:11px;color:var(--text2);">AVG ATTENDANCE</div>
+  </div>
+  {% endif %}
+  {% if quiz_summary %}
+  <div class="card" style="padding:14px;text-align:center;">
+    <div style="font-size:28px;font-weight:700;color:var(--blue);">{{ quiz_summary|length }}</div>
+    <div style="font-size:11px;color:var(--text2);">QUIZZES</div>
+  </div>
+  {% endif %}
+  {% if assignment_summary %}
+  <div class="card" style="padding:14px;text-align:center;">
+    <div style="font-size:28px;font-weight:700;color:var(--gold);">{{ assignment_summary|length }}</div>
+    <div style="font-size:11px;color:var(--text2);">ASSIGNMENTS</div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Student performance table -->
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-title"><i class="fas fa-users"></i> STUDENT PERFORMANCE — {{ active_class }}</div>
+  {% if students %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th><th>Student</th><th>Stars ⭐</th><th>Level</th>
+          <th>Attendance</th><th>Submissions</th><th>Certs</th><th>Projects</th><th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for s in students %}
+      {% set att_pct = ((s.present_count / s.total_att)*100)|round(1) if s.total_att and s.total_att > 0 else 0 %}
+      <tr>
+        <td style="color:var(--text2);font-family:'Share Tech Mono',monospace;">{{ loop.index }}</td>
+        <td>
+          <div style="font-weight:600;">{{ s.name }}</div>
+          <div style="font-size:11px;color:var(--text2);">{{ s.roll_number }}</div>
+        </td>
+        <td>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="width:60px;height:5px;background:var(--border);border-radius:3px;overflow:hidden;">
+              <div style="height:100%;width:{{ [s.streak_stars//10,100]|min }}%;background:linear-gradient(90deg,var(--accent),var(--gold));"></div>
+            </div>
+            <span style="color:var(--gold);font-size:12px;">{{ s.streak_stars }}</span>
+          </div>
+        </td>
+        <td><span class="badge badge-blue">Lvl {{ s.level }}</span></td>
+        <td>
+          <span style="color:{% if att_pct>=75 %}var(--green){% elif att_pct>=60 %}var(--gold){% else %}var(--accent){% endif %};font-weight:700;">
+            {{ att_pct }}%
+          </span>
+          <div style="font-size:10px;color:var(--text2);">{{ s.present_count }}/{{ s.total_att }}</div>
+        </td>
+        <td style="color:var(--blue);">{{ s.submissions_count or 0 }}</td>
+        <td style="color:var(--blue);">{{ s.certs }}</td>
+        <td>{{ s.projects_count }}</td>
+        <td>
+          {% if att_pct < 75 and s.total_att > 0 %}
+          <span class="badge badge-red">📉 Low Att</span>
+          {% elif s.streak_stars < 50 %}
+          <span class="badge" style="background:rgba(255,165,0,0.15);color:orange;border:1px solid orange;">⚠ Inactive</span>
+          {% else %}
+          <span class="badge badge-green">✓ Good</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="text-align:center;padding:40px;color:var(--text2);">No students in {{ active_class }}.</div>
+  {% endif %}
+</div>
+
+<!-- Attendance by Subject -->
+{% if att_by_subject %}
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-title"><i class="fas fa-calendar-check"></i> ATTENDANCE BY SUBJECT</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Subject</th><th>Classes Taken</th><th>Present</th><th>Absent</th><th>Late</th><th>Avg %</th></tr></thead>
+      <tbody>
+      {% for a in att_by_subject %}
+      <tr>
+        <td style="font-weight:600;">{{ a.subject }}</td>
+        <td style="font-family:'Share Tech Mono',monospace;color:var(--text2);">{{ a.total }}</td>
+        <td style="color:var(--green);">{{ a.present }}</td>
+        <td style="color:var(--accent);">{{ a.absent }}</td>
+        <td style="color:var(--gold);">{{ a.late }}</td>
+        <td>
+          <span style="color:{% if a.pct>=75 %}var(--green){% elif a.pct>=60 %}var(--gold){% else %}var(--accent){% endif %};font-weight:700;">
+            {{ a.pct }}%
+          </span>
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- Quiz Performance -->
+{% if quiz_summary %}
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-title"><i class="fas fa-question-circle"></i> QUIZ PERFORMANCE</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Quiz</th><th>Subject</th><th>Attempts</th><th>Avg %</th><th>Max %</th><th>Min %</th></tr></thead>
+      <tbody>
+      {% for q in quiz_summary %}
+      <tr>
+        <td style="font-weight:600;">{{ q.title }}</td>
+        <td style="color:var(--text2);">{{ q.subject }}</td>
+        <td style="font-family:'Share Tech Mono',monospace;color:var(--blue);">{{ q.attempts or 0 }}</td>
+        <td><span style="color:{% if (q.avg_pct or 0)>=75 %}var(--green){% elif (q.avg_pct or 0)>=50 %}var(--gold){% else %}var(--accent){% endif %};font-weight:700;">{{ q.avg_pct or 0 }}%</span></td>
+        <td style="color:var(--green);">{{ q.max_pct|round(1) if q.max_pct else '—' }}</td>
+        <td style="color:var(--accent);">{{ q.min_pct|round(1) if q.min_pct else '—' }}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- Assignment Summary -->
+{% if assignment_summary %}
+<div class="card">
+  <div class="card-title"><i class="fas fa-tasks"></i> ASSIGNMENT SUBMISSIONS</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Assignment</th><th>Subject</th><th>Due Date</th><th>Submitted</th><th>Total</th><th>Avg Marks</th></tr></thead>
+      <tbody>
+      {% for a in assignment_summary %}
+      {% set pct = ((a.submitted / a.total_students)*100)|round(0)|int if a.total_students else 0 %}
+      <tr>
+        <td style="font-weight:600;">{{ a.title }}</td>
+        <td style="color:var(--text2);">{{ a.subject }}</td>
+        <td style="font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--text2);">{{ a.due_date }}</td>
+        <td>
+          <span style="color:{% if pct>=75 %}var(--green){% elif pct>=50 %}var(--gold){% else %}var(--accent){% endif %};font-weight:700;">
+            {{ a.submitted }}/{{ a.total_students }}
+          </span>
+        </td>
+        <td style="color:var(--text2);">{{ a.total_students }}</td>
+        <td style="color:var(--gold);">{{ a.avg_marks or '—' }}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% endif %}
+{% endblock %}

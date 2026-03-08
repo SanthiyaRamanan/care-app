@@ -1,0 +1,328 @@
+{% set current_user = user %}
+{% extends "base.html" %}
+{% block head %}
+
+<style id="mobile-global-fix">
+/* ═══════════════════════════════════════
+   CARE — Global Mobile Fixes
+   Applied to all pages
+═══════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* ── Layout ── */
+  body { overflow-x: hidden !important; }
+
+  /* ── Cards ── */
+  .card { padding: 14px !important; }
+  .card-title { font-size: 11px !important; letter-spacing: 1px !important; }
+
+  /* ── Stats grid ── */
+  .stats-grid { grid-template-columns: repeat(2,1fr) !important; gap: 10px !important; }
+  .stat-card { padding: 12px !important; }
+  .stat-value { font-size: 20px !important; }
+  .stat-label { font-size: 10px !important; }
+
+  /* ── Grids ── */
+  .grid-2, .grid-3 { grid-template-columns: 1fr !important; gap: 12px !important; }
+
+  /* ── Tables ── */
+  .table-wrap { overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; border-radius: 8px !important; }
+  table { font-size: 12px !important; min-width: 420px; }
+  th, td { padding: 8px 10px !important; white-space: nowrap !important; }
+
+  /* ── Forms ── */
+  input, select, textarea { font-size: 16px !important; } /* prevent iOS zoom */
+
+  /* ── Buttons ── */
+  .btn { padding: 8px 13px !important; font-size: 13px !important; }
+  .btn-sm { padding: 5px 10px !important; font-size: 11px !important; }
+
+  /* ── Flex rows → stack ── */
+  .filter-bar,
+  .flex-row,
+  [style*="display:flex"][style*="gap"],
+  [style*="display: flex"][style*="gap"] { flex-wrap: wrap !important; }
+
+  /* ── Inline width overrides ── */
+  [style*="min-width:260px"],[style*="min-width: 260px"] { min-width:0 !important; width:100% !important; }
+  [style*="min-width:180px"],[style*="min-width: 180px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="min-width:160px"],[style*="min-width: 160px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="min-width:130px"],[style*="min-width: 130px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="width:900px"],[style*="width: 900px"] { width:100% !important; max-width:100% !important; }
+
+  /* ── Modal ── */
+  .modal { max-width: 95vw !important; padding: 16px !important; margin: 8px !important; }
+  .modal-title { font-size: 13px !important; }
+
+  /* ── XP Toast ── */
+  .xp-toast { bottom: calc(var(--nav-h) + 10px) !important; right: 8px !important; min-width: 180px !important; padding: 10px 14px !important; }
+
+  /* ── Class tab rows ── */
+  .class-tab-row { flex-wrap: wrap !important; gap: 6px !important; }
+  .class-tab-row .btn { min-width: 72px !important; font-size: 11px !important; padding: 7px 8px !important; }
+
+  /* ── Hero card ── */
+  .hero-card { padding: 16px !important; }
+  .hero-name { font-size: 16px !important; }
+  .stars-big { font-size: 26px !important; }
+
+  /* ── Section headers ── */
+  h2, .section-title { font-size: 14px !important; }
+
+  /* ── Podium on leaderboard ── */
+  .podium-wrap { gap: 8px !important; padding: 12px 0 !important; }
+  .podium-item { width: 80px !important; }
+  .podium-avatar { width: 44px !important; height: 44px !important; font-size: 16px !important; }
+  .podium-bar { margin-top: 6px !important; }
+
+  /* ── Staff dashboard student cards ── */
+  .student-mini-card { padding: 10px !important; }
+
+  /* ── Attendance step buttons ── */
+  .period-btn { min-width: 0 !important; flex: 1 1 45% !important; }
+
+  /* ── Quiz grade buttons ── */
+  .grade-btn-row { flex-wrap: wrap !important; gap: 6px !important; }
+}
+</style>
+
+<style>
+@media (max-width: 768px) {
+  body { overflow-x: hidden; }
+  input, select { font-size: 16px !important; }
+  .filter-bar { flex-direction: column !important; gap: 8px !important; }
+  .form-grid-3 { grid-template-columns: 1fr !important; }
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .table-wrap table { min-width: 520px; }
+}
+</style>
+{% endblock %}
+{% block title %}Subject Master{% endblock %}
+{% block page_title %}📚 SUBJECT MASTER{% endblock %}
+{% block content %}
+
+<div style="display:flex;gap:0;margin-bottom:22px;border-bottom:2px solid var(--border);">
+  <button class="subj-tab" id="btn-add" onclick="showTab('tab-add',this)" style="padding:10px 24px;font-family:'Orbitron',monospace;font-size:11px;letter-spacing:1px;background:none;border:none;color:var(--text);cursor:pointer;border-bottom:2px solid var(--accent);margin-bottom:-2px;">➕ ADD SUBJECTS</button>
+  <button class="subj-tab" id="btn-assign" onclick="showTab('tab-assign',this)" style="padding:10px 24px;font-family:'Orbitron',monospace;font-size:11px;letter-spacing:1px;background:none;border:none;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;">🔗 ASSIGN TO STAFF</button>
+  <button class="subj-tab" id="btn-list" onclick="showTab('tab-list',this)" style="padding:10px 24px;font-family:'Orbitron',monospace;font-size:11px;letter-spacing:1px;background:none;border:none;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;">📋 ALL SUBJECTS</button>
+</div>
+
+<!-- TAB 1: ADD -->
+<div id="tab-add">
+<div class="grid-2" style="gap:20px;">
+<div class="card">
+  <div class="card-title"><i class="fas fa-plus"></i> ADD NEW SUBJECT</div>
+  <form method="POST">
+    <input type="hidden" name="action" value="add">
+    <div class="form-group"><label>Department</label>
+      <select name="department" required>
+        <option value="">Select Department</option>
+        {% for d in DEPARTMENTS %}<option value="{{ d }}">{{ d }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="form-group"><label>Semester</label>
+      <select name="semester" required>
+        <option value="">Select Semester</option>
+        {% for i in range(1,9) %}<option value="{{ i }}">Semester {{ i }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="form-group"><label>Subject Name</label>
+      <input type="text" name="subject" required placeholder="e.g. Data Structures">
+    </div>
+    <div class="form-group"><label>Type</label>
+      <select name="subject_type">
+        <option value="theory">Theory</option>
+        <option value="lab">Lab / Practical</option>
+        <option value="elective">Elective</option>
+      </select>
+    </div>
+    <button type="submit" class="btn btn-primary" style="width:100%;">+ Add Subject</button>
+  </form>
+</div>
+<div class="card">
+  <div class="card-title"><i class="fas fa-list"></i> RECENTLY ADDED</div>
+  {% if subjects %}
+  <div class="table-wrap"><table>
+    <thead><tr><th>Dept</th><th>Sem</th><th>Subject</th><th>Type</th><th></th></tr></thead>
+    <tbody>
+    {% set seen2 = [] %}
+    {% for s in subjects %}{% if s.id not in seen2 %}{% set _ = seen2.append(s.id) %}
+    <tr>
+      <td style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--blue);">{{ s.department }}</td>
+      <td style="font-family:'Orbitron',monospace;font-size:11px;color:var(--accent);">S{{ s.semester }}</td>
+      <td style="font-weight:600;font-size:13px;">{{ s.subject }}</td>
+      <td><span class="badge {% if s.subject_type=='lab' %}badge-blue{% elif s.subject_type=='elective' %}badge-gold{% else %}badge-green{% endif %}" style="font-size:9px;">{{ s.subject_type.title() }}</span></td>
+      <td><form method="POST" style="display:inline;"><input type="hidden" name="action" value="delete"><input type="hidden" name="subject_id" value="{{ s.id }}"><button type="submit" class="btn btn-sm" style="background:rgba(233,69,96,0.15);color:var(--accent);border:1px solid rgba(233,69,96,0.4);padding:4px 8px;font-size:11px;" onclick="return confirm('Delete?')">✕</button></form></td>
+    </tr>
+    {% endif %}{% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}<div style="text-align:center;padding:40px;color:var(--text2);">No subjects yet.</div>{% endif %}
+</div>
+</div>
+</div>
+
+<!-- TAB 2: ASSIGN -->
+<div id="tab-assign" style="display:none;">
+<div class="grid-2" style="gap:20px;">
+<div class="card">
+  <div class="card-title"><i class="fas fa-user-tie"></i> ASSIGN SUBJECT TO STAFF</div>
+  <div style="font-size:12px;color:var(--text2);margin-bottom:16px;">Each staff handles up to <strong style="color:var(--gold);">4 subjects</strong>.</div>
+  <form method="POST">
+    <input type="hidden" name="action" value="assign">
+    <div class="form-group"><label>Filter Dept</label>
+      <select id="filterDept" onchange="filterSubjects()">
+        <option value="">All Departments</option>
+        {% for d in DEPARTMENTS %}<option value="{{ d }}">{{ d }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="form-group"><label>Filter Semester</label>
+      <select id="filterSem" onchange="filterSubjects()">
+        <option value="">All Semesters</option>
+        {% for i in range(1,9) %}<option value="{{ i }}">Semester {{ i }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="form-group"><label>Subject</label>
+      <select name="subject_id" id="subjectDropdown" required>
+        <option value="">— Select Subject —</option>
+        {% set seen3 = [] %}
+        {% for s in subjects %}{% if s.id not in seen3 %}{% set _ = seen3.append(s.id) %}
+        <option value="{{ s.id }}" data-dept="{{ s.department }}" data-sem="{{ s.semester }}">{{ s.department }} · Sem {{ s.semester }} · {{ s.subject }}</option>
+        {% endif %}{% endfor %}
+      </select>
+    </div>
+    <div class="form-group"><label>Staff Member</label>
+      <select name="staff_id" id="staffSel" onchange="checkLoad(this.value)" required>
+        <option value="">— Select Staff —</option>
+        {% for st in staff_list %}<option value="{{ st.id }}">{{ st.name }}</option>{% endfor %}
+      </select>
+      <div id="loadInfo" style="font-size:11px;margin-top:5px;display:none;"></div>
+    </div>
+    <div class="form-group"><label>Class</label>
+      <select name="class_name" required>
+        <option value="">Select Class</option>
+        <optgroup label="1st Year">{% for c in ['I-A','I-B','I-C','I-D','I-E','I-F','I-G'] %}<option value="{{ c }}">{{ c }}</option>{% endfor %}</optgroup>
+        <optgroup label="2nd–4th Year">{% for c in ['CS-A','CS-B','CE-A','MECH-A','AD-A','AD-B','ECE-A'] %}<option value="{{ c }}">{{ c }}</option>{% endfor %}</optgroup>
+      </select>
+    </div>
+    <button type="submit" class="btn btn-primary" style="width:100%;">✓ Assign Subject</button>
+  </form>
+</div>
+<div class="card">
+  <div class="card-title"><i class="fas fa-tasks"></i> STAFF WORKLOAD</div>
+  <div style="font-size:11px;color:var(--text2);margin-bottom:12px;">Bars = assigned subjects (max 4)</div>
+  {% for st in staff_list %}
+  {% set st_assigns = subjects | selectattr('assigned_staff','equalto',st.name) | list %}
+  {% set ids_seen = [] %}
+  {% set count = namespace(v=0) %}
+  {% for s in st_assigns %}{% if s.id not in ids_seen %}{% set _ = ids_seen.append(s.id) %}{% set count.v = count.v + 1 %}{% endif %}{% endfor %}
+  <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
+    <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--purple));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;">{{ st.name[0] }}</div>
+    <div style="flex:1;">
+      <div style="font-size:13px;font-weight:600;">{{ st.name }}</div>
+      <div style="display:flex;gap:3px;margin-top:4px;">
+        {% for i in range(4) %}<div style="width:24px;height:5px;border-radius:3px;background:{% if i < count.v %}{% if count.v <= 3 %}var(--green){% else %}var(--gold){% endif %}{% else %}var(--border){% endif %};"></div>{% endfor %}
+      </div>
+    </div>
+    <div style="font-size:12px;font-weight:700;color:{% if count.v >= 4 %}var(--gold){% elif count.v > 0 %}var(--green){% else %}var(--text2){% endif %};">{{ count.v }}/4</div>
+  </div>
+  {% endfor %}
+</div>
+</div>
+
+<div class="card" style="margin-top:20px;">
+  <div class="card-title"><i class="fas fa-link"></i> CURRENT ASSIGNMENTS</div>
+  {% set seen4 = [] %}
+  {% set has_assign = namespace(v=false) %}
+  {% for s in subjects %}{% if s.assign_id and s.assign_id not in seen4 %}{% set _ = seen4.append(s.assign_id) %}{% set has_assign.v = true %}{% endif %}{% endfor %}
+  {% if has_assign.v %}
+  <div class="table-wrap"><table>
+    <thead><tr><th>Dept</th><th>Sem</th><th>Subject</th><th>Staff</th><th>Class</th><th></th></tr></thead>
+    <tbody>
+    {% set seen5 = [] %}
+    {% for s in subjects %}{% if s.assign_id and s.assign_id not in seen5 %}{% set _ = seen5.append(s.assign_id) %}
+    <tr>
+      <td style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--blue);">{{ s.department }}</td>
+      <td style="font-family:'Orbitron',monospace;font-size:11px;color:var(--accent);">S{{ s.semester }}</td>
+      <td style="font-weight:600;">{{ s.subject }}</td>
+      <td style="color:var(--green);font-size:12px;">{{ s.assigned_staff }}</td>
+      <td style="font-size:12px;color:var(--text2);">{{ s.assigned_class }}</td>
+      <td><form method="POST" style="display:inline;"><input type="hidden" name="action" value="unassign"><input type="hidden" name="assign_id" value="{{ s.assign_id }}"><button type="submit" class="btn btn-sm" style="background:rgba(255,165,0,0.15);color:orange;border:1px solid orange;padding:4px 8px;font-size:11px;" onclick="return confirm('Remove?')">Unassign</button></form></td>
+    </tr>
+    {% endif %}{% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}<div style="text-align:center;padding:30px;color:var(--text2);">No assignments yet.</div>{% endif %}
+</div>
+</div>
+
+<!-- TAB 3: ALL -->
+<div id="tab-list" style="display:none;">
+<div class="card" style="margin-bottom:16px;padding:14px 18px;">
+  <form method="GET" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+    <div class="form-group" style="margin-bottom:0;min-width:140px;"><label>Department</label>
+      <select name="dept"><option value="">All</option>{% for d in DEPARTMENTS %}<option value="{{ d }}" {% if d==sel_dept %}selected{% endif %}>{{ d }}</option>{% endfor %}</select>
+    </div>
+    <div class="form-group" style="margin-bottom:0;min-width:120px;"><label>Semester</label>
+      <select name="sem"><option value="">All</option>{% for i in range(1,9) %}<option value="{{ i }}" {% if i==sel_sem %}selected{% endif %}>Sem {{ i }}</option>{% endfor %}</select>
+    </div>
+    <button type="submit" class="btn btn-outline btn-sm" style="padding:10px 18px;">Filter</button>
+    <a href="{{ url_for('admin_subjects') }}" class="btn btn-outline btn-sm" style="padding:10px 18px;">Reset</a>
+  </form>
+</div>
+<div class="card">
+  <div class="card-title"><i class="fas fa-list"></i> ALL SUBJECTS ({{ subjects|length }})</div>
+  {% if subjects %}
+  <div class="table-wrap"><table>
+    <thead><tr><th>Dept</th><th>Sem</th><th>Subject</th><th>Type</th><th>Staff</th><th>Class</th><th></th></tr></thead>
+    <tbody>
+    {% set seen6 = [] %}
+    {% for s in subjects %}{% if s.id not in seen6 %}{% set _ = seen6.append(s.id) %}
+    <tr>
+      <td style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--blue);">{{ s.department }}</td>
+      <td style="font-family:'Orbitron',monospace;font-size:11px;color:var(--accent);">S{{ s.semester }}</td>
+      <td style="font-weight:600;">{{ s.subject }}</td>
+      <td><span class="badge {% if s.subject_type=='lab' %}badge-blue{% elif s.subject_type=='elective' %}badge-gold{% else %}badge-green{% endif %}" style="font-size:9px;">{{ s.subject_type.title() }}</span></td>
+      <td style="font-size:12px;color:var(--text2);">{{ s.assigned_staff or '—' }}</td>
+      <td style="font-size:12px;color:var(--text2);">{{ s.assigned_class or '—' }}</td>
+      <td style="display:flex;gap:6px;">
+        {% if s.assign_id %}<form method="POST" style="display:inline;"><input type="hidden" name="action" value="unassign"><input type="hidden" name="assign_id" value="{{ s.assign_id }}"><button type="submit" class="btn btn-sm" style="background:rgba(255,165,0,0.15);color:orange;border:1px solid orange;padding:4px 8px;font-size:11px;" onclick="return confirm('Remove?')">Unassign</button></form>{% endif %}
+        <form method="POST" style="display:inline;"><input type="hidden" name="action" value="delete"><input type="hidden" name="subject_id" value="{{ s.id }}"><button type="submit" class="btn btn-sm" style="background:rgba(233,69,96,0.15);color:var(--accent);border:1px solid rgba(233,69,96,0.4);padding:4px 8px;font-size:11px;" onclick="return confirm('Delete?')">✕</button></form>
+      </td>
+    </tr>
+    {% endif %}{% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}<div style="text-align:center;padding:40px;color:var(--text2);">No subjects found.</div>{% endif %}
+</div>
+</div>
+
+<script>
+function showTab(id, btn) {
+  ['tab-add','tab-assign','tab-list'].forEach(t => document.getElementById(t).style.display = 'none');
+  document.getElementById(id).style.display = 'block';
+  document.querySelectorAll('.subj-tab').forEach(b => { b.style.color='var(--text2)'; b.style.borderBottomColor='transparent'; });
+  btn.style.color='var(--text)'; btn.style.borderBottomColor='var(--accent)';
+}
+function filterSubjects() {
+  const dept = document.getElementById('filterDept').value;
+  const sem  = document.getElementById('filterSem').value;
+  document.querySelectorAll('#subjectDropdown option').forEach(o => {
+    if (!o.value) return;
+    o.style.display = ((!dept||o.dataset.dept===dept) && (!sem||o.dataset.sem===sem)) ? '' : 'none';
+  });
+  document.getElementById('subjectDropdown').value = '';
+}
+function checkLoad(staffId) {
+  const info = document.getElementById('loadInfo');
+  if (!staffId) { info.style.display='none'; return; }
+  const name = document.querySelector(`#staffSel option[value="${staffId}"]`)?.textContent?.trim()||'';
+  let count = 0;
+  document.querySelectorAll('#tab-assign .table-wrap tbody tr').forEach(r => {
+    if (r.cells[3] && r.cells[3].textContent.trim()===name) count++;
+  });
+  info.style.display='block';
+  info.style.color = count >= 4 ? 'var(--gold)' : 'var(--green)';
+  info.textContent = count >= 4 ? `⚠️ ${name} is full (4/4 subjects)` : `✓ ${name}: ${count}/4 subjects (${4-count} slot${4-count!==1?'s':''} free)`;
+}
+</script>
+{% endblock %}

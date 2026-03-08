@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+{% block head %}
+
+<style id="mobile-global-fix">
+/* ═══════════════════════════════════════
+   CARE — Global Mobile Fixes
+   Applied to all pages
+═══════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* ── Layout ── */
+  body { overflow-x: hidden !important; }
+
+  /* ── Cards ── */
+  .card { padding: 14px !important; }
+  .card-title { font-size: 11px !important; letter-spacing: 1px !important; }
+
+  /* ── Stats grid ── */
+  .stats-grid { grid-template-columns: repeat(2,1fr) !important; gap: 10px !important; }
+  .stat-card { padding: 12px !important; }
+  .stat-value { font-size: 20px !important; }
+  .stat-label { font-size: 10px !important; }
+
+  /* ── Grids ── */
+  .grid-2, .grid-3 { grid-template-columns: 1fr !important; gap: 12px !important; }
+
+  /* ── Tables ── */
+  .table-wrap { overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; border-radius: 8px !important; }
+  table { font-size: 12px !important; min-width: 420px; }
+  th, td { padding: 8px 10px !important; white-space: nowrap !important; }
+
+  /* ── Forms ── */
+  input, select, textarea { font-size: 16px !important; } /* prevent iOS zoom */
+
+  /* ── Buttons ── */
+  .btn { padding: 8px 13px !important; font-size: 13px !important; }
+  .btn-sm { padding: 5px 10px !important; font-size: 11px !important; }
+
+  /* ── Flex rows → stack ── */
+  .filter-bar,
+  .flex-row,
+  [style*="display:flex"][style*="gap"],
+  [style*="display: flex"][style*="gap"] { flex-wrap: wrap !important; }
+
+  /* ── Inline width overrides ── */
+  [style*="min-width:260px"],[style*="min-width: 260px"] { min-width:0 !important; width:100% !important; }
+  [style*="min-width:180px"],[style*="min-width: 180px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="min-width:160px"],[style*="min-width: 160px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="min-width:130px"],[style*="min-width: 130px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="width:900px"],[style*="width: 900px"] { width:100% !important; max-width:100% !important; }
+
+  /* ── Modal ── */
+  .modal { max-width: 95vw !important; padding: 16px !important; margin: 8px !important; }
+  .modal-title { font-size: 13px !important; }
+
+  /* ── XP Toast ── */
+  .xp-toast { bottom: calc(var(--nav-h) + 10px) !important; right: 8px !important; min-width: 180px !important; padding: 10px 14px !important; }
+
+  /* ── Class tab rows ── */
+  .class-tab-row { flex-wrap: wrap !important; gap: 6px !important; }
+  .class-tab-row .btn { min-width: 72px !important; font-size: 11px !important; padding: 7px 8px !important; }
+
+  /* ── Hero card ── */
+  .hero-card { padding: 16px !important; }
+  .hero-name { font-size: 16px !important; }
+  .stars-big { font-size: 26px !important; }
+
+  /* ── Section headers ── */
+  h2, .section-title { font-size: 14px !important; }
+
+  /* ── Podium on leaderboard ── */
+  .podium-wrap { gap: 8px !important; padding: 12px 0 !important; }
+  .podium-item { width: 80px !important; }
+  .podium-avatar { width: 44px !important; height: 44px !important; font-size: 16px !important; }
+  .podium-bar { margin-top: 6px !important; }
+
+  /* ── Staff dashboard student cards ── */
+  .student-mini-card { padding: 10px !important; }
+
+  /* ── Attendance step buttons ── */
+  .period-btn { min-width: 0 !important; flex: 1 1 45% !important; }
+
+  /* ── Quiz grade buttons ── */
+  .grade-btn-row { flex-wrap: wrap !important; gap: 6px !important; }
+}
+</style>
+
+<style>
+@media (max-width: 768px) {
+  body { overflow-x: hidden; }
+  .class-tab-row { flex-wrap: wrap !important; gap: 6px !important; }
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .table-wrap table { min-width: 480px; }
+  .stats-grid { grid-template-columns: repeat(2,1fr) !important; }
+}
+</style>
+{% endblock %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block page_title %}🛡️ ADMIN CONTROL PANEL{% endblock %}
+{% block content %}
+
+<!-- Stats -->
+<div class="stats-grid">
+  <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-value">{{ total_students }}</div><div class="stat-label">TOTAL STUDENTS</div></div>
+  <div class="stat-card"><div class="stat-icon">🎓</div><div class="stat-value" style="color:var(--blue)">{{ total_staff }}</div><div class="stat-label">STAFF</div></div>
+  <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-value" style="color:var(--green)">{{ today_att }}</div><div class="stat-label">ATT RECORDS TODAY</div></div>
+  <div class="stat-card"><div class="stat-icon">🔍</div><div class="stat-value" style="color:var(--accent)">{{ pending_certs }}</div><div class="stat-label">PENDING CERTS</div></div>
+</div>
+
+<!-- Quick Admin Links -->
+<div style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
+  <a href="{{ url_for('admin_timetable') }}" class="btn btn-primary"><i class="fas fa-clock"></i> Manage Timetable</a>
+  <a href="{{ url_for('admin_attendance') }}" class="btn btn-outline"><i class="fas fa-user-check"></i> Attendance Overview</a>
+  <a href="{{ url_for('admin_staff') }}" class="btn btn-outline"><i class="fas fa-users-cog"></i> Manage Staff</a>
+</div>
+
+<!-- Class Performance Grid -->
+<div class="card" style="margin-bottom:20px;">
+  <div class="card-title"><i class="fas fa-chart-bar"></i> CLASS-WISE PERFORMANCE</div>
+  <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:12px;">
+    {% for c in class_stats %}
+    <a href="{{ url_for('admin_class_view', class_name=c.raw_class, year=c.year) if c.year > 1 else url_for('admin_class_view', class_name=c.raw_class) }}" style="text-decoration:none;">
+      <div style="background:var(--bg3); border:1px solid var(--border); border-radius:10px; padding:14px; transition:all 0.2s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="font-family:'Orbitron',monospace; font-size:15px; color:var(--accent); margin-bottom:8px;">{{ c.class_name }}</div>
+        <div style="font-size:12px; color:var(--text2);">👥 {{ c.total }} students</div>
+        <div style="font-size:12px; color:var(--gold); margin-top:4px;">⭐ Avg {{ c.avg_stars }} stars</div>
+        <div style="margin-top:8px; height:4px; background:var(--border); border-radius:2px; overflow:hidden;">
+          <div style="height:100%; width:{{ c.avg_att }}%; background:{% if c.avg_att >= 75 %}var(--green){% elif c.avg_att >= 60 %}var(--gold){% else %}var(--accent){% endif %}; border-radius:2px;"></div>
+        </div>
+        <div style="font-size:10px; color:var(--text2); margin-top:3px;">Avg Attendance: {{ c.avg_att }}%</div>
+      </div>
+    </a>
+    {% endfor %}
+    {% if not class_stats %}
+    <div style="color:var(--text2); font-size:13px; padding:20px;">No students registered yet.</div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="grid-2">
+  <!-- Staff List -->
+  <div class="card">
+    <div class="card-title"><i class="fas fa-chalkboard-teacher"></i> STAFF & CLASSES</div>
+    {% for s in staff_list %}
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border);">
+      <div>
+        <div style="font-weight:600; font-size:13px;">{{ s.name }}</div>
+        <div style="font-size:11px; color:var(--text2);">{{ s.staff_id or '—' }} · {{ s.department or '' }}</div>
+      </div>
+      <div style="text-align:right;">
+        {% if s.classes %}
+          {% for cls in s.classes.split(', ') %}
+          <span class="badge badge-blue" style="margin:1px;">{{ cls }}</span>
+          {% endfor %}
+        {% else %}
+          <span style="font-size:11px; color:var(--text2);">No classes set</span>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+    <a href="{{ url_for('admin_staff') }}" class="btn btn-outline btn-sm" style="width:100%; text-align:center; justify-content:center; margin-top:10px;">View All Staff</a>
+  </div>
+
+  <!-- Today's Attendance Feed -->
+  <div class="card">
+    <div class="card-title"><i class="fas fa-history"></i> TODAY'S ATTENDANCE FEED</div>
+    {% if recent_att %}
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Student</th><th>Class</th><th>Period</th><th>Staff</th><th>Status</th><th>Swap?</th></tr></thead>
+        <tbody>
+        {% for a in recent_att %}
+        <tr>
+          <td style="font-size:12px; font-weight:600;">{{ a.student_name }}</td>
+          <td><span class="badge badge-blue" style="font-size:9px;">{{ a.class_name }}</span></td>
+          <td style="font-family:'Share Tech Mono',monospace; font-size:11px; color:var(--blue);">P{{ a.period }}</td>
+          <td style="font-size:11px; color:var(--text2);">{{ a.staff_name }}</td>
+          <td><span class="badge {% if a.status=='present' %}badge-green{% elif a.status=='absent' %}badge-red{% else %}badge-gold{% endif %}" style="font-size:9px;">{{ a.status.title() }}</span></td>
+          <td>
+            {% if a.is_swap %}
+            <span class="badge" style="background:rgba(124,58,237,0.2);color:#a78bfa;border:1px solid rgba(124,58,237,0.3);font-size:9px;" title="{{ a.swap_note }}">🔄 Swap</span>
+            {% else %}—{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div style="text-align:center; padding:30px; color:var(--text2); font-size:13px;">No attendance marked today yet.</div>
+    {% endif %}
+    <a href="{{ url_for('admin_attendance') }}" class="btn btn-outline btn-sm" style="width:100%; text-align:center; justify-content:center; margin-top:10px;">Full Attendance View</a>
+  </div>
+</div>
+{% endblock %}

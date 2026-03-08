@@ -1,0 +1,583 @@
+{% set current_user = user %}
+{% extends "base.html" %}
+{% block title %}My Arena{% endblock %}
+{% block page_title %}⚡ MY ARENA{% endblock %}
+
+{% block head %}
+
+<style id="mobile-global-fix">
+/* ═══════════════════════════════════════
+   CARE — Global Mobile Fixes
+   Applied to all pages
+═══════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* ── Layout ── */
+  body { overflow-x: hidden !important; }
+
+  /* ── Cards ── */
+  .card { padding: 14px !important; }
+  .card-title { font-size: 11px !important; letter-spacing: 1px !important; }
+
+  /* ── Stats grid ── */
+  .stats-grid { grid-template-columns: repeat(2,1fr) !important; gap: 10px !important; }
+  .stat-card { padding: 12px !important; }
+  .stat-value { font-size: 20px !important; }
+  .stat-label { font-size: 10px !important; }
+
+  /* ── Grids ── */
+  .grid-2, .grid-3 { grid-template-columns: 1fr !important; gap: 12px !important; }
+
+  /* ── Tables ── */
+  .table-wrap { overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; border-radius: 8px !important; }
+  table { font-size: 12px !important; min-width: 420px; }
+  th, td { padding: 8px 10px !important; white-space: nowrap !important; }
+
+  /* ── Forms ── */
+  input, select, textarea { font-size: 16px !important; } /* prevent iOS zoom */
+
+  /* ── Buttons ── */
+  .btn { padding: 8px 13px !important; font-size: 13px !important; }
+  .btn-sm { padding: 5px 10px !important; font-size: 11px !important; }
+
+  /* ── Flex rows → stack ── */
+  .filter-bar,
+  .flex-row,
+  [style*="display:flex"][style*="gap"],
+  [style*="display: flex"][style*="gap"] { flex-wrap: wrap !important; }
+
+  /* ── Inline width overrides ── */
+  [style*="min-width:260px"],[style*="min-width: 260px"] { min-width:0 !important; width:100% !important; }
+  [style*="min-width:180px"],[style*="min-width: 180px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="min-width:160px"],[style*="min-width: 160px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="min-width:130px"],[style*="min-width: 130px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="width:900px"],[style*="width: 900px"] { width:100% !important; max-width:100% !important; }
+
+  /* ── Modal ── */
+  .modal { max-width: 95vw !important; padding: 16px !important; margin: 8px !important; }
+  .modal-title { font-size: 13px !important; }
+
+  /* ── XP Toast ── */
+  .xp-toast { bottom: calc(var(--nav-h) + 10px) !important; right: 8px !important; min-width: 180px !important; padding: 10px 14px !important; }
+
+  /* ── Class tab rows ── */
+  .class-tab-row { flex-wrap: wrap !important; gap: 6px !important; }
+  .class-tab-row .btn { min-width: 72px !important; font-size: 11px !important; padding: 7px 8px !important; }
+
+  /* ── Hero card ── */
+  .hero-card { padding: 16px !important; }
+  .hero-name { font-size: 16px !important; }
+  .stars-big { font-size: 26px !important; }
+
+  /* ── Section headers ── */
+  h2, .section-title { font-size: 14px !important; }
+
+  /* ── Podium on leaderboard ── */
+  .podium-wrap { gap: 8px !important; padding: 12px 0 !important; }
+  .podium-item { width: 80px !important; }
+  .podium-avatar { width: 44px !important; height: 44px !important; font-size: 16px !important; }
+  .podium-bar { margin-top: 6px !important; }
+
+  /* ── Staff dashboard student cards ── */
+  .student-mini-card { padding: 10px !important; }
+
+  /* ── Attendance step buttons ── */
+  .period-btn { min-width: 0 !important; flex: 1 1 45% !important; }
+
+  /* ── Quiz grade buttons ── */
+  .grade-btn-row { flex-wrap: wrap !important; gap: 6px !important; }
+}
+</style>
+
+<style>
+/* ── GAME HERO CARD ── */
+.hero-card {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f1e 100%);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+.hero-card::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(233,69,96,0.12), transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+}
+.hero-card::after {
+    content: '';
+    position: absolute;
+    bottom: -40px; left: -40px;
+    width: 160px; height: 160px;
+    background: radial-gradient(circle, rgba(124,58,237,0.1), transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+}
+.hero-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 14px;
+}
+.hero-name {
+    font-family: 'Orbitron', monospace;
+    font-size: 22px;
+    font-weight: 900;
+    color: var(--text);
+}
+.hero-sub { font-size: 13px; color: var(--text2); margin-top: 3px; }
+.stars-display {
+    text-align: right;
+}
+.stars-big {
+    font-family: 'Orbitron', monospace;
+    font-size: 36px;
+    font-weight: 900;
+    color: var(--gold);
+    text-shadow: 0 0 20px rgba(255,215,0,0.5);
+    line-height: 1;
+}
+.stars-label { font-size: 11px; color: var(--text2); letter-spacing: 2px; margin-top: 3px; }
+
+/* XP Bar */
+.xp-bar-section { margin-bottom: 20px; }
+.xp-labels {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+.xp-level-badge {
+    background: linear-gradient(135deg, var(--accent), var(--purple));
+    color: white;
+    font-family: 'Orbitron', monospace;
+    font-size: 12px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    letter-spacing: 1px;
+}
+.xp-next { font-size: 12px; color: var(--text2); font-family: 'Share Tech Mono', monospace; }
+.xp-bar-outer {
+    height: 14px;
+    background: var(--bg3);
+    border-radius: 7px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    position: relative;
+}
+.xp-bar-inner {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), #f5a623, var(--gold));
+    border-radius: 7px;
+    transition: width 2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    box-shadow: 0 0 12px rgba(233,69,96,0.5);
+}
+.xp-bar-inner::after {
+    content: '';
+    position: absolute;
+    top: 2px; left: 10%; right: 10%;
+    height: 3px;
+    background: rgba(255,255,255,0.3);
+    border-radius: 2px;
+}
+.xp-shine {
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 40px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    animation: xpShine 2s infinite;
+}
+@keyframes xpShine {
+    0% { left: -50px; }
+    100% { left: 110%; }
+}
+
+/* Hero stats row */
+.hero-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+}
+.hero-stat {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+    text-align: center;
+    transition: all 0.2s;
+    cursor: default;
+}
+.hero-stat:hover {
+    background: rgba(233,69,96,0.08);
+    border-color: rgba(233,69,96,0.3);
+    transform: translateY(-2px);
+}
+.hero-stat-val {
+    font-family: 'Orbitron', monospace;
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 3px;
+}
+.hero-stat-label { font-size: 10px; color: var(--text2); letter-spacing: 1px; }
+
+/* LEADERBOARD PODIUM */
+.podium-wrap {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 10px;
+    padding: 8px 0 16px;
+}
+.podium-player {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+}
+.podium-avatar {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 18px; color: white;
+    margin-bottom: 6px;
+    position: relative;
+    z-index: 2;
+}
+.podium-crown { font-size: 20px; text-align: center; margin-bottom: 2px; }
+.podium-name { font-size: 11px; font-weight: 700; text-align: center; max-width: 70px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.podium-stars { font-size: 10px; color: var(--gold); font-family: 'Share Tech Mono', monospace; }
+.podium-block {
+    border-radius: 8px 8px 0 0;
+    width: 65px;
+    margin-top: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Orbitron', monospace;
+    font-size: 18px; font-weight: 900;
+}
+
+/* Activity feed */
+.activity-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    animation: fadeSlideIn 0.3s ease;
+}
+@keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateX(-10px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+.activity-icon {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
+}
+.activity-earn { background: rgba(0,255,136,0.12); border: 1px solid rgba(0,255,136,0.2); }
+.activity-lose { background: rgba(233,69,96,0.12); border: 1px solid rgba(233,69,96,0.2); }
+.activity-stars {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+/* Quiz card game style */
+.quiz-card {
+    background: linear-gradient(135deg, var(--card2), var(--bg3));
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    transition: all 0.2s;
+}
+.quiz-card:hover {
+    border-color: var(--accent);
+    transform: translateX(4px);
+}
+
+/* Assignment game pill */
+.assign-pill {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.2s;
+}
+.assign-pill:hover { border-color: rgba(0,180,216,0.4); }
+.assign-pill.overdue { border-color: rgba(233,69,96,0.4); background: rgba(233,69,96,0.04); }
+</style>
+<style>
+
+@media (max-width: 768px) {
+  .hero-stats { grid-template-columns: repeat(2,1fr) !important; }
+  .hero-top { flex-direction: column !important; gap: 10px !important; }
+  .stars-display { text-align: left !important; }
+  .stars-big { font-size: 28px !important; }
+  .hero-name { font-size: 17px !important; }
+  .podium-block { width: 50px !important; }
+  .podium-avatar { width: 36px !important; height: 36px !important; font-size: 13px !important; }
+  body { overflow-x: hidden; }
+}
+
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ════ HERO GAME CARD ════ -->
+<div class="hero-card">
+    <div class="hero-top">
+        <div>
+            <div class="hero-name">{{ user.name.upper() }}</div>
+            <div class="hero-sub">
+                {{ user.department }} • Class {{ user.class_name }}
+                {% if rank %} • <span style="color:var(--accent);">Rank #{{ rank }}</span>{% endif %}
+            </div>
+        </div>
+        <div class="stars-display">
+            <div class="stars-big" id="starCounter">{{ user.streak_stars }}</div>
+            <div class="stars-label">STREAK STARS</div>
+        </div>
+    </div>
+
+    <div class="xp-bar-section">
+        <div class="xp-labels">
+            <span class="xp-level-badge">⚡ LEVEL {{ user.level }}</span>
+            <span class="xp-next">{{ user.streak_stars % 1000 }} / 1000 → LEVEL {{ user.level + 1 }}</span>
+        </div>
+        <div class="xp-bar-outer">
+            <div class="xp-bar-inner" style="width: 0%" id="xpBar">
+                <div class="xp-shine"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="hero-stats">
+        <div class="hero-stat">
+            <div class="hero-stat-val" style="color:var(--green);">
+                {% if att and att.total and att.total > 0 %}{{ ((att.present/att.total)*100)|round(0)|int }}%{% else %}—{% endif %}
+            </div>
+            <div class="hero-stat-label">ATTENDANCE</div>
+        </div>
+        <div class="hero-stat">
+            <div class="hero-stat-val" style="color:var(--blue);">{{ active_quizzes|length }}</div>
+            <div class="hero-stat-label">QUIZZES</div>
+        </div>
+        <div class="hero-stat">
+            <div class="hero-stat-val" style="color:var(--accent);">
+                {% set pending_count = [] %}
+                {% for a in pending_assignments %}{% if not a.submitted %}{% set _ = pending_count.append(1) %}{% endif %}{% endfor %}
+                {{ pending_count|length }}
+            </div>
+            <div class="hero-stat-label">PENDING</div>
+        </div>
+        <div class="hero-stat">
+            <div class="hero-stat-val" style="color:var(--gold);">{{ 1000 - (user.streak_stars % 1000) }}</div>
+            <div class="hero-stat-label">TO NEXT LVL</div>
+        </div>
+    </div>
+</div>
+
+<!-- ════ MAIN GRID ════ -->
+<div class="grid-2" style="margin-bottom:20px;">
+
+    <!-- LEADERBOARD -->
+    <div class="card">
+        <div class="card-title"><i class="fas fa-trophy"></i> HALL OF CHAMPIONS</div>
+        {% if top5 %}
+        <div class="podium-wrap">
+            {% for s in top5[:3] %}
+            {% set colors = ['linear-gradient(135deg,#ffd700,#f5a623)','linear-gradient(135deg,#c0c0c0,#a0a0a0)','linear-gradient(135deg,#cd7f32,#a0522d)'] %}
+            {% set heights = ['110px','90px','70px'] %}
+            {% set crowns = ['👑','🥈','🥉'] %}
+            <div class="podium-player">
+                <div class="podium-crown">{{ crowns[loop.index0] }}</div>
+                <div class="podium-avatar" style="background:{{ colors[loop.index0] }};
+                    {% if s.id == user.id %}box-shadow:0 0 16px rgba(233,69,96,0.7);border:2px solid var(--accent){% endif %}">
+                    {{ s.name[0] }}
+                </div>
+                <div class="podium-name" style="{% if s.id==user.id %}color:var(--accent){% endif %}">
+                    {{ s.name.split()[0] }}{% if s.id==user.id %} (You){% endif %}
+                </div>
+                <div class="podium-stars">⭐{{ s.streak_stars }}</div>
+                <div class="podium-block" style="height:{{ heights[loop.index0] }};
+                    background:{% if loop.index==1 %}rgba(255,215,0,0.15){% elif loop.index==2 %}rgba(192,192,192,0.1){% else %}rgba(205,127,50,0.1){% endif %};
+                    border:1px solid {% if loop.index==1 %}rgba(255,215,0,0.3){% elif loop.index==2 %}rgba(192,192,192,0.2){% else %}rgba(205,127,50,0.2){% endif %};">
+                    {{ loop.index }}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% if top5|length > 3 %}
+        <div style="border-top:1px solid var(--border); padding-top:10px; margin-top:4px;">
+            {% for s in top5[3:] %}
+            <div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border);">
+                <div style="font-size:16px;">{{ '4️⃣' if loop.index==1 else '5️⃣' }}</div>
+                <div style="font-size:40px;width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--purple));display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:white;flex-shrink:0;">{{ s.name[0] }}</div>
+                <div style="flex:1;font-size:13px;{% if s.id==user.id %}color:var(--accent){% endif %}">{{ s.name }}</div>
+                <div style="font-size:11px;color:var(--gold);font-family:'Share Tech Mono',monospace;">⭐{{ s.streak_stars }}</div>
+                <span class="badge badge-bronze">Bronze</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% else %}
+        <div style="text-align:center;padding:30px;color:var(--text2);">
+            <div style="font-size:40px;margin-bottom:8px;">🚀</div>
+            Be the first to earn stars!
+        </div>
+        {% endif %}
+        <a href="{{ url_for('leaderboard') }}" class="btn btn-outline btn-sm" style="width:100%;justify-content:center;margin-top:12px;">
+            <i class="fas fa-expand"></i> Full Leaderboard
+        </a>
+    </div>
+
+    <!-- PENDING ASSIGNMENTS -->
+    <div class="card">
+        <div class="card-title"><i class="fas fa-tasks"></i> PENDING ASSIGNMENTS</div>
+        {% set has_pending = [] %}
+        {% for a in pending_assignments %}{% if not a.submitted %}{% set _ = has_pending.append(a) %}{% endif %}{% endfor %}
+
+        {% if has_pending %}
+        {% for a in has_pending %}
+        {% set is_overdue = a.due_date < today %}
+        <div class="assign-pill {% if is_overdue %}overdue{% endif %}">
+            <div style="flex:1;">
+                <div style="font-weight:700;font-size:13px;">{{ a.title }}</div>
+                <div style="font-size:11px;color:var(--text2);">{{ a.subject }}</div>
+                <div style="font-size:11px;margin-top:3px;color:{% if is_overdue %}var(--accent){% else %}var(--gold){% endif %};">
+                    📅 Due: {{ a.due_date }}{% if is_overdue %} ⚠️{% endif %}
+                </div>
+            </div>
+            <a href="{{ url_for('student_assignments') }}" class="btn btn-primary btn-sm">Submit</a>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div style="text-align:center;padding:30px;color:var(--text2);">
+            <div style="font-size:36px;margin-bottom:8px;">🎉</div>
+            <div style="font-size:13px;">All assignments submitted!</div>
+        </div>
+        {% endif %}
+
+        <!-- Active quizzes below -->
+        {% if active_quizzes %}
+        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
+            <div style="font-family:'Orbitron',monospace;font-size:11px;color:var(--accent);letter-spacing:2px;margin-bottom:10px;">⚡ ACTIVE QUIZZES</div>
+            {% for q in active_quizzes %}
+            <div class="quiz-card">
+                <div>
+                    <div style="font-weight:700;font-size:13px;">{{ q.title }}</div>
+                    <div style="font-size:11px;color:var(--text2);">{{ q.subject }} • {{ q.duration_minutes }} mins</div>
+                </div>
+                <a href="{{ url_for('attempt_quiz', quiz_id=q.id) }}" class="btn btn-gold btn-sm">
+                    ⚡ Play
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ACTIVITY FEED + NOTIFICATIONS -->
+<div class="grid-2">
+    <div class="card">
+        <div class="card-title"><i class="fas fa-bolt"></i> RECENT ACTIVITY</div>
+        {% if recent_activity %}
+        {% for act in recent_activity %}
+        <div class="activity-item">
+            <div class="activity-icon {% if act.stars_earned > 0 %}activity-earn{% else %}activity-lose{% endif %}">
+                {% if act.stars_earned > 0 %}⭐{% else %}⚠️{% endif %}
+            </div>
+            <div style="flex:1;">
+                <div style="font-size:13px;font-weight:600;">{{ act.reason }}</div>
+                <div style="font-size:11px;color:var(--text2);">{{ act.created_at.strftime('%d %b, %H:%M') if act.created_at else '' }}</div>
+            </div>
+            <div class="activity-stars" style="color:{% if act.stars_earned > 0 %}var(--green){% else %}var(--accent){% endif %}">
+                {% if act.stars_earned > 0 %}+{{ act.stars_earned }}{% else %}-{{ act.stars_deducted }}{% endif %}
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div style="text-align:center;padding:30px;color:var(--text2);">
+            <div style="font-size:36px;margin-bottom:8px;">🚀</div>
+            Start earning stars! Complete activities.
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <div class="card-title"><i class="fas fa-bell"></i> NOTIFICATIONS</div>
+        {% if notifications %}
+        {% for n in notifications %}
+        <div style="padding:10px 0;border-bottom:1px solid var(--border);">
+            <div style="display:flex;gap:10px;align-items:start;">
+                <div style="font-size:20px;flex-shrink:0;">
+                    {% if n.type=='streak' %}⭐{% elif n.type=='warning' %}⚠️
+                    {% elif n.type=='assignment' %}📝{% elif n.type=='achievement' %}🎉
+                    {% elif n.type=='quiz' %}📋{% else %}🔔{% endif %}
+                </div>
+                <div>
+                    <div style="font-weight:700;font-size:13px;">{{ n.title }}</div>
+                    <div style="font-size:12px;color:var(--text2);">{{ n.message[:70] }}{% if n.message|length > 70 %}...{% endif %}</div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div style="text-align:center;padding:30px;color:var(--text2);font-size:13px;">All caught up! ✓</div>
+        {% endif %}
+        <a href="{{ url_for('notifications') }}" class="btn btn-outline btn-sm" style="width:100%;justify-content:center;margin-top:10px;">View All</a>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Animate XP bar on load
+window.addEventListener('load', ()=>{
+    setTimeout(()=>{
+        document.getElementById('xpBar').style.width = '{{ level_progress }}%';
+    }, 400);
+
+    // Animate star counter
+    const target = {{ user.streak_stars }};
+    const counter = document.getElementById('starCounter');
+    if(target > 0){
+        let current = Math.max(0, target - 50);
+        const step = Math.ceil((target - current) / 30);
+        const interval = setInterval(()=>{
+            current = Math.min(current + step, target);
+            counter.textContent = current;
+            if(current >= target) clearInterval(interval);
+        }, 30);
+    }
+});
+
+// Star burst on leaderboard hover
+document.querySelectorAll('.podium-player').forEach(el=>{
+    el.addEventListener('mouseenter', e=>{
+        const r = el.getBoundingClientRect();
+        burstStars(r.left + r.width/2, r.top + 20, 6);
+    });
+});
+</script>
+{% endblock %}

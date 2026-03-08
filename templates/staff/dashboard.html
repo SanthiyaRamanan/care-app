@@ -1,0 +1,238 @@
+{% set current_user = user %}
+{% extends "base.html" %}
+{% block head %}
+
+<style id="mobile-global-fix">
+/* ═══════════════════════════════════════
+   CARE — Global Mobile Fixes
+   Applied to all pages
+═══════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* ── Layout ── */
+  body { overflow-x: hidden !important; }
+
+  /* ── Cards ── */
+  .card { padding: 14px !important; }
+  .card-title { font-size: 11px !important; letter-spacing: 1px !important; }
+
+  /* ── Stats grid ── */
+  .stats-grid { grid-template-columns: repeat(2,1fr) !important; gap: 10px !important; }
+  .stat-card { padding: 12px !important; }
+  .stat-value { font-size: 20px !important; }
+  .stat-label { font-size: 10px !important; }
+
+  /* ── Grids ── */
+  .grid-2, .grid-3 { grid-template-columns: 1fr !important; gap: 12px !important; }
+
+  /* ── Tables ── */
+  .table-wrap { overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; border-radius: 8px !important; }
+  table { font-size: 12px !important; min-width: 420px; }
+  th, td { padding: 8px 10px !important; white-space: nowrap !important; }
+
+  /* ── Forms ── */
+  input, select, textarea { font-size: 16px !important; } /* prevent iOS zoom */
+
+  /* ── Buttons ── */
+  .btn { padding: 8px 13px !important; font-size: 13px !important; }
+  .btn-sm { padding: 5px 10px !important; font-size: 11px !important; }
+
+  /* ── Flex rows → stack ── */
+  .filter-bar,
+  .flex-row,
+  [style*="display:flex"][style*="gap"],
+  [style*="display: flex"][style*="gap"] { flex-wrap: wrap !important; }
+
+  /* ── Inline width overrides ── */
+  [style*="min-width:260px"],[style*="min-width: 260px"] { min-width:0 !important; width:100% !important; }
+  [style*="min-width:180px"],[style*="min-width: 180px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="min-width:160px"],[style*="min-width: 160px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="min-width:130px"],[style*="min-width: 130px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="width:900px"],[style*="width: 900px"] { width:100% !important; max-width:100% !important; }
+
+  /* ── Modal ── */
+  .modal { max-width: 95vw !important; padding: 16px !important; margin: 8px !important; }
+  .modal-title { font-size: 13px !important; }
+
+  /* ── XP Toast ── */
+  .xp-toast { bottom: calc(var(--nav-h) + 10px) !important; right: 8px !important; min-width: 180px !important; padding: 10px 14px !important; }
+
+  /* ── Class tab rows ── */
+  .class-tab-row { flex-wrap: wrap !important; gap: 6px !important; }
+  .class-tab-row .btn { min-width: 72px !important; font-size: 11px !important; padding: 7px 8px !important; }
+
+  /* ── Hero card ── */
+  .hero-card { padding: 16px !important; }
+  .hero-name { font-size: 16px !important; }
+  .stars-big { font-size: 26px !important; }
+
+  /* ── Section headers ── */
+  h2, .section-title { font-size: 14px !important; }
+
+  /* ── Podium on leaderboard ── */
+  .podium-wrap { gap: 8px !important; padding: 12px 0 !important; }
+  .podium-item { width: 80px !important; }
+  .podium-avatar { width: 44px !important; height: 44px !important; font-size: 16px !important; }
+  .podium-bar { margin-top: 6px !important; }
+
+  /* ── Staff dashboard student cards ── */
+  .student-mini-card { padding: 10px !important; }
+
+  /* ── Attendance step buttons ── */
+  .period-btn { min-width: 0 !important; flex: 1 1 45% !important; }
+
+  /* ── Quiz grade buttons ── */
+  .grade-btn-row { flex-wrap: wrap !important; gap: 6px !important; }
+}
+</style>
+
+<style>
+@media (max-width: 768px) {
+  input, select, textarea { font-size: 16px !important; }
+  body { overflow-x: hidden; }
+  .class-tabs { flex-wrap: wrap !important; gap: 6px !important; }
+  .dash-stats-grid { grid-template-columns: repeat(2,1fr) !important; }
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+}
+</style>
+{% endblock %}
+{% block title %}Staff Dashboard{% endblock %}
+{% block page_title %}🎓 FACULTY CONTROL CENTER{% endblock %}
+{% block content %}
+
+{% if no_class %}
+<div class="card" style="text-align:center;padding:60px;">
+  <div style="font-size:56px;margin-bottom:16px;">🎯</div>
+  <div style="font-family:'Orbitron',monospace;font-size:16px;margin-bottom:8px;">No Classes Assigned Yet</div>
+  <div style="color:var(--text2);font-size:13px;margin-bottom:20px;">Go to your Profile and select the classes you handle (up to 5).</div>
+  <a href="{{ url_for('profile') }}" class="btn btn-primary"><i class="fas fa-user-edit"></i> Update Profile & Select Classes</a>
+</div>
+{% else %}
+
+<!-- ── CLASS SWITCHER (4 buttons) ── -->
+<div class="class-tab-row" style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
+  {% for cls in staff_classes %}
+  <a href="{{ url_for('staff_dashboard') }}?class={{ cls }}"
+     class="btn {% if cls == active_class %}btn-primary{% else %}btn-outline{% endif %}"
+     style="min-width:80px;justify-content:center;font-family:'Orbitron',monospace;font-size:12px;letter-spacing:1px;">
+    {{ cls }}
+  </a>
+  {% endfor %}
+</div>
+
+<!-- Stats for active class -->
+<div class="stats-grid">
+  <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-value">{{ student_count }}</div><div class="stat-label">STUDENTS — {{ active_class }}</div></div>
+  <div class="stat-card">
+    <div class="stat-icon">✅</div>
+    <div class="stat-value" style="color:var(--green)">{{ today_attendance.present or 0 }}</div>
+    <div class="stat-label">PRESENT TODAY</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">❌</div>
+    <div class="stat-value" style="color:var(--accent)">{{ today_attendance.absent or 0 }}</div>
+    <div class="stat-label">ABSENT TODAY</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">📋</div>
+    <div class="stat-value" style="color:var(--blue)">{{ assignments|length }}</div>
+    <div class="stat-label">ASSIGNMENTS</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">🔍</div>
+    <div class="stat-value" style="color:var(--gold)">{{ pending_certs|length }}</div>
+    <div class="stat-label">PENDING CERTS</div>
+  </div>
+</div>
+
+<!-- Student Performance Table -->
+<div class="card" style="margin-bottom:20px;">
+  <div class="card-title"><i class="fas fa-users"></i> CLASS PERFORMANCE — {{ active_class }}</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Student</th><th>Stars</th><th>Level</th><th>Attendance</th><th>Certs</th><th>Projects</th><th>Submissions</th><th>Status</th></tr></thead>
+      <tbody>
+      {% for s in students %}
+      <tr>
+        <td style="font-family:'Share Tech Mono',monospace;color:var(--text2);">{{ loop.index }}</td>
+        <td>
+          <div style="font-weight:600;">{{ s.name }}</div>
+          <div style="font-size:11px;color:var(--text2);">{{ s.roll_number or '—' }}</div>
+        </td>
+        <td style="font-family:'Share Tech Mono',monospace;color:var(--gold);">⭐ {{ s.streak_stars }}</td>
+        <td><span class="badge badge-blue">LVL {{ s.level }}</span></td>
+        <td>
+          {% if s.total_att and s.total_att > 0 %}
+            {% set att_pct = ((s.present_count / s.total_att) * 100)|round(1) %}
+            <span style="color:{% if att_pct>=75 %}var(--green){% elif att_pct>=60 %}var(--gold){% else %}var(--accent){% endif %}">{{ att_pct }}%</span>
+          {% else %}—{% endif %}
+        </td>
+        <td style="color:var(--blue);">{{ s.certs }}</td>
+        <td>{{ s.projects_count }}</td>
+        <td>{{ s.submissions_count }}</td>
+        <td>
+          {% if s.streak_stars < 100 %}<span class="badge badge-red">⚠ Low</span>
+          {% elif s.streak_stars < 500 %}<span class="badge badge-blue">Active</span>
+          {% else %}<span class="badge badge-green">🔥 Top</span>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+      {% if not students %}
+      <tr><td colspan="9" style="text-align:center;color:var(--text2);padding:30px;">No students in {{ active_class }} yet.</td></tr>
+      {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="grid-2">
+  <!-- Quiz Stats -->
+  <div class="card">
+    <div class="card-title"><i class="fas fa-question-circle"></i> QUIZ PERFORMANCE — {{ active_class }}</div>
+    {% if quiz_stats %}
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Quiz</th><th>Subject</th><th>Attempts</th><th>Avg Score</th></tr></thead>
+        <tbody>
+        {% for q in quiz_stats %}
+        <tr>
+          <td style="font-weight:600;font-size:13px;">{{ q.title }}</td>
+          <td style="font-size:12px;color:var(--text2);">{{ q.subject }}</td>
+          <td style="color:var(--blue);">{{ q.attempts or 0 }}</td>
+          <td style="color:var(--gold);">{% if q.avg_score %}{{ q.avg_score|round(1) }}%{% else %}—{% endif %}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:20px;color:var(--text2);font-size:13px;">No quizzes yet for {{ active_class }}.</div>
+    {% endif %}
+  </div>
+
+  <!-- Quick Actions + Notifications -->
+  <div style="display:flex;flex-direction:column;gap:16px;">
+    <div class="card">
+      <div class="card-title"><i class="fas fa-bolt"></i> QUICK ACTIONS</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <a href="{{ url_for('staff_attendance') }}?class={{ active_class }}" class="btn btn-primary btn-sm" style="justify-content:center;"><i class="fas fa-user-check"></i> Attendance</a>
+        <a href="{{ url_for('staff_timetable') }}" class="btn btn-outline btn-sm" style="justify-content:center;"><i class="fas fa-clock"></i> Timetable</a>
+        <a href="{{ url_for('staff_assignments') }}?class={{ active_class }}" class="btn btn-outline btn-sm" style="justify-content:center;"><i class="fas fa-tasks"></i> Assignments</a>
+        <a href="{{ url_for('staff_analytics') }}?class={{ active_class }}" class="btn btn-outline btn-sm" style="justify-content:center;"><i class="fas fa-chart-line"></i> Analytics</a>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><i class="fas fa-bell"></i> NOTIFICATIONS</div>
+      {% for n in notifications %}
+      <div style="padding:8px 0;border-bottom:1px solid var(--border);">
+        <div style="font-size:13px;font-weight:600;">{{ n.title }}</div>
+        <div style="font-size:12px;color:var(--text2);">{{ n.message[:60] }}...</div>
+      </div>
+      {% else %}
+      <div style="color:var(--text2);font-size:13px;text-align:center;padding:12px;">All caught up! ✓</div>
+      {% endfor %}
+      <a href="{{ url_for('notifications') }}" class="btn btn-outline btn-sm" style="width:100%;text-align:center;justify-content:center;margin-top:8px;">View All</a>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

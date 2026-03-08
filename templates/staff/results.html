@@ -1,0 +1,280 @@
+{% set current_user = user %}
+{% extends "base.html" %}
+{% block head %}
+
+<style id="mobile-global-fix">
+/* ═══════════════════════════════════════
+   CARE — Global Mobile Fixes
+   Applied to all pages
+═══════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* ── Layout ── */
+  body { overflow-x: hidden !important; }
+
+  /* ── Cards ── */
+  .card { padding: 14px !important; }
+  .card-title { font-size: 11px !important; letter-spacing: 1px !important; }
+
+  /* ── Stats grid ── */
+  .stats-grid { grid-template-columns: repeat(2,1fr) !important; gap: 10px !important; }
+  .stat-card { padding: 12px !important; }
+  .stat-value { font-size: 20px !important; }
+  .stat-label { font-size: 10px !important; }
+
+  /* ── Grids ── */
+  .grid-2, .grid-3 { grid-template-columns: 1fr !important; gap: 12px !important; }
+
+  /* ── Tables ── */
+  .table-wrap { overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; border-radius: 8px !important; }
+  table { font-size: 12px !important; min-width: 420px; }
+  th, td { padding: 8px 10px !important; white-space: nowrap !important; }
+
+  /* ── Forms ── */
+  input, select, textarea { font-size: 16px !important; } /* prevent iOS zoom */
+
+  /* ── Buttons ── */
+  .btn { padding: 8px 13px !important; font-size: 13px !important; }
+  .btn-sm { padding: 5px 10px !important; font-size: 11px !important; }
+
+  /* ── Flex rows → stack ── */
+  .filter-bar,
+  .flex-row,
+  [style*="display:flex"][style*="gap"],
+  [style*="display: flex"][style*="gap"] { flex-wrap: wrap !important; }
+
+  /* ── Inline width overrides ── */
+  [style*="min-width:260px"],[style*="min-width: 260px"] { min-width:0 !important; width:100% !important; }
+  [style*="min-width:180px"],[style*="min-width: 180px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="min-width:160px"],[style*="min-width: 160px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="min-width:130px"],[style*="min-width: 130px"] { min-width:0 !important; flex:1 1 100% !important; }
+  [style*="width:900px"],[style*="width: 900px"] { width:100% !important; max-width:100% !important; }
+
+  /* ── Modal ── */
+  .modal { max-width: 95vw !important; padding: 16px !important; margin: 8px !important; }
+  .modal-title { font-size: 13px !important; }
+
+  /* ── XP Toast ── */
+  .xp-toast { bottom: calc(var(--nav-h) + 10px) !important; right: 8px !important; min-width: 180px !important; padding: 10px 14px !important; }
+
+  /* ── Class tab rows ── */
+  .class-tab-row { flex-wrap: wrap !important; gap: 6px !important; }
+  .class-tab-row .btn { min-width: 72px !important; font-size: 11px !important; padding: 7px 8px !important; }
+
+  /* ── Hero card ── */
+  .hero-card { padding: 16px !important; }
+  .hero-name { font-size: 16px !important; }
+  .stars-big { font-size: 26px !important; }
+
+  /* ── Section headers ── */
+  h2, .section-title { font-size: 14px !important; }
+
+  /* ── Podium on leaderboard ── */
+  .podium-wrap { gap: 8px !important; padding: 12px 0 !important; }
+  .podium-item { width: 80px !important; }
+  .podium-avatar { width: 44px !important; height: 44px !important; font-size: 16px !important; }
+  .podium-bar { margin-top: 6px !important; }
+
+  /* ── Staff dashboard student cards ── */
+  .student-mini-card { padding: 10px !important; }
+
+  /* ── Attendance step buttons ── */
+  .period-btn { min-width: 0 !important; flex: 1 1 45% !important; }
+
+  /* ── Quiz grade buttons ── */
+  .grade-btn-row { flex-wrap: wrap !important; gap: 6px !important; }
+}
+</style>
+
+<style>
+@media (max-width: 768px) {
+  input, select, textarea { font-size: 16px !important; }
+  body { overflow-x: hidden; }
+  .class-tab-row { flex-wrap: wrap !important; gap: 6px !important; }
+  .filter-row { flex-direction: column !important; }
+  .filter-row .form-group { width: 100% !important; min-width: 0 !important; }
+  .subject-row { flex-direction: column !important; gap: 8px !important; }
+  .subject-row .form-group { width: 100% !important; }
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .table-wrap table { min-width: 500px; }
+}
+</style>
+{% endblock %}
+{% block title %}Internal Marks{% endblock %}
+{% block page_title %}📝 CAT INTERNAL MARKS{% endblock %}
+{% block content %}
+
+<!-- Class selector -->
+<div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;" class="class-tab-row">
+  {% for cls in staff_classes %}
+  <a href="?class={{ cls }}" class="btn {% if cls==active_class %}btn-primary{% else %}btn-outline{% endif %}"
+     style="min-width:90px;justify-content:center;font-family:'Orbitron',monospace;font-size:12px;">{{ cls }}</a>
+  {% endfor %}
+</div>
+
+{% if active_class %}
+
+<!-- Subject + semester selector -->
+<div class="card" style="margin-bottom:18px;padding:14px 18px;">
+  <form method="GET" class="filter-row" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
+    <input type="hidden" name="class" value="{{ active_class }}">
+    <div class="form-group" style="margin-bottom:0;min-width:160px;">
+      <label>Subject</label>
+      <input type="text" name="subject" value="{{ request.args.get('subject','') }}" placeholder="e.g. Data Structures">
+    </div>
+    <div class="form-group" style="margin-bottom:0;min-width:120px;">
+      <label>Semester</label>
+      <select name="semester">
+        <option value="">All Semesters</option>
+        {% for i in range(1,9) %}<option value="{{ i }}" {% if request.args.get('semester')|int == i %}selected{% endif %}>Semester {{ i }}</option>{% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn btn-outline btn-sm" style="padding:10px 18px;">Filter</button>
+  </form>
+</div>
+
+<!-- ═══ BULK ENTRY TABLE ═══ -->
+<div class="card">
+  <div class="card-title"><i class="fas fa-table"></i> CAT MARKS — {{ active_class }} — ALL STUDENTS
+    <span style="margin-left:auto;font-size:11px;color:var(--text2);font-weight:400;font-family:'Rajdhani',sans-serif;">Enter marks and click Save</span>
+  </div>
+
+  {% if students %}
+  <form method="POST" id="catForm">
+    <input type="hidden" name="class_name" value="{{ active_class }}">
+
+    <!-- Subject & Semester row -->
+    <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;align-items:flex-end;">
+      <div class="form-group" style="margin-bottom:0;flex:1;min-width:180px;">
+        <label>Subject <span style="color:var(--accent);">*</span></label>
+        <input type="text" name="subject" required value="{{ request.args.get('subject','') }}"
+               placeholder="Subject name for these marks" style="font-weight:600;">
+      </div>
+      <div class="form-group" style="margin-bottom:0;min-width:140px;">
+        <label>Semester <span style="color:var(--accent);">*</span></label>
+        <select name="semester" required>
+          <option value="">Select</option>
+          {% for i in range(1,9) %}<option value="{{ i }}" {% if request.args.get('semester')|int == i %}selected{% endif %}>Semester {{ i }}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table id="catTable">
+        <thead>
+          <tr>
+            <th style="min-width:60px;">Roll No</th>
+            <th style="min-width:160px;">Student Name</th>
+            <th style="min-width:120px;">
+              CAT 1 <span style="color:var(--text2);font-weight:400;">/100</span>
+              <div style="font-size:9px;color:var(--text2);margin-top:2px;font-weight:400;">Leave blank to skip</div>
+            </th>
+            <th style="min-width:120px;">
+              CAT 2 <span style="color:var(--text2);font-weight:400;">/100</span>
+              <div style="font-size:9px;color:var(--text2);margin-top:2px;font-weight:400;">Leave blank to skip</div>
+            </th>
+            <th style="min-width:80px;">Avg</th>
+            <th style="min-width:80px;">Existing</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for s in students %}
+        {% set ex = cat_lookup.get(s.id) if cat_lookup is defined else None %}
+        <tr id="row_{{ s.id }}">
+          <td style="font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--blue);">{{ s.roll_number }}</td>
+          <td style="font-weight:600;">{{ s.name }}</td>
+          <td>
+            <input type="number" name="cat1_{{ s.id }}" min="0" max="100" step="0.5"
+                   value="{{ ex.cat1_marks if ex else '' }}"
+                   placeholder="{{ ex.cat1_marks if ex else '—' }}"
+                   oninput="calcAvg({{ s.id }})"
+                   style="width:90px;padding:7px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Share Tech Mono',monospace;font-size:13px;text-align:center;">
+          </td>
+          <td>
+            <input type="number" name="cat2_{{ s.id }}" min="0" max="100" step="0.5"
+                   value="{{ ex.cat2_marks if ex else '' }}"
+                   placeholder="{{ ex.cat2_marks if ex else '—' }}"
+                   oninput="calcAvg({{ s.id }})"
+                   style="width:90px;padding:7px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Share Tech Mono',monospace;font-size:13px;text-align:center;">
+          </td>
+          <td>
+            <span id="avg_{{ s.id }}" style="font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--gold);font-weight:700;">
+              {% if ex %}{{ ((ex.cat1_marks + ex.cat2_marks)/2)|round(1) }}{% else %}—{% endif %}
+            </span>
+          </td>
+          <td>
+            {% if ex %}
+            <span class="badge badge-green" style="font-size:9px;">Saved</span>
+            {% else %}
+            <span class="badge" style="font-size:9px;background:rgba(144,144,176,0.15);color:var(--text2);">New</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div style="display:flex;gap:12px;margin-top:16px;align-items:center;flex-wrap:wrap;">
+      <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save All Marks</button>
+      <button type="button" class="btn btn-outline" onclick="fillAll()">Fill All Blank → 0</button>
+      <div style="font-size:12px;color:var(--text2);margin-left:auto;">
+        Existing entries will be <strong style="color:var(--gold);">updated</strong> (not duplicated)
+      </div>
+    </div>
+  </form>
+
+  {% else %}
+  <div style="text-align:center;padding:40px;color:var(--text2);">No students in {{ active_class }}.</div>
+  {% endif %}
+</div>
+
+<!-- Records table for other subjects -->
+{% if cat_records %}
+<div class="card" style="margin-top:18px;">
+  <div class="card-title"><i class="fas fa-history"></i> ALL CAT RECORDS — {{ active_class }}</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Roll No</th><th>Student</th><th>Subject</th><th>Sem</th><th>CAT 1</th><th>CAT 2</th><th>Avg</th></tr></thead>
+      <tbody>
+      {% for r in cat_records %}
+      <tr>
+        <td style="font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--blue);">{{ r.roll_number }}</td>
+        <td style="font-weight:600;">{{ r.student_name }}</td>
+        <td>{{ r.subject }}</td>
+        <td style="font-family:'Share Tech Mono',monospace;color:var(--text2);">S{{ r.semester }}</td>
+        <td style="font-family:'Share Tech Mono',monospace;color:{% if r.cat1_marks >= 50 %}var(--green){% else %}var(--accent){% endif %};">{{ r.cat1_marks }}</td>
+        <td style="font-family:'Share Tech Mono',monospace;color:{% if r.cat2_marks >= 50 %}var(--green){% else %}var(--accent){% endif %};">{{ r.cat2_marks }}</td>
+        <td style="font-weight:700;color:var(--gold);">{{ ((r.cat1_marks + r.cat2_marks) / 2)|round(1) }}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% endif %}
+
+<script>
+function calcAvg(sid) {
+  const c1 = parseFloat(document.querySelector(`[name="cat1_${sid}"]`).value) || 0;
+  const c2 = parseFloat(document.querySelector(`[name="cat2_${sid}"]`).value) || 0;
+  const el = document.getElementById(`avg_${sid}`);
+  if (c1 || c2) {
+    const filled = (c1 > 0 && c2 > 0) ? 2 : 1;
+    el.textContent = ((c1 + c2) / filled).toFixed(1);
+    el.style.color = 'var(--gold)';
+  } else {
+    el.textContent = '—';
+  }
+}
+
+function fillAll() {
+  document.querySelectorAll('#catTable input[type="number"]').forEach(inp => {
+    if (!inp.value) inp.value = 0;
+    const sid = inp.name.split('_')[1];
+    calcAvg(sid);
+  });
+}
+</script>
+{% endblock %}
