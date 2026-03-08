@@ -6,84 +6,44 @@
 {% block head %}
 
 <style id="mobile-global-fix">
-/* ═══════════════════════════════════════
-   CARE — Global Mobile Fixes
-   Applied to all pages
-═══════════════════════════════════════ */
 @media (max-width: 768px) {
-  /* ── Layout ── */
   body { overflow-x: hidden !important; }
-
-  /* ── Cards ── */
   .card { padding: 14px !important; }
   .card-title { font-size: 11px !important; letter-spacing: 1px !important; }
-
-  /* ── Stats grid ── */
   .stats-grid { grid-template-columns: repeat(2,1fr) !important; gap: 10px !important; }
   .stat-card { padding: 12px !important; }
   .stat-value { font-size: 20px !important; }
   .stat-label { font-size: 10px !important; }
-
-  /* ── Grids ── */
   .grid-2, .grid-3 { grid-template-columns: 1fr !important; gap: 12px !important; }
-
-  /* ── Tables ── */
   .table-wrap { overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; border-radius: 8px !important; }
   table { font-size: 12px !important; min-width: 420px; }
   th, td { padding: 8px 10px !important; white-space: nowrap !important; }
-
-  /* ── Forms ── */
-  input, select, textarea { font-size: 16px !important; } /* prevent iOS zoom */
-
-  /* ── Buttons ── */
+  input, select, textarea { font-size: 16px !important; }
   .btn { padding: 8px 13px !important; font-size: 13px !important; }
   .btn-sm { padding: 5px 10px !important; font-size: 11px !important; }
-
-  /* ── Flex rows → stack ── */
-  .filter-bar,
-  .flex-row,
+  .filter-bar, .flex-row,
   [style*="display:flex"][style*="gap"],
   [style*="display: flex"][style*="gap"] { flex-wrap: wrap !important; }
-
-  /* ── Inline width overrides ── */
   [style*="min-width:260px"],[style*="min-width: 260px"] { min-width:0 !important; width:100% !important; }
   [style*="min-width:180px"],[style*="min-width: 180px"] { min-width:0 !important; flex:1 1 100% !important; }
   [style*="min-width:160px"],[style*="min-width: 160px"] { min-width:0 !important; flex:1 1 100% !important; }
   [style*="min-width:130px"],[style*="min-width: 130px"] { min-width:0 !important; flex:1 1 100% !important; }
   [style*="width:900px"],[style*="width: 900px"] { width:100% !important; max-width:100% !important; }
-
-  /* ── Modal ── */
   .modal { max-width: 95vw !important; padding: 16px !important; margin: 8px !important; }
   .modal-title { font-size: 13px !important; }
-
-  /* ── XP Toast ── */
   .xp-toast { bottom: calc(var(--nav-h) + 10px) !important; right: 8px !important; min-width: 180px !important; padding: 10px 14px !important; }
-
-  /* ── Class tab rows ── */
   .class-tab-row { flex-wrap: wrap !important; gap: 6px !important; }
   .class-tab-row .btn { min-width: 72px !important; font-size: 11px !important; padding: 7px 8px !important; }
-
-  /* ── Hero card ── */
   .hero-card { padding: 16px !important; }
   .hero-name { font-size: 16px !important; }
   .stars-big { font-size: 26px !important; }
-
-  /* ── Section headers ── */
   h2, .section-title { font-size: 14px !important; }
-
-  /* ── Podium on leaderboard ── */
   .podium-wrap { gap: 8px !important; padding: 12px 0 !important; }
   .podium-item { width: 80px !important; }
   .podium-avatar { width: 44px !important; height: 44px !important; font-size: 16px !important; }
   .podium-bar { margin-top: 6px !important; }
-
-  /* ── Staff dashboard student cards ── */
   .student-mini-card { padding: 10px !important; }
-
-  /* ── Attendance step buttons ── */
   .period-btn { min-width: 0 !important; flex: 1 1 45% !important; }
-
-  /* ── Quiz grade buttons ── */
   .grade-btn-row { flex-wrap: wrap !important; gap: 6px !important; }
 }
 </style>
@@ -132,9 +92,7 @@
     color: var(--text);
 }
 .hero-sub { font-size: 13px; color: var(--text2); margin-top: 3px; }
-.stars-display {
-    text-align: right;
-}
+.stars-display { text-align: right; }
 .stars-big {
     font-family: 'Orbitron', monospace;
     font-size: 36px;
@@ -197,6 +155,87 @@
 @keyframes xpShine {
     0% { left: -50px; }
     100% { left: 110%; }
+}
+
+/* ── HERO AVATAR BAR (mobile) ── */
+.hero-avatar-bar-wrap {
+    display: none; /* hidden on desktop — sidebar already has it */
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+}
+.hero-avatar-bar-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--text2);
+    font-family: 'Share Tech Mono', monospace;
+    margin-bottom: 6px;
+}
+.hero-avatar-track-wrap {
+    position: relative;
+    height: 34px;
+    overflow: visible;
+}
+.hero-avatar-track {
+    height: 7px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 4px;
+    margin-top: 13px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+.hero-avatar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), #f5a623, var(--gold));
+    border-radius: 4px;
+    transition: width 2s ease;
+    box-shadow: 0 0 10px rgba(233,69,96,0.6);
+}
+.hero-avatar-walker {
+    position: absolute;
+    top: 0;
+    font-size: 28px;
+    transform: translateX(-50%);
+    transition: left 2s ease;
+    animation: walkerBob 0.5s ease infinite alternate;
+    cursor: pointer;
+    user-select: none;
+    filter: drop-shadow(0 0 6px rgba(233,69,96,0.5));
+}
+.hero-avatar-bubble {
+    display: none;
+    margin-top: 10px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--gold);
+    border-radius: 10px;
+    padding: 8px 13px;
+    font-size: 12px;
+    color: var(--text);
+    line-height: 1.5;
+    animation: bubblePop 0.3s ease;
+    position: relative;
+}
+.hero-avatar-bubble::before {
+    content: '';
+    position: absolute;
+    top: -7px;
+    left: 20px;
+    border-left: 7px solid transparent;
+    border-right: 7px solid transparent;
+    border-bottom: 7px solid var(--gold);
+}
+
+@media (max-width: 768px) {
+    .hero-avatar-bar-wrap { display: block !important; }
+    .hero-stats { grid-template-columns: repeat(2,1fr) !important; }
+    .hero-top { flex-direction: column !important; gap: 10px !important; }
+    .stars-display { text-align: left !important; }
+    .stars-big { font-size: 28px !important; }
+    .hero-name { font-size: 17px !important; }
+    .podium-block { width: 50px !important; }
+    .podium-avatar { width: 36px !important; height: 36px !important; font-size: 13px !important; }
+    body { overflow-x: hidden; }
 }
 
 /* Hero stats row */
@@ -290,7 +329,7 @@
     flex-shrink: 0;
 }
 
-/* Quiz card game style */
+/* Quiz card */
 .quiz-card {
     background: linear-gradient(135deg, var(--card2), var(--bg3));
     border: 1px solid var(--border);
@@ -302,12 +341,9 @@
     margin-bottom: 8px;
     transition: all 0.2s;
 }
-.quiz-card:hover {
-    border-color: var(--accent);
-    transform: translateX(4px);
-}
+.quiz-card:hover { border-color: var(--accent); transform: translateX(4px); }
 
-/* Assignment game pill */
+/* Assignment pill */
 .assign-pill {
     background: var(--bg3);
     border: 1px solid var(--border);
@@ -322,20 +358,6 @@
 }
 .assign-pill:hover { border-color: rgba(0,180,216,0.4); }
 .assign-pill.overdue { border-color: rgba(233,69,96,0.4); background: rgba(233,69,96,0.04); }
-</style>
-<style>
-
-@media (max-width: 768px) {
-  .hero-stats { grid-template-columns: repeat(2,1fr) !important; }
-  .hero-top { flex-direction: column !important; gap: 10px !important; }
-  .stars-display { text-align: left !important; }
-  .stars-big { font-size: 28px !important; }
-  .hero-name { font-size: 17px !important; }
-  .podium-block { width: 50px !important; }
-  .podium-avatar { width: 36px !important; height: 36px !important; font-size: 13px !important; }
-  body { overflow-x: hidden; }
-}
-
 </style>
 {% endblock %}
 
@@ -357,6 +379,7 @@
         </div>
     </div>
 
+    <!-- XP Bar (desktop style) -->
     <div class="xp-bar-section">
         <div class="xp-labels">
             <span class="xp-level-badge">⚡ LEVEL {{ user.level }}</span>
@@ -366,6 +389,28 @@
             <div class="xp-bar-inner" style="width: 0%" id="xpBar">
                 <div class="xp-shine"></div>
             </div>
+        </div>
+    </div>
+
+    <!-- ── MOBILE AVATAR WALKER BAR ── -->
+    <div class="hero-avatar-bar-wrap" id="heroAvatarSection">
+        <div class="hero-avatar-bar-labels">
+            <span>LVL {{ user.level }}</span>
+            <span id="heroXpLabel">{{ user.streak_stars % 1000 }} / 1000 XP</span>
+            <span>LVL {{ user.level + 1 }}</span>
+        </div>
+        <div class="hero-avatar-track-wrap">
+            <div class="hero-avatar-track">
+                <div class="hero-avatar-fill" id="heroAvatarFill" style="width:0%;"></div>
+            </div>
+            <div class="hero-avatar-walker" id="heroAvatarWalker"
+                 style="left: 0%;"
+                 onclick="heroWalkerTap(event)">
+                🧑‍🎓
+            </div>
+        </div>
+        <div class="hero-avatar-bubble" id="heroAvatarBubble">
+            <span id="heroAvatarMsg"></span>
         </div>
     </div>
 
@@ -430,7 +475,7 @@
             {% for s in top5[3:] %}
             <div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border);">
                 <div style="font-size:16px;">{{ '4️⃣' if loop.index==1 else '5️⃣' }}</div>
-                <div style="font-size:40px;width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--purple));display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:white;flex-shrink:0;">{{ s.name[0] }}</div>
+                <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--purple));display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:white;flex-shrink:0;">{{ s.name[0] }}</div>
                 <div style="flex:1;font-size:13px;{% if s.id==user.id %}color:var(--accent){% endif %}">{{ s.name }}</div>
                 <div style="font-size:11px;color:var(--gold);font-family:'Share Tech Mono',monospace;">⭐{{ s.streak_stars }}</div>
                 <span class="badge badge-bronze">Bronze</span>
@@ -476,7 +521,6 @@
         </div>
         {% endif %}
 
-        <!-- Active quizzes below -->
         {% if active_quizzes %}
         <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
             <div style="font-family:'Orbitron',monospace;font-size:11px;color:var(--accent);letter-spacing:2px;margin-bottom:10px;">⚡ ACTIVE QUIZZES</div>
@@ -486,9 +530,7 @@
                     <div style="font-weight:700;font-size:13px;">{{ q.title }}</div>
                     <div style="font-size:11px;color:var(--text2);">{{ q.subject }} • {{ q.duration_minutes }} mins</div>
                 </div>
-                <a href="{{ url_for('attempt_quiz', quiz_id=q.id) }}" class="btn btn-gold btn-sm">
-                    ⚡ Play
-                </a>
+                <a href="{{ url_for('attempt_quiz', quiz_id=q.id) }}" class="btn btn-gold btn-sm">⚡ Play</a>
             </div>
             {% endfor %}
         </div>
@@ -552,31 +594,100 @@
 
 {% block scripts %}
 <script>
-// Animate XP bar on load
-window.addEventListener('load', ()=>{
-    setTimeout(()=>{
-        document.getElementById('xpBar').style.width = '{{ level_progress }}%';
+const _heroStars = {{ user.streak_stars }};
+const _heroLevel = {{ user.level }};
+const _heroProgress = {{ level_progress }};
+
+// ── Animate XP bar + avatar on load
+window.addEventListener('load', () => {
+    // Desktop XP bar
+    setTimeout(() => {
+        document.getElementById('xpBar').style.width = _heroProgress + '%';
     }, 400);
 
+    // Mobile avatar bar — animate in after slight delay
+    setTimeout(() => {
+        const fill = document.getElementById('heroAvatarFill');
+        const walker = document.getElementById('heroAvatarWalker');
+        if (fill) fill.style.width = _heroProgress + '%';
+        if (walker) walker.style.left = _heroProgress + '%';
+    }, 600);
+
     // Animate star counter
-    const target = {{ user.streak_stars }};
     const counter = document.getElementById('starCounter');
-    if(target > 0){
-        let current = Math.max(0, target - 50);
-        const step = Math.ceil((target - current) / 30);
-        const interval = setInterval(()=>{
-            current = Math.min(current + step, target);
+    if (_heroStars > 0) {
+        let current = Math.max(0, _heroStars - 50);
+        const step = Math.ceil((_heroStars - current) / 30);
+        const interval = setInterval(() => {
+            current = Math.min(current + step, _heroStars);
             counter.textContent = current;
-            if(current >= target) clearInterval(interval);
+            if (current >= _heroStars) clearInterval(interval);
         }, 30);
+    }
+
+    // Auto-greet on mobile after bar animates
+    if (window.innerWidth <= 768) {
+        setTimeout(() => heroWalkerAutoGreet(), 1400);
     }
 });
 
-// Star burst on leaderboard hover
-document.querySelectorAll('.podium-player').forEach(el=>{
-    el.addEventListener('mouseenter', e=>{
+// ── Hero walker tap
+function heroWalkerTap(e) {
+    const msgs = _heroStars < 10
+        ? ["So few stars... 😢", "Help me grow! 🌱", "Earn more XP!"]
+        : _heroStars < 100
+        ? ["Getting there! 💪", "Keep grinding! ⚡", "Almost 100 stars!"]
+        : _heroStars < 500
+        ? ["I'm levelling up! 🔥", "Stars incoming! ⭐", "Feel the power!"]
+        : ["Top tier! 🏆", "Unstoppable! 🚀", "Legend in the making! 👑"];
+
+    const msg = msgs[Math.floor(Math.random() * msgs.length)];
+    showHeroAvatarBubble(msg);
+
+    // Star burst at tap
+    burstStars(e.clientX, e.clientY, 10);
+}
+
+// ── Auto greet on page load (mobile only)
+function heroWalkerAutoGreet() {
+    const greets = _heroStars < 10
+        ? ["Welcome! Time to earn stars! ⭐", "Let's start climbing! 🚀"]
+        : _heroStars < 100
+        ? ["Back in action! 💪", "Keep up the grind! 🔥"]
+        : _heroStars < 500
+        ? ["You're crushing it! ⚡", "Star machine! ⭐"]
+        : ["LEGEND status! 🏆", "Top of the ranks! 👑"];
+    showHeroAvatarBubble(greets[Math.floor(Math.random() * greets.length)]);
+}
+
+function showHeroAvatarBubble(msg) {
+    const bubble = document.getElementById('heroAvatarBubble');
+    const msgEl = document.getElementById('heroAvatarMsg');
+    if (!bubble || !msgEl) return;
+    msgEl.textContent = msg;
+    bubble.style.display = 'block';
+    bubble.style.opacity = '1';
+    // Reset animation
+    bubble.style.animation = 'none';
+    void bubble.offsetWidth;
+    bubble.style.animation = 'bubblePop 0.3s ease';
+    clearTimeout(window._heroBubbleTimer);
+    window._heroBubbleTimer = setTimeout(() => {
+        bubble.style.transition = 'opacity 0.4s';
+        bubble.style.opacity = '0';
+        setTimeout(() => {
+            bubble.style.display = 'none';
+            bubble.style.opacity = '1';
+            bubble.style.transition = '';
+        }, 420);
+    }, 3200);
+}
+
+// ── Star burst on leaderboard hover
+document.querySelectorAll('.podium-player').forEach(el => {
+    el.addEventListener('mouseenter', e => {
         const r = el.getBoundingClientRect();
-        burstStars(r.left + r.width/2, r.top + 20, 6);
+        burstStars(r.left + r.width / 2, r.top + 20, 6);
     });
 });
 </script>
