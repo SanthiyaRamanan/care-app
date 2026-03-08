@@ -1,2 +1,5 @@
 [phases.setup]
-nixPkgs = ["python312", "gcc", "libmysqlclient", "pkg-config"]
+nixPkgs = ["python312", "gcc", "pkg-config", "default-libmysqlclient-dev"]
+
+[phases.install]
+cmds = ["pip install -r requirements.txt"]
