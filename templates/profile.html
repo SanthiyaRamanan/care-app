@@ -48,36 +48,41 @@
     </div>
 
     {% if user.role in ('staff', 'admin') %}
-    <!-- ══ CLASS SELECTION BY YEAR ══ -->
+    <!-- ══ CLASS SELECTION BY YEAR (from DB via classes_by_year) ══ -->
     <div class="form-group">
       <label>MY CLASSES</label>
       <div style="background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:16px;">
 
         <div style="font-size:11px;color:var(--text2);margin-bottom:14px;">
-          Select the classes you handle across any year <span style="color:var(--accent);font-weight:700;">(max 5 total)</span>
+          Select the classes you handle &nbsp;<span style="color:var(--accent);font-weight:700;">(max 5 total)</span>
         </div>
 
-        <!-- Year Tab Buttons -->
+        <!-- Year Tab Buttons — built from classes_by_year keys -->
         <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;" id="yearTabRow">
-          {% for yr in [1,2,3,4] %}
+          {% for yr in classes_by_year.keys() %}
           <button type="button" id="yrtab_{{ yr }}"
             onclick="switchYearTab({{ yr }})"
             style="padding:7px 16px;border-radius:8px;font-size:12px;font-family:'Orbitron',monospace;font-weight:700;cursor:pointer;border:1px solid var(--border);transition:all 0.2s;
                    background:{% if loop.first %}var(--accent){% else %}var(--bg3){% endif %};
                    color:{% if loop.first %}white{% else %}var(--text2){% endif %};">
             YEAR {{ yr }}
-            <span id="yrbadge_{{ yr }}" style="font-size:10px;margin-left:4px;opacity:0.8;"></span>
+            <span id="yrbadge_{{ yr }}" style="font-size:10px;margin-left:3px;opacity:0.85;"></span>
           </button>
           {% endfor %}
         </div>
 
-        <!-- Year 1 Classes -->
-        <div id="yrpanel_1" class="yr-panel">
-          <div style="font-size:10px;color:var(--text2);letter-spacing:1px;margin-bottom:8px;">SELECT YOUR YEAR 1 CLASSES</div>
+        <!-- One panel per year, classes from DB -->
+        {% for yr, cls_list in classes_by_year.items() %}
+        <div id="yrpanel_{{ yr }}" class="yr-panel" {% if not loop.first %}style="display:none;"{% endif %}>
+          <div style="font-size:10px;color:var(--text2);letter-spacing:1px;margin-bottom:10px;">
+            YEAR {{ yr }} CLASSES
+          </div>
+          {% if cls_list %}
           <div style="display:flex;flex-wrap:wrap;gap:8px;">
-            {% for cls in ['I-A','I-B','I-C','I-D','I-E','I-F','I-G'] %}
-            <label class="cls-label {% if cls in my_classes %}cls-selected{% endif %}" id="lbl_{{ cls }}"
-                   onclick="toggleClass(this, '{{ cls }}')">
+            {% for cls in cls_list %}
+            <label class="cls-label {% if cls in my_classes %}cls-selected{% endif %}"
+                   id="lbl_{{ cls|replace(' ','_') }}"
+                   onclick="toggleClass(this)">
               <input type="checkbox" name="staff_classes" value="{{ cls }}"
                      {% if cls in my_classes %}checked{% endif %}
                      style="width:auto;accent-color:var(--accent);">
@@ -85,57 +90,13 @@
             </label>
             {% endfor %}
           </div>
+          {% else %}
+          <div style="font-size:12px;color:var(--text2);padding:10px 0;">No classes found for Year {{ yr }}.</div>
+          {% endif %}
         </div>
+        {% endfor %}
 
-        <!-- Year 2 Classes -->
-        <div id="yrpanel_2" class="yr-panel" style="display:none;">
-          <div style="font-size:10px;color:var(--text2);letter-spacing:1px;margin-bottom:8px;">SELECT YOUR YEAR 2 CLASSES</div>
-          <div style="display:flex;flex-wrap:wrap;gap:8px;">
-            {% for cls in ['CS-A','CS-B','CE-A','MECH-A','AD-A','AD-B','ECE-A'] %}
-            <label class="cls-label {% if cls in my_classes %}cls-selected{% endif %}" id="lbl_{{ cls }}"
-                   onclick="toggleClass(this, '{{ cls }}')">
-              <input type="checkbox" name="staff_classes" value="{{ cls }}"
-                     {% if cls in my_classes %}checked{% endif %}
-                     style="width:auto;accent-color:var(--accent);">
-              {{ cls }}
-            </label>
-            {% endfor %}
-          </div>
-        </div>
-
-        <!-- Year 3 Classes -->
-        <div id="yrpanel_3" class="yr-panel" style="display:none;">
-          <div style="font-size:10px;color:var(--text2);letter-spacing:1px;margin-bottom:8px;">SELECT YOUR YEAR 3 CLASSES</div>
-          <div style="display:flex;flex-wrap:wrap;gap:8px;">
-            {% for cls in ['CS-C','CS-D','CE-B','MECH-B','AD-C','AD-D','ECE-B'] %}
-            <label class="cls-label {% if cls in my_classes %}cls-selected{% endif %}" id="lbl_{{ cls }}"
-                   onclick="toggleClass(this, '{{ cls }}')">
-              <input type="checkbox" name="staff_classes" value="{{ cls }}"
-                     {% if cls in my_classes %}checked{% endif %}
-                     style="width:auto;accent-color:var(--accent);">
-              {{ cls }}
-            </label>
-            {% endfor %}
-          </div>
-        </div>
-
-        <!-- Year 4 Classes -->
-        <div id="yrpanel_4" class="yr-panel" style="display:none;">
-          <div style="font-size:10px;color:var(--text2);letter-spacing:1px;margin-bottom:8px;">SELECT YOUR YEAR 4 CLASSES</div>
-          <div style="display:flex;flex-wrap:wrap;gap:8px;">
-            {% for cls in ['CS-E','CS-F','CE-C','MECH-C','AD-E','AD-F','ECE-C'] %}
-            <label class="cls-label {% if cls in my_classes %}cls-selected{% endif %}" id="lbl_{{ cls }}"
-                   onclick="toggleClass(this, '{{ cls }}')">
-              <input type="checkbox" name="staff_classes" value="{{ cls }}"
-                     {% if cls in my_classes %}checked{% endif %}
-                     style="width:auto;accent-color:var(--accent);">
-              {{ cls }}
-            </label>
-            {% endfor %}
-          </div>
-        </div>
-
-        <!-- Counter + hint -->
+        <!-- Counter + warning -->
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:10px;border-top:1px solid var(--border);">
           <div style="font-size:11px;color:var(--text2);">
             Total selected: <span id="countNum" style="color:var(--accent);font-weight:700;font-family:'Orbitron',monospace;">{{ my_classes|length }}</span> / 5
@@ -209,21 +170,20 @@
 }
 @media (max-width: 768px) {
   .cls-label { font-size: 12px; padding: 6px 10px; }
-  #yearTabRow button { padding: 6px 12px; font-size: 11px; }
+  #yearTabRow button { padding: 6px 11px; font-size: 11px; }
 }
 </style>
 
 <script>
 const MAX_CLASSES = 5;
+const yearKeys = [{% for yr in classes_by_year.keys() %}{{ yr }}{% if not loop.last %},{% endif %}{% endfor %}];
 
 function switchYearTab(yr) {
-  // Hide all panels
   document.querySelectorAll('.yr-panel').forEach(p => p.style.display = 'none');
-  // Show selected
   document.getElementById('yrpanel_' + yr).style.display = 'block';
-  // Update tab styles
-  [1,2,3,4].forEach(y => {
+  yearKeys.forEach(y => {
     const btn = document.getElementById('yrtab_' + y);
+    if (!btn) return;
     if (y === yr) {
       btn.style.background = 'var(--accent)';
       btn.style.color = 'white';
@@ -236,11 +196,11 @@ function switchYearTab(yr) {
   });
 }
 
-function toggleClass(label, cls) {
+function toggleClass(label) {
   const cb = label.querySelector('input[type=checkbox]');
   const totalChecked = document.querySelectorAll('input[name="staff_classes"]:checked').length;
 
-  // If trying to CHECK and already at max — block it
+  // Block if trying to check and already at max
   if (!cb.checked && totalChecked >= MAX_CLASSES) {
     document.getElementById('maxWarn').style.display = 'block';
     setTimeout(() => document.getElementById('maxWarn').style.display = 'none', 2500);
@@ -248,10 +208,8 @@ function toggleClass(label, cls) {
     return false;
   }
 
-  // Toggle after short delay (let checkbox state update)
   setTimeout(() => {
-    const isChecked = cb.checked;
-    if (isChecked) {
+    if (cb.checked) {
       label.classList.add('cls-selected');
     } else {
       label.classList.remove('cls-selected');
@@ -264,8 +222,8 @@ function updateCount() {
   const count = document.querySelectorAll('input[name="staff_classes"]:checked').length;
   document.getElementById('countNum').textContent = count;
 
-  // Update year tab badges
-  [1,2,3,4].forEach(yr => {
+  // Update badge on each year tab
+  yearKeys.forEach(yr => {
     const panel = document.getElementById('yrpanel_' + yr);
     const badge = document.getElementById('yrbadge_' + yr);
     if (panel && badge) {
@@ -274,18 +232,18 @@ function updateCount() {
     }
   });
 
-  // Hide max warning if under limit
   if (count < MAX_CLASSES) {
     document.getElementById('maxWarn').style.display = 'none';
   }
 }
 
-// Init badges on load
+// Init on load
 updateCount();
 
-// Auto-switch to year tab that has existing selections
+// Auto-open the year tab that has existing selections
 (function() {
-  for (let yr = 1; yr <= 4; yr++) {
+  for (let i = 0; i < yearKeys.length; i++) {
+    const yr = yearKeys[i];
     const panel = document.getElementById('yrpanel_' + yr);
     if (panel && panel.querySelectorAll('input:checked').length > 0) {
       switchYearTab(yr);
