@@ -6,14 +6,12 @@ from datetime import datetime, date, timedelta
 from functools import wraps
 
 from flask import (Flask, render_template, request, redirect,
-                   url_for, session, flash, jsonify, send_file, send_from_directory)
-import pymysql
-import pymysql.cursors
+                   url_for, session, flash, jsonify, send_file)
+from flask_mysqldb import MySQL
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 
 from config import Config
-
 
 try:
     import openpyxl
@@ -23,6 +21,7 @@ except ImportError:
 
 app = Flask(__name__)
 app.config.from_object(Config)
+mysql = MySQL(app)
 
 # Jinja filter for JSON parsing in templates
 app.jinja_env.filters['from_json'] = json.loads
@@ -36,6 +35,7 @@ ALL_CLASSES = [
     'CS-A','CS-B','CE-A','MECH-A','AD-A','AD-B','ECE-A'
 ]
 
+# Classes grouped by year (1st year = sem 1&2, 2nd = sem 3&4, 3rd = sem 5&6, 4th = sem 7&8)
 CLASSES_BY_YEAR = {
     1: ['I-A','I-B','I-C','I-D','I-E','I-F','I-G'],
     2: ['CS-A','CS-B','CE-A','MECH-A','AD-A','AD-B','ECE-A'],
@@ -44,50 +44,15 @@ CLASSES_BY_YEAR = {
 }
 
 # ════════════════════════════════════════════
-#  DATABASE CONNECTION
-# ════════════════════════════════════════════
-
-def get_db():
-    """Get a new PyMySQL connection."""
-    return pymysql.connect(
-        host=app.config['MYSQL_HOST'],
-        port=app.config['MYSQL_PORT'],
-        user=app.config['MYSQL_USER'],
-        password=app.config['MYSQL_PASSWORD'],
-        database=app.config['MYSQL_DB'],
-        cursorclass=pymysql.cursors.DictCursor,
-        autocommit=False,
-        charset='utf8mb4'
-    )
-
-def get_cur():
-    """Get cursor from a new connection. Store conn on cursor for commit/close."""
-    conn = get_db()
-    cur = conn.cursor()
-    cur._conn = conn  # attach conn so we can commit/close later
-    return cur
-
-def commit_and_close(cur):
-    """Commit the connection attached to this cursor, then close both."""
-    try:
-        cur._conn.commit()
-    finally:
-        cur.close()
-        cur._conn.close()
-
-def close_cur(cur):
-    """Close cursor and its connection without committing."""
-    try:
-        cur.close()
-        cur._conn.close()
-    except:
-        pass
-
-# ════════════════════════════════════════════
 #  HELPERS
 # ════════════════════════════════════════════
 
+def get_cur():
+    return mysql.connection.cursor()
+
 def parse_class_key(class_key):
+    """Parse '3-AD-B' → (cls_name='AD-B', cls_year=3).
+       Plain keys like 'I-A' or 'AD-B' → (cls_name=key, cls_year=None)."""
     import re as _re
     m = _re.match(r'^(\d+)-(.+)$', class_key or '')
     if m:
@@ -95,6 +60,7 @@ def parse_class_key(class_key):
     return class_key, None
 
 def year_filter_sql(cls_year, alias=''):
+    """Return (sql_fragment, params_list) for year filtering."""
     col = f"{alias}.year" if alias else "year"
     if cls_year:
         return f" AND {col}=%s", [cls_year]
@@ -110,23 +76,7 @@ def save_file(file, subfolder):
     path = os.path.join(app.config['UPLOAD_FOLDER'], subfolder, fn)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     file.save(path)
-    # Return a relative path from UPLOAD_FOLDER root, e.g. "profiles/20240101_pic.jpg"
-    return f"{subfolder}/{fn}"
-
-def get_profile_pic_url(profile_pic):
-    """
-    Returns a URL to serve the profile picture.
-    Handles both old-style paths (uploads/profiles/...) and new-style (profiles/...).
-    """
-    if not profile_pic:
-        return None
-    # Strip leading 'uploads/' if present (legacy paths stored with it)
-    clean = profile_pic.lstrip('/')
-    if clean.startswith('uploads/'):
-        clean = clean[len('uploads/'):]
-    return url_for('serve_upload', filename=clean)
-
-# make get_profile_pic_url available in all templates via context_processor (defined below after decorators)
+    return f"uploads/{subfolder}/{fn}"
 
 def get_current_user():
     if 'user_id' not in session:
@@ -134,31 +84,31 @@ def get_current_user():
     try:
         cur = get_cur()
         cur.execute("SELECT * FROM users WHERE id=%s", (session['user_id'],))
-        u = cur.fetchone()
-        close_cur(cur)
+        u = cur.fetchone(); cur.close()
         return u
     except:
         return None
 
 def get_staff_classes(staff_id):
+    """Return list of class_names this staff chose in their profile."""
     try:
         cur = get_cur()
-        cur.execute("SELECT class_name FROM staff_classes WHERE staff_id=%s ORDER BY class_name", (staff_id,))
-        rows = cur.fetchall()
-        close_cur(cur)
+        cur.execute("SELECT class_name FROM staff_classes WHERE staff_id=%s ORDER BY class_name",
+                    (staff_id,))
+        rows = cur.fetchall(); cur.close()
         return [r['class_name'] for r in rows]
     except:
         return []
 
 def get_class_coordinator(class_name):
+    """Return the staff user who is CC for this class, or None."""
     try:
         cur = get_cur()
         cur.execute("""SELECT u.* FROM users u
                        JOIN staff_classes sc ON sc.staff_id=u.id
                        WHERE sc.is_coordinator=1 AND sc.coordinator_class=%s
                        LIMIT 1""", (class_name,))
-        cc = cur.fetchone()
-        close_cur(cur)
+        cc = cur.fetchone(); cur.close()
         return cc
     except:
         return None
@@ -166,10 +116,11 @@ def get_class_coordinator(class_name):
 def add_stars(user_id, amount, reason, notif_type='streak'):
     try:
         cur = get_cur()
+        # Don't give stars to admin
         cur.execute("SELECT role FROM users WHERE id=%s", (user_id,))
         u = cur.fetchone()
         if u and u['role'] == 'admin':
-            close_cur(cur); return
+            cur.close(); return
 
         if amount >= 0:
             cur.execute("""UPDATE users SET streak_stars=streak_stars+%s,
@@ -192,7 +143,7 @@ def add_stars(user_id, amount, reason, notif_type='streak'):
         _notif(cur, user_id,
                f'+{amount} ⭐ Stars Earned' if amount >= 0 else f'{amount} ⭐ Stars Deducted',
                reason, notif_type if amount >= 0 else 'warning')
-        commit_and_close(cur)
+        mysql.connection.commit(); cur.close()
     except Exception as e:
         print(f"add_stars error: {e}")
 
@@ -204,7 +155,7 @@ def notify(user_id, title, message, ntype='general'):
     try:
         cur = get_cur()
         _notif(cur, user_id, title, message, ntype)
-        commit_and_close(cur)
+        mysql.connection.commit(); cur.close()
     except Exception as e:
         print(f"notify error: {e}")
 
@@ -212,8 +163,7 @@ def get_notif_count(user_id):
     try:
         cur = get_cur()
         cur.execute("SELECT COUNT(*) AS c FROM notifications WHERE user_id=%s AND is_read=0", (user_id,))
-        r = cur.fetchone()
-        close_cur(cur)
+        r = cur.fetchone(); cur.close()
         return r['c'] if r else 0
     except:
         return 0
@@ -237,8 +187,7 @@ def get_today_slots(staff_id, class_name=None):
         else:
             cur.execute("SELECT * FROM timetable WHERE staff_id=%s AND day=%s ORDER BY period",
                         (staff_id, day_name))
-        rows = cur.fetchall()
-        close_cur(cur)
+        rows = cur.fetchall(); cur.close()
         return rows
     except:
         return []
@@ -279,29 +228,12 @@ def student_required(f):
         return f(*a,**kw)
     return deco
 
-# ════════════════════════════════════════════
-#  SERVE UPLOADED FILES + CONTEXT PROCESSOR
-# ════════════════════════════════════════════
-
-@app.route('/uploads/<path:filename>')
-def serve_upload(filename):
-    """Serve files from UPLOAD_FOLDER. Inline auth avoids decorator ordering issues."""
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
-
 @app.context_processor
 def inject_globals():
     nc = 0
     if 'user_id' in session:
         nc = get_notif_count(session['user_id'])
-    return dict(
-        notif_count=nc,
-        today=date.today(),
-        all_classes=ALL_CLASSES,
-        classes_by_year=CLASSES_BY_YEAR,
-        get_profile_pic_url=get_profile_pic_url
-    )
+    return dict(notif_count=nc, today=date.today(), all_classes=ALL_CLASSES, classes_by_year=CLASSES_BY_YEAR)
 
 # ════════════════════════════════════════════
 #  AUTH
@@ -320,8 +252,7 @@ def login():
         pwd   = request.form.get('password','')
         cur = get_cur()
         cur.execute("SELECT * FROM users WHERE email=%s", (email,))
-        u = cur.fetchone()
-        close_cur(cur)
+        u = cur.fetchone(); cur.close()
         if u and check_password_hash(u['password_hash'], pwd):
             session.clear()
             session['user_id'] = u['id']
@@ -345,6 +276,7 @@ def register():
         cc_class   = request.form.get('coordinator_class','') if is_cc else ''
         cc_year    = request.form.get('coordinator_year', '') if is_cc else ''
 
+        # Students get class/year/roll — staff get none of these
         if role == 'student':
             year = request.form.get('year', type=int, default=1)
             cls  = request.form.get('class_name','')
@@ -361,8 +293,7 @@ def register():
         cur = get_cur()
         cur.execute("SELECT id FROM users WHERE email=%s", (email,))
         if cur.fetchone():
-            flash('Email already registered — please log in instead.','danger')
-            close_cur(cur)
+            flash('Email already registered — please log in instead.','danger'); cur.close()
             return render_template('auth/register.html', all_classes=ALL_CLASSES)
 
         ph = generate_password_hash(pwd)
@@ -371,7 +302,7 @@ def register():
                            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
                         (name,email,ph,role,dept,phone,year,cls,roll,sid))
         except Exception as e:
-            close_cur(cur)
+            cur.close()
             if '1062' in str(e) or 'Duplicate' in str(e):
                 flash('Email already registered — please log in instead.','danger')
             else:
@@ -380,14 +311,16 @@ def register():
 
         new_id = cur.lastrowid
 
+        # If staff and is CC, record with year info
         if role == 'staff' and is_cc and cc_class:
+            # Always store year prefix in coordinator_class e.g. "1-AD-B", "2-AD-B"
             cc_key = f"{cc_year}-{cc_class}" if cc_year else cc_class
             cur.execute("""INSERT INTO staff_classes (staff_id, class_name, is_coordinator, coordinator_class)
                            VALUES (%s,%s,1,%s)
                            ON DUPLICATE KEY UPDATE is_coordinator=1, coordinator_class=%s""",
                         (new_id, cc_key, cc_key, cc_key))
 
-        commit_and_close(cur)
+        mysql.connection.commit(); cur.close()
         flash('Account created! Please log in.','success')
         return redirect(url_for('login'))
     return render_template('auth/register.html', all_classes=ALL_CLASSES)
@@ -398,7 +331,7 @@ def logout():
     return redirect(url_for('login'))
 
 # ════════════════════════════════════════════
-#  DASHBOARD
+#  DASHBOARD — role router
 # ════════════════════════════════════════════
 
 @app.route('/dashboard')
@@ -429,6 +362,7 @@ def admin_dashboard():
     if not user: return redirect(url_for('login'))
     cur = get_cur()
 
+    # ── stats ──
     cur.execute("SELECT COUNT(*) AS c FROM users WHERE role='student'")
     total_students = cur.fetchone()['c']
     cur.execute("SELECT COUNT(*) AS c FROM users WHERE role='staff'")
@@ -438,10 +372,12 @@ def admin_dashboard():
     cur.execute("SELECT COUNT(*) AS c FROM certificates WHERE verification_status='pending'")
     pending_certs = cur.fetchone()['c']
 
+    # ── performance per class (split by year for 2nd–4th year classes) ──
     class_stats = []
     for yr, cls_list in CLASSES_BY_YEAR.items():
         for cls in cls_list:
             year_filter = " AND u.year=%s" if yr > 1 else ""
+            params = [cls, cls] if yr == 1 else [cls, yr, cls, yr]
             cur.execute("SELECT COUNT(*) AS total FROM users WHERE class_name=%s AND role='student'" +
                         ("" if yr == 1 else " AND year=%s"), ([cls] if yr == 1 else [cls, yr]))
             row = cur.fetchone()
@@ -459,17 +395,22 @@ def admin_dashboard():
             sr = cur.fetchone()
             label = cls if yr == 1 else f"Y{yr}-{cls}"
             class_stats.append({
-                'class_name': label, 'raw_class': cls, 'year': yr, 'total': total,
+                'class_name': label,
+                'raw_class': cls,
+                'year': yr,
+                'total': total,
                 'avg_stars': round(sr['avg_stars'] or 0, 1),
                 'avg_att': round(sr['avg_att'] or 0, 1)
             })
 
+    # ── all staff list ──
     cur.execute("""SELECT u.*, GROUP_CONCAT(sc.class_name ORDER BY sc.class_name SEPARATOR ', ') AS classes
                    FROM users u LEFT JOIN staff_classes sc ON sc.staff_id=u.id
                    WHERE u.role IN ('staff','admin')
                    GROUP BY u.id ORDER BY u.name""")
     staff_list = cur.fetchall()
 
+    # ── recent attendance (today, all classes) ──
     cur.execute("""SELECT a.*, u.name AS student_name, u.class_name,
                    st.name AS staff_name
                    FROM attendance a
@@ -479,13 +420,14 @@ def admin_dashboard():
                    ORDER BY a.marked_at DESC LIMIT 30""")
     recent_att = cur.fetchall()
 
-    close_cur(cur)
+    cur.close()
     return render_template('admin/dashboard.html',
         user=user, total_students=total_students, total_staff=total_staff,
         today_att=today_att, pending_certs=pending_certs,
         class_stats=class_stats, staff_list=staff_list, recent_att=recent_att,
         all_classes=ALL_CLASSES)
 
+# ── Admin: view students of a class ──
 @app.route('/admin/class/<class_name>')
 @app.route('/admin/class/<class_name>/year/<int:year>')
 @login_required
@@ -495,6 +437,7 @@ def admin_class_view(class_name, year=None):
     if not user: return redirect(url_for('login'))
     cur = get_cur()
 
+    # For 1st year classes (I-A etc.) year is always 1
     if class_name.startswith('I-'):
         year = 1
 
@@ -525,10 +468,11 @@ def admin_class_view(class_name, year=None):
                    WHERE a.class_name=%s""" + att_year_filter +
                    """ ORDER BY a.date DESC, a.period LIMIT 100""", att_params)
     att_records = cur.fetchall()
-    close_cur(cur)
+    cur.close()
     return render_template('admin/class_view.html',
         user=user, class_name=class_name, year=year, students=students, att_records=att_records)
 
+# ── Admin: Timetable management ──
 @app.route('/admin/timetable', methods=['GET','POST'])
 @login_required
 @admin_required
@@ -551,11 +495,12 @@ def admin_timetable():
             cur.execute("""INSERT INTO timetable (staff_id,class_name,year,day,period,subject,start_time,end_time)
                            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)""",
                         (staff_id,class_name,year,day,period,subject,start_time,end_time))
-            commit_and_close(cur)
+            mysql.connection.commit()
             flash('Timetable slot added ✓','success')
         elif action == 'bulk_save':
             class_name = request.form.get('class_name','')
             year       = request.form.get('year', type=int, default=1)
+            # Delete existing slots for this class+year only
             if class_name:
                 cur.execute("DELETE FROM timetable WHERE class_name=%s AND year=%s", (class_name, year))
             saved = 0
@@ -571,8 +516,9 @@ def admin_timetable():
                                        VALUES (%s,%s,%s,%s,%s,%s,%s,%s)""",
                                     (s_staff_id, class_name, year, day, p, subject, start_time, end_time))
                         saved += 1
-            commit_and_close(cur)
+            mysql.connection.commit()
             flash(f'Timetable saved with {saved} slots ✓','success')
+        cur.close()
         redir_class = request.form.get('class_name','')
         redir_year  = request.form.get('year','')
         return redirect(url_for('admin_timetable', **({'class': redir_class, 'year': redir_year} if redir_class else {})))
@@ -583,14 +529,31 @@ def admin_timetable():
     selected_sem   = request.args.get('sem', type=int)
     draft_mode     = bool(request.args.get('draft',''))
 
-    cur.execute("SELECT id,name FROM users WHERE role IN ('staff','admin') ORDER BY name")
+    cur.execute("SELECT id,name,department FROM users WHERE role IN ('staff','admin') ORDER BY department, name")
     staff_list = cur.fetchall()
+
+    # Fetch subjects from subject_master for the selected class/year so timetable can use them
+    subjects_for_tt = []
+    if selected_class and selected_year:
+        # Determine dept from class name (e.g. AD-B -> AD)
+        cls_dept = selected_class.split('-')[0] if '-' in selected_class else ''
+        sem_min = (selected_year - 1) * 2 + 1
+        sem_max = sem_min + 1
+        cur.execute("""SELECT sm.subject, sm.subject_type, u.id AS staff_id, u.name AS staff_name
+                       FROM subject_master sm
+                       LEFT JOIN subject_assignments sa ON sa.subject_id=sm.id AND sa.class_name=%s
+                       LEFT JOIN users u ON u.id=sa.staff_id
+                       WHERE sm.department=%s AND sm.semester IN (%s,%s)
+                       ORDER BY sm.semester, sm.subject""",
+                    (selected_class, cls_dept, sem_min, sem_max))
+        subjects_for_tt = cur.fetchall()
 
     conditions = []
     params = []
     if selected_class:
         conditions.append("t.class_name=%s"); params.append(selected_class)
     if selected_year:
+        # Match exact year OR rows saved before year column existed (year=1 default or NULL)
         conditions.append("(t.year=%s OR t.year IS NULL OR t.year=0)")
         params.append(selected_year)
     if selected_staff:
@@ -603,10 +566,11 @@ def admin_timetable():
 
     cur.execute(q, params)
     timetable = cur.fetchall()
-    close_cur(cur)
+    cur.close()
 
     return render_template('admin/timetable.html',
         user=user, timetable=timetable, staff_list=staff_list,
+        subjects_for_tt=subjects_for_tt,
         selected_class=selected_class, selected_year=selected_year,
         selected_staff=selected_staff, selected_sem=selected_sem,
         draft_mode=draft_mode, all_classes=ALL_CLASSES)
@@ -617,10 +581,11 @@ def admin_timetable():
 def admin_delete_slot(slot_id):
     cur = get_cur()
     cur.execute("DELETE FROM timetable WHERE id=%s", (slot_id,))
-    commit_and_close(cur)
+    mysql.connection.commit(); cur.close()
     flash('Slot deleted','success')
     return redirect(url_for('admin_timetable'))
 
+# ── Admin: attendance overview ──
 @app.route('/admin/attendance')
 @login_required
 @admin_required
@@ -631,6 +596,7 @@ def admin_attendance():
 
     sel_class = request.args.get('class','')
     sel_date  = request.args.get('date', str(date.today()))
+    sel_year  = request.args.get('year', type=int)
 
     q = """SELECT a.*, u.name AS student_name, u.roll_number, u.class_name,
                   st.name AS staff_name, a.is_swap, a.swap_note
@@ -642,25 +608,34 @@ def admin_attendance():
     if sel_class:
         q += " AND a.class_name=%s"
         params.append(sel_class)
+    if sel_year:
+        q += " AND u.year=%s"
+        params.append(sel_year)
     q += " ORDER BY a.class_name, a.period, u.name"
 
     cur.execute(q, params)
     records = cur.fetchall()
 
-    cur.execute("""SELECT class_name,
-                   SUM(status='present') AS present,
-                   SUM(status='absent') AS absent,
-                   SUM(status='late') AS late,
-                   COUNT(*) AS total
-                   FROM attendance WHERE date=%s
-                   GROUP BY class_name ORDER BY class_name""", (sel_date,))
+    # summary per class
+    sum_q = """SELECT class_name,
+               SUM(status='present') AS present,
+               SUM(status='absent') AS absent,
+               SUM(status='late') AS late,
+               COUNT(*) AS total
+               FROM attendance WHERE date=%s"""
+    sum_params = [sel_date]
+    if sel_class:
+        sum_q += " AND class_name=%s"; sum_params.append(sel_class)
+    sum_q += " GROUP BY class_name ORDER BY class_name"
+    cur.execute(sum_q, sum_params)
     summary = cur.fetchall()
-    close_cur(cur)
+    cur.close()
 
     return render_template('admin/attendance.html',
         user=user, records=records, summary=summary,
-        sel_class=sel_class, sel_date=sel_date, all_classes=ALL_CLASSES)
+        sel_class=sel_class, sel_date=sel_date, sel_year=sel_year, all_classes=ALL_CLASSES)
 
+# ── Admin: manage staff ──
 @app.route('/admin/staff')
 @login_required
 @admin_required
@@ -675,9 +650,10 @@ def admin_staff():
                    WHERE u.role IN ('staff','admin')
                    GROUP BY u.id ORDER BY u.name""")
     staff_list = cur.fetchall()
-    close_cur(cur)
+    cur.close()
     return render_template('admin/staff.html', user=user, staff_list=staff_list)
 
+# ── Admin: Subject Master ──
 @app.route('/admin/subjects', methods=['GET','POST'])
 @login_required
 @admin_required
@@ -696,12 +672,12 @@ def admin_subjects():
             if dept and sem and subject:
                 cur.execute("""INSERT IGNORE INTO subject_master (department,semester,subject,subject_type)
                                VALUES (%s,%s,%s,%s)""", (dept,sem,subject,stype))
-                commit_and_close(cur)
+                mysql.connection.commit()
                 flash('Subject added ✓','success')
         elif action == 'delete':
             sid = request.form.get('subject_id', type=int)
             cur.execute("DELETE FROM subject_master WHERE id=%s", (sid,))
-            commit_and_close(cur)
+            mysql.connection.commit()
             flash('Subject deleted','success')
         elif action == 'assign':
             subject_id = request.form.get('subject_id', type=int)
@@ -712,23 +688,24 @@ def admin_subjects():
                                VALUES (%s,%s,%s)
                                ON DUPLICATE KEY UPDATE staff_id=%s""",
                             (subject_id, staff_id, class_name, staff_id))
-                commit_and_close(cur)
+                mysql.connection.commit()
                 flash('Subject assigned to staff ✓','success')
         elif action == 'unassign':
             assign_id = request.form.get('assign_id', type=int)
             cur.execute("DELETE FROM subject_assignments WHERE id=%s", (assign_id,))
-            commit_and_close(cur)
+            mysql.connection.commit()
             flash('Assignment removed','success')
+        cur.close()
         return redirect(url_for('admin_subjects'))
 
     sel_dept = request.args.get('dept','')
     sel_sem  = request.args.get('sem', type=int)
+
+    # Distinct departments
     DEPARTMENTS = ['CS','CE','MECH','AD','ECE','IT','MBA','MCA']
 
-    q = """SELECT sm.*, sa.id AS assign_id, sa.class_name AS assigned_class, u.name AS assigned_staff
-           FROM subject_master sm
-           LEFT JOIN subject_assignments sa ON sa.subject_id=sm.id
-           LEFT JOIN users u ON u.id=sa.staff_id WHERE 1=1"""
+    # Subject master list
+    q = "SELECT sm.*, sa.id AS assign_id, sa.class_name AS assigned_class, u.name AS assigned_staff FROM subject_master sm LEFT JOIN subject_assignments sa ON sa.subject_id=sm.id LEFT JOIN users u ON u.id=sa.staff_id WHERE 1=1"
     params = []
     if sel_dept:
         q += " AND sm.department=%s"; params.append(sel_dept)
@@ -738,15 +715,17 @@ def admin_subjects():
     cur.execute(q, params)
     subjects = cur.fetchall()
 
-    cur.execute("SELECT id,name FROM users WHERE role='staff' ORDER BY name")
+    cur.execute("SELECT id,name,department FROM users WHERE role='staff' ORDER BY department, name")
     staff_list = cur.fetchall()
-    close_cur(cur)
+    cur.close()
 
     return render_template('admin/subjects.html',
         user=user, subjects=subjects, staff_list=staff_list,
         all_classes=ALL_CLASSES, DEPARTMENTS=DEPARTMENTS,
         sel_dept=sel_dept, sel_sem=sel_sem)
 
+# ── API: subjects for a dept+sem (for student results dropdown) ──
+# ── API: subjects for a dept+sem (for student results dropdown) ──
 @app.route('/api/subjects')
 @login_required
 def api_subjects():
@@ -754,8 +733,10 @@ def api_subjects():
     sem  = request.args.get('semester', type=int)
     cls  = request.args.get('class_name','')
 
+    # Strip year prefix if passed as "3-AD-B"
     cls_plain = cls.split('-',1)[-1] if cls and cls[0].isdigit() else cls
 
+    # Normalize department: "AI & DS" → "AD", "Computer Science" → "CS" etc.
     DEPT_MAP = {
         'ai & ds': 'AD', 'ai&ds': 'AD', 'aids': 'AD',
         'computer science': 'CS', 'cs': 'CS',
@@ -766,6 +747,8 @@ def api_subjects():
         'mba': 'MBA', 'mca': 'MCA',
     }
     dept_normalized = DEPT_MAP.get(dept.lower().strip(), dept)
+
+    # Also try extracting dept from class name e.g. "AD-B" → "AD"
     dept_from_class = cls_plain.split('-')[0] if cls_plain and '-' in cls_plain else ''
 
     if not sem:
@@ -773,32 +756,41 @@ def api_subjects():
 
     cur = get_cur()
 
+    # ── Try 1: dept from user profile (normalized) + semester ──
     if dept_normalized:
-        cur.execute("""SELECT sm.id, sm.subject, sm.subject_type, u.name AS staff_name
+        cur.execute("""SELECT sm.id, sm.subject, sm.subject_type,
+                       u.name AS staff_name
                        FROM subject_master sm
-                       LEFT JOIN subject_assignments sa ON sa.subject_id=sm.id AND sa.class_name=%s
+                       LEFT JOIN subject_assignments sa
+                           ON sa.subject_id=sm.id AND sa.class_name=%s
                        LEFT JOIN users u ON u.id=sa.staff_id
                        WHERE sm.department=%s AND sm.semester=%s
                        ORDER BY sm.subject_type, sm.subject""",
                     (cls_plain, dept_normalized, sem))
         rows = cur.fetchall()
         if rows:
-            close_cur(cur)
-            return jsonify([{'id':r['id'],'subject':r['subject'],'type':r['subject_type'],'staff':r['staff_name'] or ''} for r in rows])
+            cur.close()
+            return jsonify([{'id':r['id'],'subject':r['subject'],
+                             'type':r['subject_type'],'staff':r['staff_name'] or ''} for r in rows])
 
+    # ── Try 2: dept extracted from class name e.g. "AD" from "AD-B" ──
     if dept_from_class and dept_from_class != dept_normalized:
-        cur.execute("""SELECT sm.id, sm.subject, sm.subject_type, u.name AS staff_name
+        cur.execute("""SELECT sm.id, sm.subject, sm.subject_type,
+                       u.name AS staff_name
                        FROM subject_master sm
-                       LEFT JOIN subject_assignments sa ON sa.subject_id=sm.id AND sa.class_name=%s
+                       LEFT JOIN subject_assignments sa
+                           ON sa.subject_id=sm.id AND sa.class_name=%s
                        LEFT JOIN users u ON u.id=sa.staff_id
                        WHERE sm.department=%s AND sm.semester=%s
                        ORDER BY sm.subject_type, sm.subject""",
                     (cls_plain, dept_from_class, sem))
         rows = cur.fetchall()
         if rows:
-            close_cur(cur)
-            return jsonify([{'id':r['id'],'subject':r['subject'],'type':r['subject_type'],'staff':r['staff_name'] or ''} for r in rows])
+            cur.close()
+            return jsonify([{'id':r['id'],'subject':r['subject'],
+                             'type':r['subject_type'],'staff':r['staff_name'] or ''} for r in rows])
 
+    # ── Try 3: subjects assigned to this class directly ──
     if cls_plain:
         cur.execute("""SELECT sm.id, sm.subject, sm.subject_type, u.name AS staff_name
                        FROM subject_assignments sa
@@ -809,35 +801,43 @@ def api_subjects():
                     (cls_plain, sem))
         rows = cur.fetchall()
         if rows:
-            close_cur(cur)
-            return jsonify([{'id':r['id'],'subject':r['subject'],'type':r['subject_type'],'staff':r['staff_name'] or ''} for r in rows])
+            cur.close()
+            return jsonify([{'id':r['id'],'subject':r['subject'],
+                             'type':r['subject_type'],'staff':r['staff_name'] or ''} for r in rows])
 
+    # ── Try 4: subjects from ANY matching department pattern (LIKE) ──
     if dept:
+        # e.g. search for 'AD' inside 'AI & DS' or vice versa
         like_term = f"%{dept_from_class or dept_normalized}%"
-        cur.execute("""SELECT sm.id, sm.subject, sm.subject_type, u.name AS staff_name
+        cur.execute("""SELECT sm.id, sm.subject, sm.subject_type,
+                       u.name AS staff_name
                        FROM subject_master sm
-                       LEFT JOIN subject_assignments sa ON sa.subject_id=sm.id AND sa.class_name=%s
+                       LEFT JOIN subject_assignments sa
+                           ON sa.subject_id=sm.id AND sa.class_name=%s
                        LEFT JOIN users u ON u.id=sa.staff_id
                        WHERE sm.department LIKE %s AND sm.semester=%s
                        ORDER BY sm.subject_type, sm.subject""",
                     (cls_plain, like_term, sem))
         rows = cur.fetchall()
         if rows:
-            close_cur(cur)
-            return jsonify([{'id':r['id'],'subject':r['subject'],'type':r['subject_type'],'staff':r['staff_name'] or ''} for r in rows])
+            cur.close()
+            return jsonify([{'id':r['id'],'subject':r['subject'],
+                             'type':r['subject_type'],'staff':r['staff_name'] or ''} for r in rows])
 
+    # ── Last resort: subjects from cat_marks saved for this class/sem ──
     if cls_plain:
         cur.execute("""SELECT DISTINCT subject FROM cat_marks
-                       WHERE class_name=%s AND semester=%s ORDER BY subject""", (cls_plain, sem))
+                       WHERE class_name=%s AND semester=%s
+                       ORDER BY subject""", (cls_plain, sem))
         rows = cur.fetchall()
-        close_cur(cur)
+        cur.close()
         return jsonify([{'id':None,'subject':r['subject'],'type':'theory','staff':''} for r in rows])
 
-    close_cur(cur)
+    cur.close()
     return jsonify([])
 
 # ════════════════════════════════════════════
-#  STAFF DASHBOARD
+#  STAFF DASHBOARD — 4 class buttons
 # ════════════════════════════════════════════
 
 @app.route('/staff')
@@ -846,9 +846,12 @@ def api_subjects():
 def staff_dashboard():
     user = get_current_user()
     if not user: return redirect(url_for('login'))
+
     if session.get('role') == 'admin':
         return redirect(url_for('admin_dashboard'))
+
     staff_classes = get_staff_classes(user['id'])
+    # active class from query param, default to first
     active_class = request.args.get('class') or (staff_classes[0] if staff_classes else None)
     return _staff_class_dashboard(user, staff_classes, active_class)
 
@@ -857,16 +860,18 @@ def _staff_class_dashboard(user, staff_classes, active_class):
     today = date.today()
 
     if not active_class:
-        close_cur(cur)
+        cur.close()
         return render_template('staff/dashboard.html',
             user=user, staff_classes=[], active_class=None,
             students=[], student_count=0, today_attendance={'marked':0},
             assignments=[], pending_certs=[], notifications=[],
             att_summary={}, quiz_stats=[], no_class=True)
 
+    # Parse year prefix from active_class e.g. "3-AD-B" → year=3, cls="AD-B"
     cls_name, cls_year = parse_class_key(active_class)
     yr_filter, yr_params_suffix = year_filter_sql(cls_year, 'u')
 
+    # Students
     cur.execute("""SELECT u.*,
                    (SELECT COUNT(*) FROM attendance WHERE student_id=u.id AND status='present') AS present_count,
                    (SELECT COUNT(*) FROM attendance WHERE student_id=u.id) AS total_att,
@@ -880,6 +885,7 @@ def _staff_class_dashboard(user, staff_classes, active_class):
     students = cur.fetchall()
     student_count = len(students)
 
+    # Today attendance count
     cur.execute("""SELECT COUNT(DISTINCT student_id) AS marked,
                    SUM(status='present') AS present,
                    SUM(status='absent') AS absent,
@@ -890,6 +896,7 @@ def _staff_class_dashboard(user, staff_classes, active_class):
     ta = cur.fetchone()
     today_attendance = ta if ta else {'marked':0,'present':0,'absent':0,'late':0}
 
+    # Assignments for this class
     cur.execute("""SELECT a.*,
                    (SELECT COUNT(*) FROM submissions WHERE assignment_id=a.id) AS submitted_count,
                    (SELECT COUNT(*) FROM users WHERE class_name=a.class_name AND role='student') AS total_students
@@ -897,6 +904,7 @@ def _staff_class_dashboard(user, staff_classes, active_class):
                    ORDER BY a.created_at DESC LIMIT 8""", (user['id'], cls_name))
     assignments = cur.fetchall()
 
+    # Pending certificates
     yr_cert_filter = " AND u.year=%s" if cls_year else ""
     cert_params = [cls_name] + yr_params_suffix
     cur.execute("""SELECT c.*, u.name AS student_name FROM certificates c
@@ -905,6 +913,7 @@ def _staff_class_dashboard(user, staff_classes, active_class):
                    ORDER BY c.created_at DESC LIMIT 5""", cert_params)
     pending_certs = cur.fetchall()
 
+    # Quiz stats for this class
     cur.execute("""SELECT q.title, q.subject,
                    COUNT(qa.id) AS attempts,
                    AVG(qa.percentage) AS avg_score
@@ -914,10 +923,12 @@ def _staff_class_dashboard(user, staff_classes, active_class):
                 (user['id'], cls_name))
     quiz_stats = cur.fetchall()
 
+    # Notifications
     cur.execute("SELECT * FROM notifications WHERE user_id=%s ORDER BY created_at DESC LIMIT 5",
                 (user['id'],))
     notifications = cur.fetchall()
 
+    # Attendance summary per subject
     cur.execute("""SELECT subject,
                    SUM(status='present') AS present,
                    SUM(status='absent') AS absent,
@@ -927,7 +938,7 @@ def _staff_class_dashboard(user, staff_classes, active_class):
     att_rows = cur.fetchall()
     att_summary = {r['subject']: r for r in att_rows}
 
-    close_cur(cur)
+    cur.close()
 
     return render_template('staff/dashboard.html',
         user=user, today=today,
@@ -940,7 +951,7 @@ def _staff_class_dashboard(user, staff_classes, active_class):
         att_summary=att_summary, no_class=False)
 
 # ════════════════════════════════════════════
-#  STAFF ATTENDANCE
+#  STAFF ATTENDANCE — Class → Period → OK → Students
 # ════════════════════════════════════════════
 
 @app.route('/staff/attendance', methods=['GET','POST'])
@@ -951,8 +962,10 @@ def staff_attendance():
     if not user: return redirect(url_for('login'))
     cur = get_cur()
     today = date.today()
+
     staff_classes = get_staff_classes(user['id'])
 
+    # Step state from query params
     sel_class  = request.args.get('class','')
     sel_period = request.args.get('period', type=int)
     confirmed  = request.args.get('confirmed','0') == '1'
@@ -964,6 +977,7 @@ def staff_attendance():
         class_name  = request.form.get('class_name','')
         subject     = request.form.get('subject','')
         period      = request.form.get('period', type=int, default=1)
+        # If period is 99 (manual mode), use period_manual field instead
         if period == 99:
             period = request.form.get('period_manual', type=int, default=1)
         is_swap     = 1 if request.form.get('is_swap') else 0
@@ -974,6 +988,7 @@ def staff_attendance():
         present_count = 0
         for sid, status in zip(student_ids, statuses):
             try:
+                # Check if this is a new record or an update
                 cur.execute("SELECT id, status FROM attendance WHERE student_id=%s AND date=%s AND period=%s AND subject=%s",
                             (sid, att_date, period, subject))
                 existing = cur.fetchone()
@@ -989,24 +1004,30 @@ def staff_attendance():
                              status, is_swap, swap_note))
                 saved += 1
 
+                # ── Student stars for attendance ──
+                # Award star only on NEW present record (not updates)
                 if status == 'present' and not existing:
                     add_stars(int(sid), 2, f'Attendance: {subject} P{period}', 'attendance')
                     present_count += 1
                 elif status == 'absent' and existing and existing['status'] == 'present':
+                    # Was present, now marked absent — remove star
                     add_stars(int(sid), -2, f'Attendance corrected: {subject}', 'attendance')
 
             except Exception as e:
                 print(f"Att insert error: {e}")
 
+        # ── Staff gets 1 star per attendance session (flat) ──
         if saved > 0:
-            commit_and_close(cur)
+            mysql.connection.commit()
             add_stars(user['id'], 1, f'Marked attendance: {class_name} {subject} P{period}', 'attendance')
             flash(f'Attendance saved for {saved} students ✓  +1⭐ session star','success')
         else:
-            commit_and_close(cur)
+            mysql.connection.commit()
             flash(f'Attendance saved for {saved} students ✓','success')
+        cur.close()
         return redirect(url_for('staff_attendance', **{'class': class_name}))
 
+    # Fetch today's slots for selected class
     today_slots = []
     students    = []
     sel_slot    = None
@@ -1015,11 +1036,13 @@ def staff_attendance():
         today_slots = get_today_slots(user['id'], sel_class)
 
     if sel_class and sel_period is not None and confirmed:
+        # Find the timetable slot
         for sl in today_slots:
             if sl['period'] == sel_period:
                 sel_slot = sl
                 break
 
+        # Parse year prefix e.g. "3-AD-B" → cls_name="AD-B", cls_year=3
         cls_name, cls_year = parse_class_key(sel_class)
         yf_sql, yf_params = year_filter_sql(cls_year)
 
@@ -1029,6 +1052,7 @@ def staff_attendance():
                     [cls_name] + yf_params)
         students = cur.fetchall()
 
+    # Today's record for selected class
     today_att = []
     if sel_class:
         cls_name2, cls_year2 = parse_class_key(sel_class)
@@ -1039,7 +1063,7 @@ def staff_attendance():
                     (user['id'], today, cls_name2))
         today_att = cur.fetchall()
 
-    close_cur(cur)
+    cur.close()
     return render_template('staff/attendance.html',
         user=user, today=today,
         staff_classes=staff_classes,
@@ -1047,6 +1071,7 @@ def staff_attendance():
         today_slots=today_slots, sel_slot=sel_slot,
         students=students, today_att=today_att)
 
+# ── API: get periods for a class (for AJAX) ──
 @app.route('/api/periods')
 @login_required
 def api_periods():
@@ -1057,7 +1082,7 @@ def api_periods():
     cur.execute("""SELECT * FROM timetable WHERE staff_id=%s AND class_name=%s AND day=%s
                    ORDER BY period""", (staff_id, class_name, day_name))
     slots = cur.fetchall()
-    close_cur(cur)
+    cur.close()
     result = []
     for s in slots:
         result.append({
@@ -1070,7 +1095,7 @@ def api_periods():
     return jsonify(result)
 
 # ════════════════════════════════════════════
-#  PROFILE  (staff/admin)
+#  STAFF PROFILE — checkbox class selection
 # ════════════════════════════════════════════
 
 @app.route('/profile', methods=['GET','POST'])
@@ -1081,16 +1106,17 @@ def profile():
     cur = get_cur()
 
     if request.method == 'POST':
-        phone    = request.form.get('phone','')
-        pic      = request.files.get('profile_pic')
-        pic_path = user.get('profile_pic')   # keep existing if no new upload
+        phone = request.form.get('phone','')
+        pic   = request.files.get('profile_pic')
+        pic_path = user.get('profile_pic')
 
-        if pic and pic.filename and allowed(pic.filename, ALLOWED_IMG):
+        if pic and allowed(pic.filename, ALLOWED_IMG):
             pic_path = save_file(pic, 'profiles')
 
         cur.execute("UPDATE users SET phone=%s, profile_pic=%s WHERE id=%s",
                     (phone, pic_path, user['id']))
 
+        # Staff: update class assignments (max 5)
         if user['role'] in ('staff','admin'):
             selected = request.form.getlist('staff_classes')[:5]
             cur.execute("DELETE FROM staff_classes WHERE staff_id=%s", (user['id'],))
@@ -1099,80 +1125,25 @@ def profile():
                     cur.execute("INSERT IGNORE INTO staff_classes (staff_id,class_name) VALUES (%s,%s)",
                                 (user['id'], cls))
 
-        commit_and_close(cur)
+        mysql.connection.commit()
         flash('Profile updated ✓','success')
-        return redirect(url_for('profile'))   # ← POST-Redirect-GET
+        cur.close()
+        return redirect(url_for('profile'))
 
-    # Fresh DB fetch on GET (after redirect, user is re-queried above)
     cur.execute("SELECT * FROM streak_log WHERE user_id=%s ORDER BY created_at DESC LIMIT 30",
                 (user['id'],))
     streak_history = cur.fetchall()
 
     my_classes = get_staff_classes(user['id']) if user['role'] in ('staff','admin') else []
-    close_cur(cur)
+    cur.close()
 
     return render_template('profile.html',
         user=user, streak_history=streak_history,
         my_classes=my_classes, all_classes=ALL_CLASSES)
 
 # ════════════════════════════════════════════
-#  PROFILE  (student)
+#  TIMETABLE (staff view only — admin manages)
 # ════════════════════════════════════════════
-
-@app.route('/student/profile', methods=['GET','POST'])
-@login_required
-@student_required
-def student_profile():
-    user = get_current_user()
-    if not user: return redirect(url_for('login'))
-    cur = get_cur()
-
-    if request.method == 'POST':
-        phone    = request.form.get('phone','')
-        pic      = request.files.get('profile_pic')
-        pic_path = user.get('profile_pic')   # keep existing if no new upload
-
-        if pic and pic.filename and allowed(pic.filename, ALLOWED_IMG):
-            pic_path = save_file(pic, 'profiles')
-
-        cur.execute("UPDATE users SET phone=%s, profile_pic=%s WHERE id=%s",
-                    (phone, pic_path, user['id']))
-        commit_and_close(cur)
-        flash('Profile updated ✓','success')
-        return redirect(url_for('student_profile'))   # ← POST-Redirect-GET
-
-    # Re-fetch user fresh from DB (after redirect above)
-    user = get_current_user()
-
-    cur.execute("SELECT COUNT(*) AS total, SUM(status='present') AS present FROM attendance WHERE student_id=%s",
-                (user['id'],))
-    att = cur.fetchone() or {'total':0,'present':0}
-
-    cur.execute("SELECT COUNT(*) AS c FROM certificates WHERE student_id=%s AND verification_status='verified'",
-                (user['id'],))
-    cert_count = cur.fetchone()['c']
-
-    cur.execute("SELECT COUNT(*) AS c FROM projects WHERE student_id=%s", (user['id'],))
-    project_count = cur.fetchone()['c']
-
-    cur.execute("SELECT * FROM streak_log WHERE user_id=%s ORDER BY created_at DESC LIMIT 20",
-                (user['id'],))
-    streak_history = cur.fetchall()
-
-    cur.execute("SELECT COUNT(*)+1 AS rnk FROM users WHERE class_name=%s AND role='student' AND streak_stars>%s",
-                (user['class_name'], user['streak_stars']))
-    rank_row = cur.fetchone()
-    rank = rank_row['rnk'] if rank_row else '-'
-    close_cur(cur)
-
-    att_pct        = round((att['present'] or 0) / (att['total'] or 1) * 100, 1)
-    level_progress = ((user['streak_stars'] or 0) % 1000) / 10
-
-    return render_template('student/profile.html',
-        user=user, att=att, att_pct=att_pct,
-        cert_count=cert_count, project_count=project_count,
-        streak_history=streak_history, rank=rank,
-        level_progress=level_progress)
 
 @app.route('/staff/timetable')
 @login_required
@@ -1187,7 +1158,7 @@ def staff_timetable():
                    ORDER BY FIELD(day,'Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'),period""",
                 (user['id'],))
     timetable = cur.fetchall()
-    close_cur(cur)
+    cur.close()
     return render_template('staff/timetable.html', user=user, timetable=timetable)
 
 @app.route('/admin/timetable/slot/delete/<int:slot_id>')
@@ -1196,7 +1167,7 @@ def staff_timetable():
 def delete_timetable_slot(slot_id):
     cur = get_cur()
     cur.execute("DELETE FROM timetable WHERE id=%s", (slot_id,))
-    commit_and_close(cur)
+    mysql.connection.commit(); cur.close()
     flash('Slot deleted','success')
     return redirect(url_for('admin_timetable'))
 
@@ -1237,9 +1208,10 @@ def staff_assignments():
             for s in cur.fetchall():
                 _notif(cur, s['id'], f'New Assignment: {title}',
                        f'{subject} — Due {due_date}', 'assignment')
-        commit_and_close(cur)
+        mysql.connection.commit()
         add_stars(user['id'], 3, f'Posted assignment: {title}', 'assignment')
         flash('Assignment posted ✓  +3⭐','success')
+        cur.close()
         return redirect(url_for('staff_assignments'))
 
     active_class = request.args.get('class', '')
@@ -1252,6 +1224,7 @@ def staff_assignments():
                        FROM assignments a WHERE a.staff_id=%s AND a.class_name=%s
                        ORDER BY a.created_at DESC""", (user['id'], cls_name))
     else:
+        # Show all assignments across all staff classes
         all_cls_names = [parse_class_key(c)[0] for c in staff_classes]
         if all_cls_names:
             placeholders = ','.join(['%s'] * len(all_cls_names))
@@ -1267,7 +1240,7 @@ def staff_assignments():
                            FROM assignments a WHERE a.staff_id=%s
                            ORDER BY a.created_at DESC""", (user['id'],))
     assignments = cur.fetchall()
-    close_cur(cur)
+    cur.close()
     return render_template('staff/assignments.html',
         user=user, today=today, assignments=assignments,
         staff_classes=staff_classes, active_class=active_class)
@@ -1286,20 +1259,19 @@ def student_assignments():
         file      = request.files.get('file')
         cur.execute("SELECT * FROM assignments WHERE id=%s", (assign_id,))
         asn = cur.fetchone()
-        if not asn:
-            flash('Not found','danger'); close_cur(cur); return redirect(url_for('student_assignments'))
+        if not asn: flash('Not found','danger'); cur.close(); return redirect(url_for('student_assignments'))
         cur.execute("SELECT id FROM submissions WHERE assignment_id=%s AND student_id=%s",
                     (assign_id, user['id']))
-        if cur.fetchone():
-            flash('Already submitted','danger'); close_cur(cur); return redirect(url_for('student_assignments'))
+        if cur.fetchone(): flash('Already submitted','danger'); cur.close(); return redirect(url_for('student_assignments'))
         is_late = (date.fromisoformat(str(asn['due_date'])) < today)
         path    = save_file(file,'assignments') if (file and allowed(file.filename,ALLOWED_PDF)) else None
         cur.execute("INSERT INTO submissions (assignment_id,student_id,file_path,status) VALUES (%s,%s,%s,%s)",
                     (assign_id, user['id'], path, 'late' if is_late else 'submitted'))
-        commit_and_close(cur)
+        mysql.connection.commit()
         stars = app.config['STARS']['assignment_late'] if is_late else app.config['STARS']['assignment_ontime']
         add_stars(user['id'], stars, f'Assignment: {asn["title"]}', 'assignment')
         flash('Submitted! ✓','success')
+        cur.close()
         return redirect(url_for('student_assignments'))
 
     cur.execute("""SELECT a.*, s.id AS submitted, s.status AS sub_status,
@@ -1309,7 +1281,7 @@ def student_assignments():
                    WHERE a.class_name=%s ORDER BY a.due_date""",
                 (user['id'], user['class_name']))
     assignments = cur.fetchall()
-    close_cur(cur)
+    cur.close()
     return render_template('student/assignments.html', user=user, today=today, assignments=assignments)
 
 @app.route('/staff/submissions/<int:assign_id>')
@@ -1322,8 +1294,7 @@ def view_submissions(assign_id):
     today = date.today()
     cur.execute("SELECT * FROM assignments WHERE id=%s", (assign_id,))
     assignment = cur.fetchone()
-    if not assignment:
-        flash('Not found','danger'); close_cur(cur); return redirect(url_for('staff_assignments'))
+    if not assignment: flash('Not found','danger'); cur.close(); return redirect(url_for('staff_assignments'))
     cur.execute("""SELECT s.*, u.name AS student_name, u.roll_number
                    FROM submissions s JOIN users u ON u.id=s.student_id
                    WHERE s.assignment_id=%s ORDER BY s.submitted_at""", (assign_id,))
@@ -1331,7 +1302,7 @@ def view_submissions(assign_id):
     submitted_ids = [s['student_id'] for s in submissions]
     cur.execute("SELECT * FROM users WHERE class_name=%s AND role='student'", (assignment['class_name'],))
     not_submitted = [s for s in cur.fetchall() if s['id'] not in submitted_ids]
-    close_cur(cur)
+    cur.close()
     return render_template('staff/submissions.html',
         user=user, assignment=assignment, submissions=submissions,
         not_submitted=not_submitted, today=today)
@@ -1349,20 +1320,23 @@ def grade_submission(sub_id):
     if sub:
         cur.execute("UPDATE submissions SET marks_obtained=%s,feedback=%s,status='graded' WHERE id=%s",
                     (marks, feedback, sub_id))
-        commit_and_close(cur)
+        mysql.connection.commit()
         if marks and sub['max_marks']:
             pct = (marks/sub['max_marks'])*100
             stars = (app.config['STARS']['result_above75'] if pct>=75 else
                      app.config['STARS']['result_above60'] if pct>=60 else
                      app.config['STARS']['result_above40'] if pct>=40 else 0)
             if stars: add_stars(sub['student_id'], stars, f'Assignment graded: {sub["title"]}')
-    else:
-        close_cur(cur)
+    cur.close()
     flash('Graded ✓','success')
     return redirect(request.referrer or url_for('staff_assignments'))
 
 # ════════════════════════════════════════════
 #  QUIZ
+# ════════════════════════════════════════════
+
+# ════════════════════════════════════════════
+#  QUIZ — v2 (multi-type questions)
 # ════════════════════════════════════════════
 
 @app.route('/staff/quiz', methods=['GET','POST'])
@@ -1405,8 +1379,9 @@ def staff_quiz():
                         [cls_name] + yf_params)
             for s in cur.fetchall():
                 _notif(cur, s['id'], f'New Quiz: {title}', f'{subject}', 'quiz')
-        commit_and_close(cur)
+        mysql.connection.commit()
         flash('Quiz created ✓','success')
+        cur.close()
         return redirect(url_for('staff_quiz'))
 
     active_class = request.args.get('class') or (staff_classes[0] if staff_classes else '')
@@ -1417,7 +1392,7 @@ def staff_quiz():
                    FROM quizzes q WHERE q.staff_id=%s AND q.class_name=%s
                    ORDER BY q.created_at DESC""", (user['id'], cls_name))
     quizzes = cur.fetchall()
-    close_cur(cur)
+    cur.close()
     return render_template('staff/quiz.html',
         user=user, today=today, quizzes=quizzes,
         staff_classes=staff_classes, active_class=active_class)
@@ -1438,9 +1413,10 @@ def quiz_results(quiz_id):
                    FROM quiz_attempts a JOIN users u ON u.id=a.student_id
                    WHERE a.quiz_id=%s ORDER BY a.score DESC""", (quiz_id,))
     attempts = cur.fetchall()
+    # Add grade to each attempt
     for a in attempts:
         a['grade'] = calc_grade(a['percentage'] or 0)
-    close_cur(cur)
+    cur.close()
     return render_template('staff/quiz_results.html', user=user, quiz=quiz, attempts=attempts)
 
 @app.route('/staff/quiz/<int:quiz_id>/grade', methods=['GET','POST'])
@@ -1454,10 +1430,11 @@ def staff_grade_quiz(quiz_id):
     quiz = cur.fetchone()
 
     if request.method == 'POST':
-        answer_id   = request.form.get('answer_id', type=int)
+        answer_id  = request.form.get('answer_id', type=int)
         marks_given = request.form.get('marks_given', type=float, default=0)
         cur.execute("UPDATE quiz_answers SET marks_given=%s, is_graded=1 WHERE id=%s",
                     (marks_given, answer_id))
+        # Recalculate attempt score
         cur.execute("SELECT attempt_id FROM quiz_answers WHERE id=%s", (answer_id,))
         row = cur.fetchone()
         if row:
@@ -1471,10 +1448,12 @@ def staff_grade_quiz(quiz_id):
             pct = (new_score/total)*100
             cur.execute("UPDATE quiz_attempts SET score=%s,percentage=%s WHERE id=%s",
                         (new_score, pct, row['attempt_id']))
-        commit_and_close(cur)
+        mysql.connection.commit()
         flash('Marks saved ✓','success')
+        cur.close()
         return redirect(url_for('staff_grade_quiz', quiz_id=quiz_id))
 
+    # Fetch all text answers needing grading
     cur.execute("""SELECT qa.id AS answer_id, qa.answer_given, qa.marks_given, qa.is_graded,
                    qq.question, qq.q_type, qq.marks,
                    u.name AS student_name, u.roll_number
@@ -1485,7 +1464,7 @@ def staff_grade_quiz(quiz_id):
                    WHERE at2.quiz_id=%s AND qq.q_type IN ('short_answer','long_answer')
                    ORDER BY qa.is_graded ASC, u.name ASC""", (quiz_id,))
     pending = cur.fetchall()
-    close_cur(cur)
+    cur.close()
     return render_template('staff/quiz_grade.html', user=user, quiz=quiz, pending=pending)
 
 @app.route('/quiz/<int:quiz_id>/attempt', methods=['GET','POST'])
@@ -1497,7 +1476,7 @@ def attempt_quiz(quiz_id):
     cur = get_cur()
     cur.execute("SELECT id FROM quiz_attempts WHERE quiz_id=%s AND student_id=%s", (quiz_id, user['id']))
     if cur.fetchone():
-        flash('Already attempted','warning'); close_cur(cur)
+        flash('Already attempted','warning'); cur.close()
         return redirect(url_for('dashboard'))
     cur.execute("SELECT * FROM quizzes WHERE id=%s", (quiz_id,))
     quiz = cur.fetchone()
@@ -1505,6 +1484,7 @@ def attempt_quiz(quiz_id):
     questions = cur.fetchall()
 
     if request.method == 'POST':
+        # Create attempt first
         cur.execute("""INSERT INTO quiz_attempts (quiz_id,student_id,score,total_marks,percentage)
                        VALUES (%s,%s,0,%s,0)""", (quiz_id, user['id'], quiz['total_marks'] or 0))
         attempt_id = cur.lastrowid
@@ -1524,6 +1504,7 @@ def attempt_quiz(quiz_id):
                 try:
                     given_marks = marks if int(ans) in corr else 0
                 except: given_marks = 0
+
             elif qtype == 'multi_select':
                 ans_list = request.form.getlist(f'q_{q["id"]}[]')
                 answer_str = json.dumps([int(a) for a in ans_list])
@@ -1531,9 +1512,10 @@ def attempt_quiz(quiz_id):
                     sel = set(int(a) for a in ans_list)
                     given_marks = marks if sel == set(corr) else 0
                 except: given_marks = 0
-            else:
+
+            else:  # short/long answer
                 answer_str = request.form.get(f'q_{q["id"]}','').strip()
-                is_graded  = 0
+                is_graded  = 0  # needs manual grading
 
             auto_score += given_marks
             cur.execute("""INSERT INTO quiz_answers
@@ -1545,12 +1527,13 @@ def attempt_quiz(quiz_id):
         pct   = (auto_score/total)*100
         cur.execute("UPDATE quiz_attempts SET score=%s,percentage=%s WHERE id=%s",
                     (auto_score, pct, attempt_id))
-        commit_and_close(cur)
+        mysql.connection.commit()
         add_stars(user['id'], app.config['STARS']['quiz_attempt'], f'Quiz: {quiz["title"]}', 'quiz')
         flash(f'Submitted! Auto-scored: {auto_score}/{total}. Text answers will be graded by staff.','success')
+        cur.close()
         return redirect(url_for('dashboard'))
 
-    close_cur(cur)
+    cur.close()
     return render_template('student/quiz.html', user=user, quiz=quiz, questions=questions)
 
 @app.route('/staff/quiz/<int:quiz_id>/export')
@@ -1564,19 +1547,23 @@ def export_quiz_excel(quiz_id):
     cur = get_cur()
     cur.execute("SELECT * FROM quizzes WHERE id=%s", (quiz_id,))
     quiz = cur.fetchone()
+
     cur.execute("SELECT * FROM quiz_questions_v2 WHERE quiz_id=%s ORDER BY id", (quiz_id,))
     questions = cur.fetchall()
+
     cur.execute("""SELECT a.*, u.name AS student_name, u.roll_number
                    FROM quiz_attempts a JOIN users u ON u.id=a.student_id
                    WHERE a.quiz_id=%s ORDER BY CAST(u.roll_number AS UNSIGNED)""", (quiz_id,))
     attempts = cur.fetchall()
+
     cur.execute("""SELECT qa.attempt_id, qa.question_id, qa.answer_given, qa.marks_given
                    FROM quiz_answers qa
                    JOIN quiz_attempts at2 ON at2.id=qa.attempt_id
                    WHERE at2.quiz_id=%s""", (quiz_id,))
     all_answers = cur.fetchall()
-    close_cur(cur)
+    cur.close()
 
+    # Build answer lookup {attempt_id: {question_id: row}}
     ans_map = {}
     for row in all_answers:
         ans_map.setdefault(row['attempt_id'], {})[row['question_id']] = row
@@ -1585,17 +1572,19 @@ def export_quiz_excel(quiz_id):
     ws = wb.active
     ws.title = 'Responses'
 
-    thin     = Side(style='thin', color='CCCCCC')
-    border   = Border(left=thin, right=thin, top=thin, bottom=thin)
-    center   = Alignment(horizontal='center', vertical='center', wrap_text=True)
-    wrap_top = Alignment(wrap_text=True, vertical='top')
+    # Styles
+    thin        = Side(style='thin', color='CCCCCC')
+    border      = Border(left=thin, right=thin, top=thin, bottom=thin)
+    center      = Alignment(horizontal='center', vertical='center', wrap_text=True)
+    wrap_top    = Alignment(wrap_text=True, vertical='top')
 
-    hdr_font   = Font(bold=True, color='FFFFFF', size=11)
-    hdr_fill   = PatternFill('solid', fgColor='1F4E79')
-    qhdr_fill  = PatternFill('solid', fgColor='2E75B6')
-    qtype_fill = PatternFill('solid', fgColor='BDD7EE')
-    qtype_font = Font(bold=True, color='1F4E79', size=9)
+    hdr_font    = Font(bold=True, color='FFFFFF', size=11)
+    hdr_fill    = PatternFill('solid', fgColor='1F4E79')
+    qhdr_fill   = PatternFill('solid', fgColor='2E75B6')
+    qtype_fill  = PatternFill('solid', fgColor='BDD7EE')
+    qtype_font  = Font(bold=True, color='1F4E79', size=9)
 
+    # Row 1: headers
     fixed_headers = ['#', 'Student Name', 'Roll No', 'Score', 'Total', '%', 'Grade']
     q_headers = []
     for idx, q in enumerate(questions):
@@ -1611,6 +1600,7 @@ def export_quiz_excel(quiz_id):
         cell.alignment = center
         cell.border    = border
 
+    # Row 2: question type + marks
     type_row = ['', '', '', '', '', '', '']
     for q in questions:
         qtype = q['q_type'].replace('_', ' ').title()
@@ -1618,18 +1608,30 @@ def export_quiz_excel(quiz_id):
     ws.append(type_row)
     for col in range(len(fixed_headers)+1, len(all_headers)+1):
         cell = ws.cell(row=2, column=col)
-        cell.font = qtype_font; cell.fill = qtype_fill
-        cell.alignment = center; cell.border = border
+        cell.font      = qtype_font
+        cell.fill      = qtype_fill
+        cell.alignment = center
+        cell.border    = border
 
+    # Data rows
     for i, attempt in enumerate(attempts, 1):
         aids = ans_map.get(attempt['id'], {})
         pct  = attempt['percentage'] or 0
-        row  = [i, attempt['student_name'], attempt['roll_number'],
-                attempt['score'], attempt['total_marks'], round(pct, 1), calc_grade(pct)]
+        row  = [
+            i,
+            attempt['student_name'],
+            attempt['roll_number'],
+            attempt['score'],
+            attempt['total_marks'],
+            round(pct, 1),
+            calc_grade(pct)
+        ]
+
         for q in questions:
             ans_row = aids.get(q['id'])
             if not ans_row:
-                row.append('—'); continue
+                row.append('—')
+                continue
             raw = ans_row['answer_given'] or ''
             if q['q_type'] == 'mcq':
                 try:
@@ -1643,6 +1645,7 @@ def export_quiz_excel(quiz_id):
                     raw     = ', '.join(opts[j] for j in indices if j < len(opts))
                 except: pass
             row.append(f"{raw}  [{ans_row['marks_given']}/{q['marks']}]")
+
         ws.append(row)
         data_row = ws.max_row
         score_color = ('C6EFCE' if pct >= 75 else 'FFEB9C' if pct >= 50 else 'FFC7CE')
@@ -1650,8 +1653,10 @@ def export_quiz_excel(quiz_id):
         ws.cell(row=data_row, column=7).font = Font(bold=True)
         for col in range(1, len(all_headers)+1):
             cell = ws.cell(row=data_row, column=col)
-            cell.alignment = wrap_top; cell.border = border
+            cell.alignment = wrap_top
+            cell.border    = border
 
+    # Column widths
     for col, w in enumerate([5,22,16,8,8,8,8], 1):
         ws.column_dimensions[ws.cell(row=1,column=col).column_letter].width = w
     for col in range(len(fixed_headers)+1, len(all_headers)+1):
@@ -1668,7 +1673,7 @@ def export_quiz_excel(quiz_id):
                      mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
 # ════════════════════════════════════════════
-#  RESULTS
+#  RESULTS — CAT marks (staff) + Semester grades (student)
 # ════════════════════════════════════════════
 
 @app.route('/staff/results', methods=['GET','POST'])
@@ -1685,10 +1690,14 @@ def staff_results():
         semester   = request.form.get('semester', type=int)
         raw_class  = request.form.get('class_name','')
         cls_name, cls_year = parse_class_key(raw_class)
-        class_name = cls_name
+        class_name = cls_name  # store plain class name e.g. "AD-B" not "3-AD-B"
 
         if subject and semester and class_name:
             saved = 0
+            for key, val in request.form.items():
+                if key.startswith('cat1_') or key.startswith('cat2_'):
+                    continue  # handled below
+            # Collect all student ids present in form
             student_ids = set()
             for key in request.form.keys():
                 if key.startswith('cat1_'):
@@ -1703,9 +1712,10 @@ def staff_results():
                 cat1 = float(cat1_str) if cat1_str != '' else None
                 cat2 = float(cat2_str) if cat2_str != '' else None
                 if cat1 is None and cat2 is None:
-                    continue
+                    continue  # skip blank rows
                 cat1 = cat1 if cat1 is not None else 0
                 cat2 = cat2 if cat2 is not None else 0
+                # Delete existing then insert fresh — guaranteed upsert
                 cur.execute("""DELETE FROM cat_marks
                                WHERE student_id=%s AND subject=%s AND semester=%s""",
                             (sid, subject, semester))
@@ -1714,17 +1724,18 @@ def staff_results():
                                VALUES (%s,%s,%s,%s,%s,%s,%s)""",
                             (sid, user['id'], class_name, subject, semester, cat1, cat2))
                 saved += 1
-            commit_and_close(cur)
+            mysql.connection.commit()
             flash(f'CAT marks saved for {saved} students ✓','success')
         else:
-            close_cur(cur)
             flash('Please enter subject and semester.','warning')
+        cur.close()
+        # Redirect back with subject+semester so marks show pre-filled
         redir_params = {'class': class_name}
         if subject:  redir_params['subject']  = subject
         if semester: redir_params['semester'] = semester
         return redirect(url_for('staff_results', **redir_params))
 
-    active_class   = request.args.get('class') or (staff_classes[0] if staff_classes else '')
+    active_class  = request.args.get('class') or (staff_classes[0] if staff_classes else '')
     filter_subject = request.args.get('subject','').strip()
     filter_sem     = request.args.get('semester', type=int)
     students = []
@@ -1752,7 +1763,7 @@ def staff_results():
         cat_records = raw_records
     else:
         cat_lookup = {}
-    close_cur(cur)
+    cur.close()
     return render_template('staff/results.html',
         user=user, students=students, cat_records=cat_records,
         cat_lookup=cat_lookup,
@@ -1780,12 +1791,17 @@ def student_results():
                                VALUES (%s,%s,%s,%s,%s)
                                ON DUPLICATE KEY UPDATE grade=%s""",
                             (user['id'], semester, subject, subject_type, grade, grade))
+                mysql.connection.commit()
+
+                # Notify CC of this student's class
                 cc = get_class_coordinator(user.get('class_name',''))
                 if cc:
                     _notif(cur, cc['id'],
                            f'Result Updated: {user["name"]}',
                            f'Sem {semester} — {subject}: {grade}',
                            'achievement')
+
+                # Notify subject staff if assigned
                 cur.execute("""SELECT sa.staff_id FROM subject_assignments sa
                                JOIN subject_master sm ON sm.id=sa.subject_id
                                WHERE sm.subject=%s AND sm.semester=%s AND sa.class_name=%s
@@ -1797,14 +1813,17 @@ def student_results():
                            f'Result: {user["name"]}',
                            f'Sem {semester} — {subject}: {grade}',
                            'achievement')
-                commit_and_close(cur)
+
+                mysql.connection.commit()
                 flash('Result added ✓','success')
+
         elif action == 'delete_result':
             result_id = request.form.get('result_id', type=int)
             cur.execute("DELETE FROM semester_results WHERE id=%s AND student_id=%s",
                         (result_id, user['id']))
-            commit_and_close(cur)
+            mysql.connection.commit()
             flash('Deleted','success')
+        cur.close()
         return redirect(url_for('student_results'))
 
     cur.execute("""SELECT * FROM semester_results WHERE student_id=%s
@@ -1815,12 +1834,13 @@ def student_results():
                    ORDER BY semester, subject""", (user['id'],))
     cat_marks = cur.fetchall()
 
+    # Subjects from master for this student's department (for JS dropdown)
     dept = user.get('department','')
     cur.execute("""SELECT DISTINCT semester FROM subject_master
                    WHERE department=%s ORDER BY semester""", (dept,))
     available_sems = [r['semester'] for r in cur.fetchall()]
 
-    close_cur(cur)
+    cur.close()
     return render_template('student/results.html',
         user=user, sem_results=sem_results, cat_marks=cat_marks,
         available_sems=available_sems)
@@ -1853,19 +1873,21 @@ def student_certificates():
                        ai_confidence,ai_extracted_name,verification_status,stars_earned,event_title)
                        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
                     (user['id'],title,category,issuer,issue_date,path,ai_conf,user['name'],vstatus,stars,event_title or None))
+        mysql.connection.commit()
+        if stars: add_stars(user['id'],stars,f'Certificate: {title}','certificate')
+        # Notify CC of the student's class
         cc = get_class_coordinator(user.get('class_name',''))
         if cc:
             _notif(cur, cc['id'],
                    f'Certificate Pending: {user["name"]}',
                    f'{title} — {category.replace("_"," ").title()} | Class: {user.get("class_name","")}',
                    'certificate')
-        commit_and_close(cur)
-        if stars: add_stars(user['id'],stars,f'Certificate: {title}','certificate')
+            mysql.connection.commit()
         flash(f'Uploaded! Status: {vstatus}','success')
+        cur.close()
         return redirect(url_for('student_certificates'))
     cur.execute("SELECT * FROM certificates WHERE student_id=%s ORDER BY created_at DESC", (user['id'],))
-    certificates=cur.fetchall()
-    close_cur(cur)
+    certificates=cur.fetchall(); cur.close()
     return render_template('student/certificates.html', user=user, certificates=certificates)
 
 @app.route('/staff/certificates')
@@ -1875,12 +1897,14 @@ def verify_certificates_page():
     user = get_current_user()
     if not user: return redirect(url_for('login'))
     cur = get_cur()
+    # Check if this staff is a CC — if so, show their CC class first
     cur.execute("""SELECT coordinator_class FROM staff_classes
                    WHERE staff_id=%s AND is_coordinator=1 LIMIT 1""", (user['id'],))
     cc_row = cur.fetchone()
     cc_class = cc_row['coordinator_class'] if cc_row else None
 
     staff_classes = get_staff_classes(user['id'])
+    # CC class gets priority; merge with other classes
     all_visible = []
     if cc_class and cc_class not in all_visible:
         all_visible.append(cc_class)
@@ -1897,7 +1921,7 @@ def verify_certificates_page():
                    FIELD(c.verification_status,'pending','manual_review','verified','rejected'),
                    c.created_at DESC""", tuple(all_visible))
     certificates = cur.fetchall()
-    close_cur(cur)
+    cur.close()
     return render_template('staff/verify_certificates.html',
         user=user, certificates=certificates, cc_class=cc_class)
 
@@ -1915,21 +1939,20 @@ def certificate_action(cert_id, action):
             stars=CERT_STARS.get(cert['category'],5)
             cur.execute("UPDATE certificates SET verification_status='verified',stars_earned=%s,verified_by=%s WHERE id=%s",
                         (stars,user['id'],cert_id))
-            commit_and_close(cur)
+            mysql.connection.commit()
             add_stars(cert['student_id'],stars,f'Certificate verified: {cert["title"]}','certificate')
             flash('Verified ✓','success')
         elif action=='reject':
             cur.execute("UPDATE certificates SET verification_status='rejected',verified_by=%s WHERE id=%s",
                         (user['id'],cert_id))
-            commit_and_close(cur)
+            mysql.connection.commit()
             notify(cert['student_id'],'Certificate Rejected',f'"{cert["title"]}" was not approved.','certificate')
             flash('Rejected','warning')
-    else:
-        close_cur(cur)
+    cur.close()
     return redirect(request.referrer or url_for('verify_certificates_page'))
 
 # ════════════════════════════════════════════
-#  PROJECTS, SEMINARS, RESEARCH
+#  PROJECTS, SEMINARS, LIBRARY, RESEARCH
 # ════════════════════════════════════════════
 
 @app.route('/student/projects', methods=['GET','POST'])
@@ -1945,13 +1968,10 @@ def student_projects():
         status=request.form.get('status','ongoing'); stars=app.config['STARS']['project_add']
         cur.execute("INSERT INTO projects (student_id,title,description,github_link,tech_stack,status,stars_earned) VALUES (%s,%s,%s,%s,%s,%s,%s)",
                     (user['id'],title,desc,gh,tech,status,stars))
-        commit_and_close(cur)
-        add_stars(user['id'],stars,f'Project: {title}','achievement')
-        flash(f'+{stars} ⭐','success')
-        return redirect(url_for('student_projects'))
+        mysql.connection.commit(); add_stars(user['id'],stars,f'Project: {title}','achievement')
+        flash(f'+{stars} ⭐','success'); cur.close(); return redirect(url_for('student_projects'))
     cur.execute("SELECT * FROM projects WHERE student_id=%s ORDER BY created_at DESC",(user['id'],))
-    projects=cur.fetchall()
-    close_cur(cur)
+    projects=cur.fetchall(); cur.close()
     return render_template('student/projects.html', user=user, projects=projects)
 
 @app.route('/student/seminars', methods=['GET','POST'])
@@ -1969,15 +1989,11 @@ def student_seminars():
         stars=app.config['STARS']['seminar_add']
         cur.execute("INSERT INTO seminars (student_id,title,description,conducted_date,audience,image_path,stars_earned) VALUES (%s,%s,%s,%s,%s,%s,%s)",
                     (user['id'],title,desc,dt,aud,img_path,stars))
-        commit_and_close(cur)
-        add_stars(user['id'],stars,f'Seminar: {title}','achievement')
-        flash(f'+{stars} ⭐','success')
-        return redirect(url_for('student_seminars'))
+        mysql.connection.commit(); add_stars(user['id'],stars,f'Seminar: {title}','achievement')
+        flash(f'+{stars} ⭐','success'); cur.close(); return redirect(url_for('student_seminars'))
     cur.execute("SELECT * FROM seminars WHERE student_id=%s ORDER BY created_at DESC",(user['id'],))
-    seminars=cur.fetchall()
-    close_cur(cur)
+    seminars=cur.fetchall(); cur.close()
     return render_template('student/seminars.html', user=user, seminars=seminars)
-
 @app.route('/staff/research', methods=['GET','POST'])
 @login_required
 @staff_required
@@ -1993,13 +2009,11 @@ def staff_research():
                app.config['STARS']['research_presented'] if status=='presented' else 0)
         cur.execute("INSERT INTO research (staff_id,title,journal_name,publication_date,status,doi_link,stars_earned) VALUES (%s,%s,%s,%s,%s,%s,%s)",
                     (user['id'],title,jname,pub_dt,status,doi,stars))
-        commit_and_close(cur)
+        mysql.connection.commit()
         if stars: add_stars(user['id'],stars,f'Research: {title}','achievement')
-        flash('Research added ✓','success')
-        return redirect(url_for('staff_research'))
+        flash('Research added ✓','success'); cur.close(); return redirect(url_for('staff_research'))
     cur.execute("SELECT * FROM research WHERE staff_id=%s ORDER BY created_at DESC",(user['id'],))
-    research=cur.fetchall()
-    close_cur(cur)
+    research=cur.fetchall(); cur.close()
     return render_template('staff/research.html', user=user, research=research)
 
 @app.route('/staff/analytics')
@@ -2012,9 +2026,13 @@ def staff_analytics():
     staff_classes = get_staff_classes(user['id'])
     active_class  = request.args.get('class') or (staff_classes[0] if staff_classes else '')
 
-    students = []; att_by_subject = []; quiz_summary = []; assignment_summary = []
+    students = []
+    att_by_subject = []
+    quiz_summary   = []
+    assignment_summary = []
 
     if active_class:
+        # Students with per-class attendance (only this staff's records for this class)
         cur.execute("""SELECT u.*,
                        (SELECT COUNT(*) FROM attendance
                         WHERE student_id=u.id AND staff_id=%s AND class_name=%s AND status='present') AS present_count,
@@ -2032,6 +2050,7 @@ def staff_analytics():
                      user['id'], active_class, active_class))
         students = cur.fetchall()
 
+        # Attendance breakdown by subject for this staff + class
         cur.execute("""SELECT subject,
                        SUM(status='present') AS present,
                        SUM(status='absent')  AS absent,
@@ -2044,6 +2063,7 @@ def staff_analytics():
                     (user['id'], active_class))
         att_by_subject = cur.fetchall()
 
+        # Quiz summary for this staff + class
         cur.execute("""SELECT q.title, q.subject,
                        COUNT(qa.id) AS attempts,
                        ROUND(AVG(qa.percentage),1) AS avg_pct,
@@ -2056,6 +2076,7 @@ def staff_analytics():
                     (user['id'], active_class))
         quiz_summary = cur.fetchall()
 
+        # Assignment submission summary
         cur.execute("""SELECT a.title, a.subject, a.due_date,
                        COUNT(s.id) AS submitted,
                        (SELECT COUNT(*) FROM users WHERE class_name=%s AND role='student') AS total_students,
@@ -2069,7 +2090,7 @@ def staff_analytics():
 
     low_engagement = [s for s in students if (s['total_att'] or 0) > 0 and
                       (s['present_count'] or 0)/(s['total_att'] or 1)*100 < 75]
-    close_cur(cur)
+    cur.close()
     return render_template('staff/analytics.html',
         user=user, students=students,
         low_engagement=low_engagement, active_class=active_class,
@@ -2101,12 +2122,57 @@ def _student_dashboard(user):
     recent_activity=cur.fetchall()
     cur.execute("SELECT * FROM notifications WHERE user_id=%s ORDER BY created_at DESC LIMIT 5",(user['id'],))
     notifications=cur.fetchall()
-    close_cur(cur)
+    cur.close()
     level_progress=((user['streak_stars'] or 0)%1000)/10
     return render_template('student/dashboard.html',
         user=user,att=att,today=today,pending_assignments=pending_assignments,
         active_quizzes=active_quizzes,top5=top5,rank=rank,
         recent_activity=recent_activity,notifications=notifications,level_progress=level_progress)
+
+@app.route('/student/profile', methods=['GET','POST'])
+@login_required
+@student_required
+def student_profile():
+    user = get_current_user()
+    if not user: return redirect(url_for('login'))
+    cur = get_cur()
+
+    if request.method == 'POST':
+        phone    = request.form.get('phone','')
+        pic      = request.files.get('profile_pic')
+        pic_path = user.get('profile_pic')
+        if pic and allowed(pic.filename, ALLOWED_IMG):
+            pic_path = save_file(pic, 'profiles')
+        cur.execute("UPDATE users SET phone=%s, profile_pic=%s WHERE id=%s",
+                    (phone, pic_path, user['id']))
+        mysql.connection.commit()
+        flash('Profile updated ✓','success')
+        cur.close()
+        return redirect(url_for('student_profile'))
+
+    # Stats
+    cur.execute("SELECT COUNT(*) AS total, SUM(status='present') AS present FROM attendance WHERE student_id=%s", (user['id'],))
+    att = cur.fetchone() or {'total':0,'present':0}
+    cur.execute("SELECT COUNT(*) AS c FROM certificates WHERE student_id=%s AND verification_status='verified'", (user['id'],))
+    cert_count = cur.fetchone()['c']
+    cur.execute("SELECT COUNT(*) AS c FROM projects WHERE student_id=%s", (user['id'],))
+    project_count = cur.fetchone()['c']
+    cur.execute("SELECT * FROM streak_log WHERE user_id=%s ORDER BY created_at DESC LIMIT 20", (user['id'],))
+    streak_history = cur.fetchall()
+    cur.execute("SELECT COUNT(*)+1 AS rnk FROM users WHERE class_name=%s AND role='student' AND streak_stars>%s",
+                (user['class_name'], user['streak_stars']))
+    rank_row = cur.fetchone()
+    rank = rank_row['rnk'] if rank_row else '-'
+    cur.close()
+
+    att_pct = round((att['present'] or 0)/(att['total'] or 1)*100, 1)
+    level_progress = ((user['streak_stars'] or 0) % 1000) / 10
+
+    return render_template('student/profile.html',
+        user=user, att=att, att_pct=att_pct,
+        cert_count=cert_count, project_count=project_count,
+        streak_history=streak_history, rank=rank,
+        level_progress=level_progress)
 
 @app.route('/leaderboard')
 @login_required
@@ -2119,7 +2185,7 @@ def leaderboard():
     badges=['Gold','Silver','Bronze']
     for i,s in enumerate(all_students): s['badge']=badges[i] if i<3 else 'Active'
     top5=all_students[:5]; rank=next((i+1 for i,s in enumerate(all_students) if s['id']==user['id']),None)
-    close_cur(cur)
+    cur.close()
     return render_template('student/leaderboard.html',user=user,all_students=all_students,top5=top5,rank=rank)
 
 @app.route('/student/attendance')
@@ -2143,8 +2209,12 @@ def student_attendance():
                    ORDER BY a.date DESC, a.period""",
                 (user['id'],))
     records=cur.fetchall()
-    close_cur(cur)
+    cur.close()
     return render_template('student/attendance.html',user=user,subject_summary=subject_summary,records=records)
+
+# ════════════════════════════════════════════
+#  NOTIFICATIONS, PROFILE (already above)
+# ════════════════════════════════════════════
 
 @app.route('/notifications')
 @login_required
@@ -2155,7 +2225,7 @@ def notifications():
     cur.execute("SELECT * FROM notifications WHERE user_id=%s ORDER BY created_at DESC LIMIT 50",(user['id'],))
     notifs=cur.fetchall()
     cur.execute("UPDATE notifications SET is_read=1 WHERE user_id=%s",(user['id'],))
-    commit_and_close(cur)
+    mysql.connection.commit(); cur.close()
     return render_template('notifications.html',user=user,notifications=notifs)
 
 @app.route('/api/notifications/count')
@@ -2174,7 +2244,7 @@ def generate_resume_page():
     cur.execute("SELECT * FROM projects WHERE student_id=%s",(user['id'],)); projects=cur.fetchall()
     cur.execute("SELECT * FROM seminars WHERE student_id=%s",(user['id'],)); seminars=cur.fetchall()
     cur.execute("SELECT * FROM results WHERE student_id=%s ORDER BY semester",(user['id'],)); results=cur.fetchall()
-    close_cur(cur)
+    cur.close()
     try:
         from fpdf import FPDF
         pdf=FPDF(); pdf.add_page(); pdf.set_font('Helvetica','B',20)
@@ -2198,6 +2268,8 @@ def generate_resume_page():
         return send_file(path,as_attachment=True,download_name=f"{user['name'].replace(' ','_')}_Resume.pdf",mimetype='application/pdf')
     except ImportError:
         flash('pip install fpdf2','warning'); return redirect(url_for('profile'))
+
+
 
 
 if __name__ == "__main__":
