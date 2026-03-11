@@ -106,17 +106,46 @@
       <label>Date</label>
       <input type="date" name="date" value="{{ sel_date }}" style="padding:8px 12px;">
     </div>
-    <div class="form-group" style="margin-bottom:0;">
+    <div class="form-group" style="margin-bottom:0;min-width:130px;">
+      <label>Year</label>
+      <select name="year" id="attYearSel" onchange="updateAttClassDrop()" style="padding:8px 12px;border-radius:8px;">
+        <option value="">All Years</option>
+        <option value="1" {% if sel_year==1 %}selected{% endif %}>Y1 – 1st Year</option>
+        <option value="2" {% if sel_year==2 %}selected{% endif %}>Y2 – 2nd Year</option>
+        <option value="3" {% if sel_year==3 %}selected{% endif %}>Y3 – 3rd Year</option>
+        <option value="4" {% if sel_year==4 %}selected{% endif %}>Y4 – 4th Year</option>
+      </select>
+    </div>
+    <div class="form-group" style="margin-bottom:0;min-width:150px;">
       <label>Class</label>
-      <select name="class" style="padding:8px 12px;border-radius:8px;">
+      <select name="class" id="attClassSel" style="padding:8px 12px;border-radius:8px;">
         <option value="">All Classes</option>
-        {% for cls in all_classes %}<option value="{{ cls }}" {% if sel_class==cls %}selected{% endif %}>{{ cls }}</option>{% endfor %}
+        <optgroup label="1st Year" id="attGrp1">
+          {% for cls in ['I-A','I-B','I-C','I-D','I-E','I-F','I-G'] %}
+          <option value="{{ cls }}" {% if sel_class==cls %}selected{% endif %}>{{ cls }}</option>
+          {% endfor %}
+        </optgroup>
+        <optgroup label="2nd–4th Year" id="attGrp2">
+          {% for cls in ['CS-A','CS-B','CE-A','MECH-A','AD-A','AD-B','ECE-A'] %}
+          <option value="{{ cls }}" {% if sel_class==cls %}selected{% endif %}>{{ cls }}</option>
+          {% endfor %}
+        </optgroup>
       </select>
     </div>
     <button type="submit" class="btn btn-primary btn-sm">🔍 Filter</button>
     <a href="{{ url_for('admin_attendance') }}" class="btn btn-outline btn-sm">Reset</a>
   </form>
 </div>
+<script>
+function updateAttClassDrop(){
+  var yr=document.getElementById('attYearSel').value;
+  var g1=document.getElementById('attGrp1'), g2=document.getElementById('attGrp2');
+  if(yr==='1'){g1.style.display='';g2.style.display='none';}
+  else if(yr==='2'||yr==='3'||yr==='4'){g1.style.display='none';g2.style.display='';}
+  else{g1.style.display='';g2.style.display='';}
+}
+updateAttClassDrop();
+</script>
 
 <!-- Summary cards per class -->
 {% if summary %}
