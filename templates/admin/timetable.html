@@ -1,4 +1,3 @@
-
 <style id="mobile-global-fix">
 /* ═══════════════════════════════════════
    CARE — Global Mobile Fixes
@@ -108,7 +107,16 @@
     <label>Staff Filter</label>
     <select id="filterStaff" onchange="applyFilter()" style="padding:8px 12px;border-radius:8px;font-size:13px;background:var(--bg3);border:1px solid var(--border);color:var(--text);width:100%;">
       <option value="">All Staff</option>
-      {% for s in staff_list %}<option value="{{ s.id }}" {% if selected_staff==s.id %}selected{% endif %}>{{ s.name }}</option>{% endfor %}
+      {% set depts_seen = [] %}
+      {% for s in staff_list %}
+        {% if s.department and s.department not in depts_seen %}
+          {% if depts_seen %}</optgroup>{% endif %}
+          <optgroup label="── {{ s.department }} ──">
+          {% set _ = depts_seen.append(s.department) %}
+        {% endif %}
+        <option value="{{ s.id }}" {% if selected_staff==s.id %}selected{% endif %}>{{ s.name }}</option>
+      {% endfor %}
+      {% if depts_seen %}</optgroup>{% endif %}
     </select>
   </div>
   {% if selected_class and selected_year and timetable %}
@@ -290,13 +298,23 @@ updateClassDropdown();
             name="slot_{{ day }}_{{ p.num }}_subject"
             placeholder="Subject"
             value="{{ ns2.slot.subject if ns2.slot else '' }}"
+            list="subjectSuggestions"
             style="width:100%;background:#0f0f1e;border:1px solid var(--border);color:var(--text);padding:5px 7px;border-radius:6px;font-size:11px;font-family:'Rajdhani',sans-serif;"
-            oninput="checkFill()">
+            oninput="checkFill();autoSetStaff(this)">
           <select name="slot_{{ day }}_{{ p.num }}_staff"
             style="width:100%;background:#0f0f1e;border:1px solid var(--border);color:var(--text);padding:4px 6px;border-radius:6px;font-size:10px;"
             onchange="checkFill()">
             <option value="">— Staff —</option>
-            {% for s in staff_list %}<option value="{{ s.id }}" {% if ns2.slot and ns2.slot.staff_id==s.id %}selected{% endif %}>{{ s.name }}</option>{% endfor %}
+            {% set tt_depts = [] %}
+            {% for s in staff_list %}
+              {% if s.department and s.department not in tt_depts %}
+                {% if tt_depts %}</optgroup>{% endif %}
+                <optgroup label="{{ s.department }}">
+                {% set _ = tt_depts.append(s.department) %}
+              {% endif %}
+              <option value="{{ s.id }}" {% if ns2.slot and ns2.slot.staff_id==s.id %}selected{% endif %}>{{ s.name }}</option>
+            {% endfor %}
+            {% if tt_depts %}</optgroup>{% endif %}
           </select>
           <input type="hidden" name="slot_{{ day }}_{{ p.num }}_start" value="{{ ns2.slot.start_time if ns2.slot else pt[0] }}">
           <input type="hidden" name="slot_{{ day }}_{{ p.num }}_end" value="{{ ns2.slot.end_time if ns2.slot else pt[1] }}">
@@ -322,6 +340,15 @@ updateClassDropdown();
 </form>
 </div>
 
+<!-- Subject suggestions datalist from subject_master -->
+<datalist id="subjectSuggestions">
+  {% if subjects_for_tt %}
+    {% for s in subjects_for_tt %}
+    <option value="{{ s.subject }}">{{ s.subject }} ({{ s.subject_type }}{% if s.staff_name %} – {{ s.staff_name }}{% endif %})</option>
+    {% endfor %}
+  {% endif %}
+</datalist>
+
 {% else %}
 <!-- No class selected -->
 <div class="card" style="text-align:center;padding:60px;color:var(--text2);">
@@ -332,6 +359,25 @@ updateClassDropdown();
 {% endif %}
 
 <script>
+// Subject → staff auto-assign map from subject_master
+const subjectStaffMap = {
+  {% if subjects_for_tt %}
+  {% for s in subjects_for_tt %}{% if s.staff_id %}"{{ s.subject|lower }}": {{ s.staff_id }},{% endif %}{% endfor %}
+  {% endif %}
+};
+
+function autoSetStaff(inp) {
+  const val = inp.value.trim().toLowerCase();
+  if (!val || !subjectStaffMap[val]) return;
+  // Find the nearest staff select in the same cell
+  const cell = inp.closest('td');
+  if (!cell) return;
+  const staffSel = cell.querySelector('select[name*="_staff"]');
+  if (staffSel && subjectStaffMap[val]) {
+    staffSel.value = subjectStaffMap[val];
+  }
+}
+
 function enableEdit() {
   document.getElementById('viewSection').style.display = 'none';
   document.getElementById('editSection').style.display = 'block';
