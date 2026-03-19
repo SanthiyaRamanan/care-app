@@ -1,5 +1,5 @@
 import pymysql
-pymysql.install_as_MySQLdb()
+import pymysql.cursors
 
 import os, json, tempfile, smtplib, threading
 from email.mime.text import MIMEText
@@ -9,8 +9,7 @@ from datetime import datetime, date, timedelta
 from functools import wraps
 
 from flask import (Flask, render_template, request, redirect,
-                   url_for, session, flash, jsonify, send_file)
-from flask_mysqldb import MySQL
+                   url_for, session, flash, jsonify, send_file, g)
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 
@@ -24,7 +23,35 @@ except ImportError:
 
 app = Flask(__name__)
 app.config.from_object(Config)
-mysql = MySQL(app)
+
+# ── Pure PyMySQL connection (replaces Flask-MySQLdb) ──
+def get_db():
+    if 'db' not in g:
+        g.db = pymysql.connect(
+            host=app.config['MYSQL_HOST'],
+            port=int(app.config.get('MYSQL_PORT', 3306)),
+            user=app.config['MYSQL_USER'],
+            password=app.config['MYSQL_PASSWORD'],
+            database=app.config['MYSQL_DB'],
+            cursorclass=pymysql.cursors.DictCursor,
+            autocommit=False,
+            connect_timeout=10,
+        )
+    return g.db
+
+@app.teardown_appcontext
+def close_db(error=None):
+    db = g.pop('db', None)
+    if db is not None:
+        db.close()
+
+class _MySQLCompat:
+    """Thin shim so existing code using mysql.connection.cursor() keeps working."""
+    @property
+    def connection(self):
+        return get_db()
+
+mysql = _MySQLCompat()
 
 # Jinja filter for JSON parsing in templates
 app.jinja_env.filters['from_json'] = json.loads
