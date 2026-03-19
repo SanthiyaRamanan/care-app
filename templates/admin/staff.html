@@ -71,7 +71,20 @@
         <td>
           {% if s.classes %}
             {% for cls in s.classes.split(', ') %}
-            <span class="badge badge-blue" style="margin:2px;">{{ cls }}</span>
+              {# Strip year prefix like "3-AD-B" → show as "AD-B (Yr III)" #}
+              {% set c = cls | string | trim %}
+              {% if c and c != 'None' %}
+                {% if c[0].isdigit() and '-' in c %}
+                  {% set yr_labels = {'1':'I','2':'II','3':'III','4':'IV'} %}
+                  {% set cyr = c.split('-')[0] %}
+                  {% set ccls = c.split('-',1)[1] %}
+                  <span class="badge badge-blue" style="margin:2px;" title="Year {{ cyr }}">
+                    {{ ccls }}<span style="font-size:9px;opacity:0.7;"> Yr{{ yr_labels.get(cyr,cyr) }}</span>
+                  </span>
+                {% else %}
+                  <span class="badge badge-blue" style="margin:2px;">{{ c }}</span>
+                {% endif %}
+              {% endif %}
             {% endfor %}
           {% else %}
             <span style="color:var(--text2);font-size:12px;">Not assigned</span>
@@ -79,13 +92,20 @@
         </td>
         <td>
           {% if s.cc_class %}
-          <span class="badge" style="background:rgba(124,58,237,0.2);color:#a78bfa;border:1px solid rgba(124,58,237,0.4);">
-            🏫 {% if '-' in s.cc_class and s.cc_class[0].isdigit() %}
-              Yr{{ s.cc_class.split('-')[0] }} — {{ s.cc_class.split('-',1)[1] }}
+            {# cc_class can be "3-AD-B" or plain "AD-B" or "I-A" #}
+            {% set cc = s.cc_class | string %}
+            {% if cc[0].isdigit() and '-' in cc %}
+              {% set cc_yr  = cc.split('-')[0] %}
+              {% set cc_cls = cc.split('-', 1)[1] %}
+              {% set yr_labels = {'1':'I','2':'II','3':'III','4':'IV'} %}
+              <span class="badge" style="background:rgba(124,58,237,0.2);color:#a78bfa;border:1px solid rgba(124,58,237,0.4);">
+                🏫 Yr {{ yr_labels.get(cc_yr, cc_yr) }} &nbsp;·&nbsp; {{ cc_cls }}
+              </span>
             {% else %}
-              {{ s.cc_class }}
+              <span class="badge" style="background:rgba(124,58,237,0.2);color:#a78bfa;border:1px solid rgba(124,58,237,0.4);">
+                🏫 {{ cc }}
+              </span>
             {% endif %}
-          </span>
           {% else %}
           <span style="color:var(--text2);font-size:12px;">—</span>
           {% endif %}
