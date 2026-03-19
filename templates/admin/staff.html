@@ -1,97 +1,4 @@
 {% extends "base.html" %}
-{% block head %}
-
-<style id="mobile-global-fix">
-/* ═══════════════════════════════════════
-   CARE — Global Mobile Fixes
-   Applied to all pages
-═══════════════════════════════════════ */
-@media (max-width: 768px) {
-  /* ── Layout ── */
-  body { overflow-x: hidden !important; }
-
-  /* ── Cards ── */
-  .card { padding: 14px !important; }
-  .card-title { font-size: 11px !important; letter-spacing: 1px !important; }
-
-  /* ── Stats grid ── */
-  .stats-grid { grid-template-columns: repeat(2,1fr) !important; gap: 10px !important; }
-  .stat-card { padding: 12px !important; }
-  .stat-value { font-size: 20px !important; }
-  .stat-label { font-size: 10px !important; }
-
-  /* ── Grids ── */
-  .grid-2, .grid-3 { grid-template-columns: 1fr !important; gap: 12px !important; }
-
-  /* ── Tables ── */
-  .table-wrap { overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; border-radius: 8px !important; }
-  table { font-size: 12px !important; min-width: 420px; }
-  th, td { padding: 8px 10px !important; white-space: nowrap !important; }
-
-  /* ── Forms ── */
-  input, select, textarea { font-size: 16px !important; } /* prevent iOS zoom */
-
-  /* ── Buttons ── */
-  .btn { padding: 8px 13px !important; font-size: 13px !important; }
-  .btn-sm { padding: 5px 10px !important; font-size: 11px !important; }
-
-  /* ── Flex rows → stack ── */
-  .filter-bar,
-  .flex-row,
-  [style*="display:flex"][style*="gap"],
-  [style*="display: flex"][style*="gap"] { flex-wrap: wrap !important; }
-
-  /* ── Inline width overrides ── */
-  [style*="min-width:260px"],[style*="min-width: 260px"] { min-width:0 !important; width:100% !important; }
-  [style*="min-width:180px"],[style*="min-width: 180px"] { min-width:0 !important; flex:1 1 100% !important; }
-  [style*="min-width:160px"],[style*="min-width: 160px"] { min-width:0 !important; flex:1 1 100% !important; }
-  [style*="min-width:130px"],[style*="min-width: 130px"] { min-width:0 !important; flex:1 1 100% !important; }
-  [style*="width:900px"],[style*="width: 900px"] { width:100% !important; max-width:100% !important; }
-
-  /* ── Modal ── */
-  .modal { max-width: 95vw !important; padding: 16px !important; margin: 8px !important; }
-  .modal-title { font-size: 13px !important; }
-
-  /* ── XP Toast ── */
-  .xp-toast { bottom: calc(var(--nav-h) + 10px) !important; right: 8px !important; min-width: 180px !important; padding: 10px 14px !important; }
-
-  /* ── Class tab rows ── */
-  .class-tab-row { flex-wrap: wrap !important; gap: 6px !important; }
-  .class-tab-row .btn { min-width: 72px !important; font-size: 11px !important; padding: 7px 8px !important; }
-
-  /* ── Hero card ── */
-  .hero-card { padding: 16px !important; }
-  .hero-name { font-size: 16px !important; }
-  .stars-big { font-size: 26px !important; }
-
-  /* ── Section headers ── */
-  h2, .section-title { font-size: 14px !important; }
-
-  /* ── Podium on leaderboard ── */
-  .podium-wrap { gap: 8px !important; padding: 12px 0 !important; }
-  .podium-item { width: 80px !important; }
-  .podium-avatar { width: 44px !important; height: 44px !important; font-size: 16px !important; }
-  .podium-bar { margin-top: 6px !important; }
-
-  /* ── Staff dashboard student cards ── */
-  .student-mini-card { padding: 10px !important; }
-
-  /* ── Attendance step buttons ── */
-  .period-btn { min-width: 0 !important; flex: 1 1 45% !important; }
-
-  /* ── Quiz grade buttons ── */
-  .grade-btn-row { flex-wrap: wrap !important; gap: 6px !important; }
-}
-</style>
-
-<style>
-@media (max-width: 768px) {
-  body { overflow-x: hidden; }
-  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  .table-wrap table { min-width: 500px; }
-}
-</style>
-{% endblock %}
 {% block title %}Staff Management{% endblock %}
 {% block page_title %}👩‍🏫 STAFF MANAGEMENT{% endblock %}
 {% block content %}
@@ -103,19 +10,40 @@
     <div style="font-size:11px;color:var(--text2);">TOTAL STAFF</div>
   </div>
   <div class="card" style="padding:14px;text-align:center;">
-    <div style="font-size:28px;font-weight:700;color:var(--blue);">{{ staff_list|selectattr('cc_class')|list|length }}</div>
+    <div style="font-size:28px;font-weight:700;color:var(--purple);">{{ staff_list|selectattr('cc_class')|list|length }}</div>
     <div style="font-size:11px;color:var(--text2);">CLASS COORDINATORS</div>
   </div>
   <div class="card" style="padding:14px;text-align:center;">
     <div style="font-size:28px;font-weight:700;color:var(--green);">{{ staff_list|selectattr('classes')|list|length }}</div>
     <div style="font-size:11px;color:var(--text2);">ASSIGNED</div>
   </div>
+  <div class="card" style="padding:14px;text-align:center;">
+    <div style="font-size:28px;font-weight:700;color:var(--blue);">{{ staff_list|map(attribute='department')|select|unique|list|length }}</div>
+    <div style="font-size:11px;color:var(--text2);">DEPARTMENTS</div>
+  </div>
 </div>
+
+<!-- Filter bar -->
+<div class="card" style="margin-bottom:16px;padding:14px 20px;">
+  <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+    <span style="font-size:11px;color:var(--text2);letter-spacing:1px;">FILTER BY DEPT:</span>
+    <button onclick="filterDept('')" class="dept-btn active" id="dept_all">ALL</button>
+    {% set depts = staff_list|map(attribute='department')|select|unique|list %}
+    {% for d in depts %}
+    <button onclick="filterDept('{{ d }}')" class="dept-btn" id="dept_{{ loop.index }}">{{ d }}</button>
+    {% endfor %}
+  </div>
+</div>
+
+<style>
+.dept-btn{padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:600;cursor:pointer;letter-spacing:0.5px;transition:all 0.2s;}
+.dept-btn.active,.dept-btn:hover{background:var(--accent);color:white;border-color:var(--accent);}
+</style>
 
 <div class="card">
   <div class="card-title"><i class="fas fa-users-cog"></i> ALL STAFF</div>
   <div class="table-wrap">
-    <table>
+    <table id="staffTable">
       <thead>
         <tr>
           <th>Name</th>
@@ -128,13 +56,17 @@
       </thead>
       <tbody>
       {% for s in staff_list %}
-      <tr>
+      <tr data-dept="{{ s.department or '' }}">
         <td>
           <div style="font-weight:600;">{{ s.name }}</div>
           {% if s.phone %}<div style="font-size:11px;color:var(--text2);">{{ s.phone }}</div>{% endif %}
         </td>
         <td style="font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--text2);">{{ s.staff_id or '—' }}</td>
-        <td style="font-size:13px;">{{ s.department or '—' }}</td>
+        <td>
+          <span style="font-size:12px;padding:3px 10px;border-radius:12px;background:rgba(0,180,216,0.1);color:var(--blue);border:1px solid rgba(0,180,216,0.2);">
+            {{ s.department or '—' }}
+          </span>
+        </td>
         <td style="font-size:12px;color:var(--text2);">{{ s.email }}</td>
         <td>
           {% if s.classes %}
@@ -151,7 +83,7 @@
             🏫 {% if '-' in s.cc_class and s.cc_class[0].isdigit() %}
               Yr{{ s.cc_class.split('-')[0] }} — {{ s.cc_class.split('-',1)[1] }}
             {% else %}
-              Yr1 — {{ s.cc_class }}
+              {{ s.cc_class }}
             {% endif %}
           </span>
           {% else %}
@@ -167,4 +99,15 @@
     </table>
   </div>
 </div>
+
+<script>
+function filterDept(dept) {
+  document.querySelectorAll('.dept-btn').forEach(b => b.classList.remove('active'));
+  const rows = document.querySelectorAll('#staffTable tbody tr');
+  rows.forEach(row => {
+    row.style.display = (!dept || row.dataset.dept === dept) ? '' : 'none';
+  });
+  if (!dept) document.getElementById('dept_all').classList.add('active');
+}
+</script>
 {% endblock %}
