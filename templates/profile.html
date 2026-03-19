@@ -3,18 +3,12 @@
 {% block title %}Profile{% endblock %}
 {% block page_title %}👤 MY PROFILE{% endblock %}
 {% block content %}
-
 <div class="grid-2">
-
-<!-- LEFT: Profile Info + Edit -->
 <div class="card">
   <div class="card-title"><i class="fas fa-user"></i> PROFILE INFO</div>
-
-  <!-- Avatar -->
   <div style="text-align:center;margin-bottom:24px;">
     <div style="width:90px;height:90px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--purple));display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:700;color:white;margin:0 auto 12px;border:3px solid var(--accent);overflow:hidden;">
-      {% if user.profile_pic %}
-      <img src="{{ get_profile_pic_url(user.profile_pic) }}" style="width:100%;height:100%;object-fit:cover;" alt="">
+      {% if user.profile_pic %}<img src="{{ url_for('static', filename=user.profile_pic) }}" style="width:100%;height:100%;object-fit:cover;" alt="">
       {% else %}{{ user.name[0].upper() }}{% endif %}
     </div>
     <div style="font-family:'Orbitron',monospace;font-size:18px;">{{ user.name }}</div>
@@ -22,7 +16,6 @@
     {% if user.class_name %}<div style="color:var(--accent);font-size:12px;margin-top:4px;">Class: {{ user.class_name }}</div>{% endif %}
   </div>
 
-  <!-- Stars/Level (non-admin) -->
   {% if user.role != 'admin' %}
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">
     <div style="background:var(--bg3);border-radius:8px;padding:14px;text-align:center;">
@@ -36,74 +29,94 @@
   </div>
   {% endif %}
 
-  <!-- Edit Form -->
   <form method="POST" enctype="multipart/form-data">
-    <div class="form-group">
-      <label>Phone</label>
-      <input type="tel" name="phone" value="{{ user.phone or '' }}" placeholder="+91 XXXXX XXXXX">
-    </div>
-    <div class="form-group">
-      <label>Profile Picture</label>
-      <input type="file" name="profile_pic" accept=".jpg,.jpeg,.png">
-    </div>
+    <div class="form-group"><label>Phone</label><input type="tel" name="phone" value="{{ user.phone or '' }}" placeholder="+91 XXXXX XXXXX"></div>
+    <div class="form-group"><label>Profile Picture</label><input type="file" name="profile_pic" accept=".jpg,.jpeg,.png"></div>
 
     {% if user.role in ('staff', 'admin') %}
-    <!-- ══ CLASS SELECTION BY YEAR (from DB via classes_by_year) ══ -->
+    <!-- CLASS SELECTION FOR STAFF -->
     <div class="form-group">
-      <label>MY CLASSES</label>
-      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:16px;">
-
-        <div style="font-size:11px;color:var(--text2);margin-bottom:14px;">
-          Select the classes you handle &nbsp;<span style="color:var(--accent);font-weight:700;">(max 5 total)</span>
-        </div>
-
-        <!-- Year Tab Buttons — built from classes_by_year keys -->
-        <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;" id="yearTabRow">
-          {% for yr in classes_by_year.keys() %}
-          <button type="button" id="yrtab_{{ yr }}"
-            onclick="switchYearTab({{ yr }})"
-            style="padding:7px 16px;border-radius:8px;font-size:12px;font-family:'Orbitron',monospace;font-weight:700;cursor:pointer;border:1px solid var(--border);transition:all 0.2s;
-                   background:{% if loop.first %}var(--accent){% else %}var(--bg3){% endif %};
-                   color:{% if loop.first %}white{% else %}var(--text2){% endif %};">
-            YEAR {{ yr }}
-            <span id="yrbadge_{{ yr }}" style="font-size:10px;margin-left:3px;opacity:0.85;"></span>
-          </button>
+      <label>MY CLASSES <span style="color:var(--text2);font-weight:400;text-transform:none;letter-spacing:0;">(select all you handle, max 5)</span></label>
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px;">
+        <div style="font-size:11px;color:var(--gold);letter-spacing:1px;margin-bottom:6px;">1ST YEAR</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+          {% for cls in ['I-A','I-B','I-C','I-D','I-E','I-F','I-G'] %}
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;text-transform:none;letter-spacing:0;font-size:13px;font-weight:600;
+                        background:{% if cls in my_classes %}rgba(233,69,96,0.15){% else %}var(--bg3){% endif %};
+                        border:1px solid {% if cls in my_classes %}var(--accent){% else %}var(--border){% endif %};
+                        border-radius:8px;padding:6px 12px;transition:all 0.15s;" id="lbl_{{ cls }}"
+                onclick="toggleClass(this, '{{ cls }}')">
+            <input type="checkbox" name="staff_classes" value="{{ cls }}"
+                   {% if cls in my_classes %}checked{% endif %}
+                   style="width:auto;accent-color:var(--accent);">
+            {{ cls }}
+          </label>
           {% endfor %}
         </div>
+        <div style="font-size:11px;color:var(--blue);letter-spacing:1px;margin-bottom:6px;">2ND – 4TH YEAR</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+          {% for cls in ['CS-A','CS-B','CE-A','MECH-A','AD-A','AD-B','ECE-A'] %}
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;text-transform:none;letter-spacing:0;font-size:13px;font-weight:600;
+                        background:{% if cls in my_classes %}rgba(233,69,96,0.15){% else %}var(--bg3){% endif %};
+                        border:1px solid {% if cls in my_classes %}var(--accent){% else %}var(--border){% endif %};
+                        border-radius:8px;padding:6px 12px;transition:all 0.15s;" id="lbl_{{ cls }}"
+                onclick="toggleClass(this, '{{ cls }}')">
+            <input type="checkbox" name="staff_classes" value="{{ cls }}"
+                   {% if cls in my_classes %}checked{% endif %}
+                   style="width:auto;accent-color:var(--accent);">
+            {{ cls }}
+          </label>
+          {% endfor %}
+        </div>
+        <div id="classCount" style="font-size:11px;color:var(--text2);margin-top:10px;">
+          Selected: <span id="countNum" style="color:var(--accent);font-weight:700;">{{ my_classes|length }}</span> / 5
+        </div>
+      </div>
+    </div>
 
-        <!-- One panel per year, classes from DB -->
-        {% for yr, cls_list in classes_by_year.items() %}
-        <div id="yrpanel_{{ yr }}" class="yr-panel" {% if not loop.first %}style="display:none;"{% endif %}>
-          <div style="font-size:10px;color:var(--text2);letter-spacing:1px;margin-bottom:10px;">
-            YEAR {{ yr }} CLASSES
+    <!-- CC Section -->
+    <div class="form-group">
+      <label>CLASS COORDINATOR STATUS</label>
+      <div style="background:rgba(124,58,237,0.06);border:1px solid rgba(124,58,237,0.25);border-radius:10px;padding:14px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+          <input type="checkbox" name="is_coordinator" id="ccCheckProfile" value="1"
+                 {% if cc_info %}checked{% endif %}
+                 style="width:auto;accent-color:#a78bfa;" onchange="toggleCCProfile()">
+          <label for="ccCheckProfile" style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:600;color:#a78bfa;cursor:pointer;margin:0;">
+            🏫 I am a Class Coordinator (CC)
+          </label>
+        </div>
+        <div id="ccProfileFields" style="display:{% if cc_info %}block{% else %}none{% endif %};">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div>
+              <label style="color:#a78bfa;">Year</label>
+              <select id="ccYearProfile" name="coordinator_year" onchange="updateCCClassProfile()">
+                <option value="">— Select Year —</option>
+                {% for yr in [1,2,3,4] %}
+                <option value="{{ yr }}" {% if cc_info and cc_info.cc_year == yr %}selected{% endif %}>{{ yr }}{% if yr==1 %}st{% elif yr==2 %}nd{% elif yr==3 %}rd{% else %}th{% endif %} Year</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div>
+              <label style="color:#a78bfa;">Section / Class</label>
+              <select id="ccClassProfile" name="coordinator_class">
+                <option value="">— Select Year first —</option>
+                {% if cc_info %}
+                  {% set yr = cc_info.cc_year %}
+                  {% set cls_opts = {1:['I-A','I-B','I-C','I-D','I-E','I-F','I-G'], 2:['CS-A','CS-B','CE-A','MECH-A','AD-A','AD-B','ECE-A'], 3:['CS-A','CS-B','CE-A','MECH-A','AD-A','AD-B','ECE-A'], 4:['CS-A','CS-B','CE-A','MECH-A','AD-A','AD-B','ECE-A']} %}
+                  {% for c in cls_opts.get(yr, []) %}
+                  <option value="{{ c }}" {% if cc_info.cc_class == c %}selected{% endif %}>{{ c }}</option>
+                  {% endfor %}
+                {% endif %}
+              </select>
+            </div>
           </div>
-          {% if cls_list %}
-          <div style="display:flex;flex-wrap:wrap;gap:8px;">
-            {% for cls in cls_list %}
-            <label class="cls-label {% if cls in my_classes %}cls-selected{% endif %}"
-                   id="lbl_{{ cls|replace(' ','_') }}"
-                   onclick="toggleClass(this)">
-              <input type="checkbox" name="staff_classes" value="{{ cls }}"
-                     {% if cls in my_classes %}checked{% endif %}
-                     style="width:auto;accent-color:var(--accent);">
-              {{ cls }}
-            </label>
-            {% endfor %}
+          {% if cc_info %}
+          <div style="font-size:12px;color:var(--green);margin-top:8px;font-family:'Share Tech Mono',monospace;">
+            ✓ Currently CC for Yr{{ cc_info.cc_year }} — {{ cc_info.cc_class }}
           </div>
-          {% else %}
-          <div style="font-size:12px;color:var(--text2);padding:10px 0;">No classes found for Year {{ yr }}.</div>
           {% endif %}
         </div>
-        {% endfor %}
-
-        <!-- Counter + warning -->
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:10px;border-top:1px solid var(--border);">
-          <div style="font-size:11px;color:var(--text2);">
-            Total selected: <span id="countNum" style="color:var(--accent);font-weight:700;font-family:'Orbitron',monospace;">{{ my_classes|length }}</span> / 5
-          </div>
-          <div id="maxWarn" style="font-size:11px;color:var(--accent);display:none;">⚠ Max 5 reached</div>
-        </div>
-
       </div>
     </div>
     {% endif %}
@@ -118,11 +131,8 @@
   {% endif %}
 </div>
 
-<!-- RIGHT: Streak / Activity History -->
 <div class="card">
-  <div class="card-title"><i class="fas fa-history"></i>
-    {% if user.role == 'admin' %}ACTIVITY LOG{% else %}STREAK HISTORY{% endif %}
-  </div>
+  <div class="card-title"><i class="fas fa-history"></i> {% if user.role == 'admin' %}ACTIVITY LOG{% else %}STREAK HISTORY{% endif %}</div>
   {% if streak_history %}
   {% for log in streak_history %}
   <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
@@ -142,115 +152,48 @@
   <div style="text-align:center;padding:30px;color:var(--text2);">No activity yet.</div>
   {% endif %}
 </div>
-
 </div>
 
-<style>
-.cls-label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  text-transform: none;
-  letter-spacing: 0;
-  font-size: 13px;
-  font-weight: 600;
-  background: var(--card2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 7px 14px;
-  transition: all 0.15s;
-  user-select: none;
-}
-.cls-label:hover { border-color: var(--accent); color: var(--text); }
-.cls-selected {
-  background: rgba(233,69,96,0.15) !important;
-  border-color: var(--accent) !important;
-  color: var(--text) !important;
-}
-@media (max-width: 768px) {
-  .cls-label { font-size: 12px; padding: 6px 10px; }
-  #yearTabRow button { padding: 6px 11px; font-size: 11px; }
-}
-</style>
-
 <script>
-const MAX_CLASSES = 5;
-const yearKeys = [{% for yr in classes_by_year.keys() %}{{ yr }}{% if not loop.last %},{% endif %}{% endfor %}];
+const CLASS_OPTIONS_PROF = {
+  1:["I-A","I-B","I-C","I-D","I-E","I-F","I-G"],
+  2:["CS-A","CS-B","CE-A","MECH-A","AD-A","AD-B","ECE-A"],
+  3:["CS-A","CS-B","CE-A","MECH-A","AD-A","AD-B","ECE-A"],
+  4:["CS-A","CS-B","CE-A","MECH-A","AD-A","AD-B","ECE-A"]
+};
 
-function switchYearTab(yr) {
-  document.querySelectorAll('.yr-panel').forEach(p => p.style.display = 'none');
-  document.getElementById('yrpanel_' + yr).style.display = 'block';
-  yearKeys.forEach(y => {
-    const btn = document.getElementById('yrtab_' + y);
-    if (!btn) return;
-    if (y === yr) {
-      btn.style.background = 'var(--accent)';
-      btn.style.color = 'white';
-      btn.style.borderColor = 'var(--accent)';
-    } else {
-      btn.style.background = 'var(--bg3)';
-      btn.style.color = 'var(--text2)';
-      btn.style.borderColor = 'var(--border)';
-    }
-  });
-}
-
-function toggleClass(label) {
+let maxClasses = 5;
+function toggleClass(label, cls) {
   const cb = label.querySelector('input[type=checkbox]');
-  const totalChecked = document.querySelectorAll('input[name="staff_classes"]:checked').length;
-
-  // Block if trying to check and already at max
-  if (!cb.checked && totalChecked >= MAX_CLASSES) {
-    document.getElementById('maxWarn').style.display = 'block';
-    setTimeout(() => document.getElementById('maxWarn').style.display = 'none', 2500);
+  const checked = document.querySelectorAll('input[name="staff_classes"]:checked').length;
+  if (!cb.checked && checked >= maxClasses) {
+    alert('Maximum 5 classes allowed!');
     event.preventDefault();
     return false;
   }
-
   setTimeout(() => {
-    if (cb.checked) {
-      label.classList.add('cls-selected');
-    } else {
-      label.classList.remove('cls-selected');
-    }
-    updateCount();
+    const isChecked = cb.checked;
+    label.style.background = isChecked ? 'rgba(233,69,96,0.15)' : '';
+    label.style.borderColor = isChecked ? 'var(--accent)' : 'var(--border)';
+    document.getElementById('countNum').textContent =
+      document.querySelectorAll('input[name="staff_classes"]:checked').length;
   }, 10);
 }
 
-function updateCount() {
-  const count = document.querySelectorAll('input[name="staff_classes"]:checked').length;
-  document.getElementById('countNum').textContent = count;
-
-  // Update badge on each year tab
-  yearKeys.forEach(yr => {
-    const panel = document.getElementById('yrpanel_' + yr);
-    const badge = document.getElementById('yrbadge_' + yr);
-    if (panel && badge) {
-      const n = panel.querySelectorAll('input[name="staff_classes"]:checked').length;
-      badge.textContent = n > 0 ? '(' + n + ')' : '';
-    }
-  });
-
-  if (count < MAX_CLASSES) {
-    document.getElementById('maxWarn').style.display = 'none';
-  }
+function toggleCCProfile() {
+  const checked = document.getElementById('ccCheckProfile').checked;
+  document.getElementById('ccProfileFields').style.display = checked ? 'block' : 'none';
 }
 
-// Init on load
-updateCount();
-
-// Auto-open the year tab that has existing selections
-(function() {
-  for (let i = 0; i < yearKeys.length; i++) {
-    const yr = yearKeys[i];
-    const panel = document.getElementById('yrpanel_' + yr);
-    if (panel && panel.querySelectorAll('input:checked').length > 0) {
-      switchYearTab(yr);
-      return;
-    }
-  }
-})();
+function updateCCClassProfile() {
+  const year = parseInt(document.getElementById('ccYearProfile').value);
+  const sel  = document.getElementById('ccClassProfile');
+  sel.innerHTML = '<option value="">— Select Section —</option>';
+  (CLASS_OPTIONS_PROF[year] || []).forEach(cls => {
+    const opt = document.createElement('option');
+    opt.value = cls; opt.textContent = cls;
+    sel.appendChild(opt);
+  });
+}
 </script>
-
 {% endblock %}
