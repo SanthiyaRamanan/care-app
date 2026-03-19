@@ -1,364 +1,342 @@
 {% set current_user = user %}
 {% extends "base.html" %}
-{% block head %}
-
-<style id="mobile-global-fix">
-/* ═══════════════════════════════════════
-   CARE — Global Mobile Fixes
-   Applied to all pages
-═══════════════════════════════════════ */
-@media (max-width: 768px) {
-  /* ── Layout ── */
-  body { overflow-x: hidden !important; }
-
-  /* ── Cards ── */
-  .card { padding: 14px !important; }
-  .card-title { font-size: 11px !important; letter-spacing: 1px !important; }
-
-  /* ── Stats grid ── */
-  .stats-grid { grid-template-columns: repeat(2,1fr) !important; gap: 10px !important; }
-  .stat-card { padding: 12px !important; }
-  .stat-value { font-size: 20px !important; }
-  .stat-label { font-size: 10px !important; }
-
-  /* ── Grids ── */
-  .grid-2, .grid-3 { grid-template-columns: 1fr !important; gap: 12px !important; }
-
-  /* ── Tables ── */
-  .table-wrap { overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; border-radius: 8px !important; }
-  table { font-size: 12px !important; min-width: 420px; }
-  th, td { padding: 8px 10px !important; white-space: nowrap !important; }
-
-  /* ── Forms ── */
-  input, select, textarea { font-size: 16px !important; } /* prevent iOS zoom */
-
-  /* ── Buttons ── */
-  .btn { padding: 8px 13px !important; font-size: 13px !important; }
-  .btn-sm { padding: 5px 10px !important; font-size: 11px !important; }
-
-  /* ── Flex rows → stack ── */
-  .filter-bar,
-  .flex-row,
-  [style*="display:flex"][style*="gap"],
-  [style*="display: flex"][style*="gap"] { flex-wrap: wrap !important; }
-
-  /* ── Inline width overrides ── */
-  [style*="min-width:260px"],[style*="min-width: 260px"] { min-width:0 !important; width:100% !important; }
-  [style*="min-width:180px"],[style*="min-width: 180px"] { min-width:0 !important; flex:1 1 100% !important; }
-  [style*="min-width:160px"],[style*="min-width: 160px"] { min-width:0 !important; flex:1 1 100% !important; }
-  [style*="min-width:130px"],[style*="min-width: 130px"] { min-width:0 !important; flex:1 1 100% !important; }
-  [style*="width:900px"],[style*="width: 900px"] { width:100% !important; max-width:100% !important; }
-
-  /* ── Modal ── */
-  .modal { max-width: 95vw !important; padding: 16px !important; margin: 8px !important; }
-  .modal-title { font-size: 13px !important; }
-
-  /* ── XP Toast ── */
-  .xp-toast { bottom: calc(var(--nav-h) + 10px) !important; right: 8px !important; min-width: 180px !important; padding: 10px 14px !important; }
-
-  /* ── Class tab rows ── */
-  .class-tab-row { flex-wrap: wrap !important; gap: 6px !important; }
-  .class-tab-row .btn { min-width: 72px !important; font-size: 11px !important; padding: 7px 8px !important; }
-
-  /* ── Hero card ── */
-  .hero-card { padding: 16px !important; }
-  .hero-name { font-size: 16px !important; }
-  .stars-big { font-size: 26px !important; }
-
-  /* ── Section headers ── */
-  h2, .section-title { font-size: 14px !important; }
-
-  /* ── Podium on leaderboard ── */
-  .podium-wrap { gap: 8px !important; padding: 12px 0 !important; }
-  .podium-item { width: 80px !important; }
-  .podium-avatar { width: 44px !important; height: 44px !important; font-size: 16px !important; }
-  .podium-bar { margin-top: 6px !important; }
-
-  /* ── Staff dashboard student cards ── */
-  .student-mini-card { padding: 10px !important; }
-
-  /* ── Attendance step buttons ── */
-  .period-btn { min-width: 0 !important; flex: 1 1 45% !important; }
-
-  /* ── Quiz grade buttons ── */
-  .grade-btn-row { flex-wrap: wrap !important; gap: 6px !important; }
-}
-</style>
-
-<style>
-@media (max-width: 768px) {
-  body { overflow-x: hidden; }
-  input, select { font-size: 16px !important; }
-  .filter-bar { flex-direction: column !important; gap: 8px !important; }
-  .form-grid-3 { grid-template-columns: 1fr !important; }
-  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  .table-wrap table { min-width: 520px; }
-}
-</style>
-{% endblock %}
 {% block title %}Subject Master{% endblock %}
 {% block page_title %}📚 SUBJECT MASTER{% endblock %}
 {% block content %}
 
+<style>
+.subj-tab{padding:10px 24px;font-family:'Orbitron',monospace;font-size:11px;letter-spacing:1px;background:none;border:none;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all 0.2s;}
+.subj-tab.active{color:var(--text);border-bottom-color:var(--accent);}
+.dept-pill{padding:6px 16px;border-radius:20px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;}
+.dept-pill:hover,.dept-pill.active{background:var(--accent);color:white;border-color:var(--accent);}
+.year-pill{padding:5px 14px;border-radius:16px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;}
+.year-pill:hover,.year-pill.active{background:var(--blue);color:white;border-color:var(--blue);}
+.sem-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-family:'Orbitron',monospace;font-size:9px;font-weight:700;background:rgba(233,69,96,0.15);color:var(--accent);border:1px solid rgba(233,69,96,0.3);}
+.type-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:9px;font-weight:700;}
+.type-theory{background:rgba(0,255,136,0.12);color:var(--green);border:1px solid rgba(0,255,136,0.3);}
+.type-lab{background:rgba(0,180,216,0.12);color:var(--blue);border:1px solid rgba(0,180,216,0.3);}
+.type-elective{background:rgba(255,215,0,0.12);color:var(--gold);border:1px solid rgba(255,215,0,0.3);}
+.type-integrated{background:rgba(124,58,237,0.15);color:#a78bfa;border:1px solid rgba(124,58,237,0.35);}
+.subj-row{display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid var(--border);transition:background 0.15s;}
+.subj-row:hover{background:rgba(255,255,255,0.03);}
+.subj-row:last-child{border-bottom:none;}
+@media(max-width:768px){input,select{font-size:16px!important;}}
+</style>
+
+<!-- Tabs -->
 <div style="display:flex;gap:0;margin-bottom:22px;border-bottom:2px solid var(--border);">
-  <button class="subj-tab" id="btn-add" onclick="showTab('tab-add',this)" style="padding:10px 24px;font-family:'Orbitron',monospace;font-size:11px;letter-spacing:1px;background:none;border:none;color:var(--text);cursor:pointer;border-bottom:2px solid var(--accent);margin-bottom:-2px;">➕ ADD SUBJECTS</button>
-  <button class="subj-tab" id="btn-assign" onclick="showTab('tab-assign',this)" style="padding:10px 24px;font-family:'Orbitron',monospace;font-size:11px;letter-spacing:1px;background:none;border:none;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;">🔗 ASSIGN TO STAFF</button>
-  <button class="subj-tab" id="btn-list" onclick="showTab('tab-list',this)" style="padding:10px 24px;font-family:'Orbitron',monospace;font-size:11px;letter-spacing:1px;background:none;border:none;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;">📋 ALL SUBJECTS</button>
+  <button class="subj-tab active" id="btn-add"  onclick="showTab('tab-add',this)">➕ ADD SUBJECTS</button>
+  <button class="subj-tab"        id="btn-list" onclick="showTab('tab-list',this)">📋 ALL SUBJECTS</button>
 </div>
 
-<!-- TAB 1: ADD -->
+<!-- ══════════════════════════════
+     TAB 1: ADD
+══════════════════════════════ -->
 <div id="tab-add">
 <div class="grid-2" style="gap:20px;">
-<div class="card">
-  <div class="card-title"><i class="fas fa-plus"></i> ADD NEW SUBJECT</div>
-  <form method="POST">
-    <input type="hidden" name="action" value="add">
-    <div class="form-group"><label>Department</label>
-      <select name="department" required>
-        <option value="">Select Department</option>
-        {% for d in DEPARTMENTS %}<option value="{{ d }}">{{ d }}</option>{% endfor %}
-      </select>
-    </div>
-    <div class="form-group"><label>Semester</label>
-      <select name="semester" required>
-        <option value="">Select Semester</option>
-        {% for i in range(1,9) %}<option value="{{ i }}">Semester {{ i }}</option>{% endfor %}
-      </select>
-    </div>
-    <div class="form-group"><label>Subject Name</label>
-      <input type="text" name="subject" required placeholder="e.g. Data Structures">
-    </div>
-    <div class="form-group"><label>Type</label>
-      <select name="subject_type">
-        <option value="theory">Theory</option>
-        <option value="lab">Lab / Practical</option>
-        <option value="elective">Elective</option>
-        <option value="integrated">Integrated (Theory + Lab)</option>
-      </select>
-    </div>
-    <button type="submit" class="btn btn-primary" style="width:100%;">+ Add Subject</button>
-  </form>
-</div>
-<div class="card">
-  <div class="card-title"><i class="fas fa-list"></i> RECENTLY ADDED</div>
-  {% if subjects %}
-  <div class="table-wrap"><table>
-    <thead><tr><th>Dept</th><th>Sem</th><th>Subject</th><th>Type</th><th></th></tr></thead>
-    <tbody>
-    {% set seen2 = [] %}
-    {% for s in subjects %}{% if s.id not in seen2 %}{% set _ = seen2.append(s.id) %}
-    <tr>
-      <td style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--blue);">{{ s.department }}</td>
-      <td style="font-family:'Orbitron',monospace;font-size:11px;color:var(--accent);">S{{ s.semester }}</td>
-      <td style="font-weight:600;font-size:13px;">{{ s.subject }}</td>
-      <td><span class="badge {% if s.subject_type=='lab' %}badge-blue{% elif s.subject_type=='elective' %}badge-gold{% elif s.subject_type=='integrated' %}badge-purple{% else %}badge-green{% endif %}" style="font-size:9px;">{% if s.subject_type=='integrated' %}Integrated{% else %}{{ s.subject_type.title() }}{% endif %}</span></td>
-      <td><form method="POST" style="display:inline;"><input type="hidden" name="action" value="delete"><input type="hidden" name="subject_id" value="{{ s.id }}"><button type="submit" class="btn btn-sm" style="background:rgba(233,69,96,0.15);color:var(--accent);border:1px solid rgba(233,69,96,0.4);padding:4px 8px;font-size:11px;" onclick="return confirm('Delete?')">✕</button></form></td>
-    {% endif %}{% endfor %}
-    </tbody>
-  </table></div>
-  {% else %}<div style="text-align:center;padding:40px;color:var(--text2);">No subjects yet.</div>{% endif %}
-</div>
-</div>
-</div>
 
-<!-- TAB 2: ASSIGN -->
-<div id="tab-assign" style="display:none;">
-<div class="grid-2" style="gap:20px;">
-<div class="card">
-  <div class="card-title"><i class="fas fa-user-tie"></i> ASSIGN SUBJECT TO STAFF</div>
-  <div style="font-size:12px;color:var(--text2);margin-bottom:16px;">Each staff teaches up to <strong style="color:var(--gold);">4 classes</strong>. Same subject can be assigned to multiple classes.</div>
-  <form method="POST">
-    <input type="hidden" name="action" value="assign">
-    <div class="form-group"><label>Filter Dept</label>
-      <select id="filterDept" onchange="filterSubjects()">
-        <option value="">All Departments</option>
-        {% for d in DEPARTMENTS %}<option value="{{ d }}">{{ d }}</option>{% endfor %}
-      </select>
-    </div>
-    <div class="form-group"><label>Filter Semester</label>
-      <select id="filterSem" onchange="filterSubjects()">
-        <option value="">All Semesters</option>
-        {% for i in range(1,9) %}<option value="{{ i }}">Semester {{ i }}</option>{% endfor %}
-      </select>
-    </div>
-    <div class="form-group"><label>Subject</label>
-      <select name="subject_id" id="subjectDropdown" required>
-        <option value="">— Select Subject —</option>
-        {% set seen3 = [] %}
-        {% for s in subjects %}{% if s.id not in seen3 %}{% set _ = seen3.append(s.id) %}
-        <option value="{{ s.id }}" data-dept="{{ s.department }}" data-sem="{{ s.semester }}">{{ s.department }} · Sem {{ s.semester }} · {{ s.subject }}</option>
-        {% endif %}{% endfor %}
-      </select>
-    </div>
-    <div class="form-group"><label>Staff Member</label>
-      <select name="staff_id" id="staffSel" onchange="checkLoad(this.value)" required>
-        <option value="">— Select Staff —</option>
-        {% set assign_depts = [] %}
-        {% for st in staff_list %}
-          {% if st.department and st.department not in assign_depts %}
-            {% if assign_depts %}</optgroup>{% endif %}
-            <optgroup label="── {{ st.department }} ──">
-            {% set _ = assign_depts.append(st.department) %}
-          {% endif %}
-          <option value="{{ st.id }}">{{ st.name }}</option>
-        {% endfor %}
-        {% if assign_depts %}</optgroup>{% endif %}
-      </select>
-      <div id="loadInfo" style="font-size:11px;margin-top:5px;display:none;"></div>
-    </div>
-    <div class="form-group"><label>Class</label>
-      <select name="class_name" required>
-        <option value="">Select Class</option>
-        <optgroup label="1st Year">{% for c in ['I-A','I-B','I-C','I-D','I-E','I-F','I-G'] %}<option value="{{ c }}">{{ c }}</option>{% endfor %}</optgroup>
-        <optgroup label="2nd–4th Year">{% for c in ['CS-A','CS-B','CE-A','MECH-A','AD-A','AD-B','ECE-A'] %}<option value="{{ c }}">{{ c }}</option>{% endfor %}</optgroup>
-      </select>
-    </div>
-    <button type="submit" class="btn btn-primary" style="width:100%;">✓ Assign Subject</button>
-  </form>
-</div>
-<div class="card">
-  <div class="card-title"><i class="fas fa-tasks"></i> STAFF WORKLOAD</div>
-  <div style="font-size:11px;color:var(--text2);margin-bottom:12px;">Bars = assigned classes (max 4)</div>
-  {% for st in staff_list %}
-  {% set st_assigns = subjects | selectattr('assigned_staff','equalto',st.name) | list %}
-  {% set classes_seen = [] %}
-  {% set count = namespace(v=0) %}
-  {% for s in st_assigns %}{% if s.assigned_class and s.assigned_class not in classes_seen %}{% set _ = classes_seen.append(s.assigned_class) %}{% set count.v = count.v + 1 %}{% endif %}{% endfor %}
-  <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
-    <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--purple));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;">{{ st.name[0] }}</div>
-    <div style="flex:1;">
-      <div style="font-size:13px;font-weight:600;">{{ st.name }}</div>
-      <div style="display:flex;gap:3px;margin-top:4px;">
-        {% for i in range(4) %}<div style="width:24px;height:5px;border-radius:3px;background:{% if i < count.v %}{% if count.v <= 3 %}var(--green){% else %}var(--gold){% endif %}{% else %}var(--border){% endif %};"></div>{% endfor %}
+  <!-- Add Form -->
+  <div class="card">
+    <div class="card-title"><i class="fas fa-plus-circle"></i> ADD NEW SUBJECT</div>
+
+    <form method="POST" id="addForm">
+      <input type="hidden" name="action" value="add">
+
+      <!-- Step 1: Department -->
+      <div class="form-group">
+        <label>① Department</label>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;" id="deptPills">
+          {% for d in DEPARTMENTS %}
+          <button type="button" class="dept-pill" onclick="selectDept('{{ d }}')" id="dpill_{{ d }}">{{ d }}</button>
+          {% endfor %}
+        </div>
+        <input type="hidden" name="department" id="selDept" required>
+        <div id="deptErr" style="font-size:11px;color:var(--accent);margin-top:4px;display:none;">Please select a department</div>
+      </div>
+
+      <!-- Step 2: Year → auto-set semester range -->
+      <div class="form-group" id="yearStep" style="display:none;">
+        <label>② Year</label>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;">
+          <button type="button" class="year-pill" onclick="selectYear(1)" id="ypill_1">I Year (Sem 1–2)</button>
+          <button type="button" class="year-pill" onclick="selectYear(2)" id="ypill_2">II Year (Sem 3–4)</button>
+          <button type="button" class="year-pill" onclick="selectYear(3)" id="ypill_3">III Year (Sem 5–6)</button>
+          <button type="button" class="year-pill" onclick="selectYear(4)" id="ypill_4">IV Year (Sem 7–8)</button>
+        </div>
+        <input type="hidden" name="year" id="selYear">
+      </div>
+
+      <!-- Step 3: Semester (auto-populated from year) -->
+      <div class="form-group" id="semStep" style="display:none;">
+        <label>③ Semester</label>
+        <select name="semester" id="semSelect" required>
+          <option value="">— Select Semester —</option>
+        </select>
+      </div>
+
+      <!-- Step 4: Subject details -->
+      <div id="subjectStep" style="display:none;">
+        <div class="form-group">
+          <label>④ Subject Name</label>
+          <input type="text" name="subject" id="subjectName" placeholder="e.g. Data Structures" required>
+        </div>
+        <div class="form-group">
+          <label>⑤ Subject Type</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            {% for t,label,icon in [('theory','Theory','📖'),('lab','Lab / Practical','🧪'),('elective','Elective','🎯'),('integrated','Integrated (Theory+Lab)','⚡')] %}
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:9px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);transition:all 0.15s;" id="tlbl_{{ t }}" onclick="selectType('{{ t }}')">
+              <input type="radio" name="subject_type" value="{{ t }}" {% if t=='theory' %}checked{% endif %} style="width:auto;accent-color:var(--accent);" onchange="selectType('{{ t }}')">
+              <span>{{ icon }} {{ label }}</span>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+        <div id="addPreview" style="display:none;padding:10px 14px;border-radius:8px;background:rgba(0,255,136,0.07);border:1px solid rgba(0,255,136,0.2);font-size:12px;color:var(--green);margin-bottom:14px;"></div>
+        <button type="submit" class="btn btn-primary" style="width:100%;" onclick="return validateForm()">+ Add Subject</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Quick list for selected dept+year -->
+  <div class="card">
+    <div class="card-title"><i class="fas fa-list-check"></i> <span id="quickListTitle">SELECT DEPT & YEAR</span></div>
+    <div id="quickList">
+      <div style="text-align:center;padding:40px;color:var(--text2);">
+        <div style="font-size:36px;margin-bottom:8px;">📂</div>
+        <div style="font-size:12px;">Choose department and year on the left to see subjects here.</div>
       </div>
     </div>
-    <div style="font-size:12px;font-weight:700;color:{% if count.v >= 4 %}var(--gold){% elif count.v > 0 %}var(--green){% else %}var(--text2){% endif %};">{{ count.v }}/4</div>
   </div>
-  {% endfor %}
+
 </div>
 </div>
 
-<div class="card" style="margin-top:20px;">
-  <div class="card-title"><i class="fas fa-link"></i> CURRENT ASSIGNMENTS</div>
-  {% set seen4 = [] %}
-  {% set has_assign = namespace(v=false) %}
-  {% for s in subjects %}{% if s.assign_id and s.assign_id not in seen4 %}{% set _ = seen4.append(s.assign_id) %}{% set has_assign.v = true %}{% endif %}{% endfor %}
-  {% if has_assign.v %}
-  <div class="table-wrap"><table>
-    <thead><tr><th>Dept</th><th>Sem</th><th>Subject</th><th>Staff</th><th>Class</th><th></th></tr></thead>
-    <tbody>
-    {% set seen5 = [] %}
-    {% for s in subjects %}{% if s.assign_id and s.assign_id not in seen5 %}{% set _ = seen5.append(s.assign_id) %}
-    <tr>
-      <td style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--blue);">{{ s.department }}</td>
-      <td style="font-family:'Orbitron',monospace;font-size:11px;color:var(--accent);">S{{ s.semester }}</td>
-      <td style="font-weight:600;">{{ s.subject }}</td>
-      <td style="color:var(--green);font-size:12px;">{{ s.assigned_staff }}</td>
-      <td style="font-size:12px;color:var(--text2);">{{ s.assigned_class }}</td>
-      <td><form method="POST" style="display:inline;"><input type="hidden" name="action" value="unassign"><input type="hidden" name="assign_id" value="{{ s.assign_id }}"><button type="submit" class="btn btn-sm" style="background:rgba(255,165,0,0.15);color:orange;border:1px solid orange;padding:4px 8px;font-size:11px;" onclick="return confirm('Remove?')">Unassign</button></form></td>
-    </tr>
-    {% endif %}{% endfor %}
-    </tbody>
-  </table></div>
-  {% else %}<div style="text-align:center;padding:30px;color:var(--text2);">No assignments yet.</div>{% endif %}
-</div>
-</div>
-
-<!-- TAB 3: ALL -->
+<!-- ══════════════════════════════
+     TAB 2: ALL SUBJECTS
+══════════════════════════════ -->
 <div id="tab-list" style="display:none;">
-<div class="card" style="margin-bottom:16px;padding:14px 18px;">
-  <form method="GET" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
-    <div class="form-group" style="margin-bottom:0;min-width:140px;"><label>Department</label>
-      <select name="dept"><option value="">All</option>{% for d in DEPARTMENTS %}<option value="{{ d }}" {% if d==sel_dept %}selected{% endif %}>{{ d }}</option>{% endfor %}</select>
+
+  <!-- Filter bar -->
+  <div class="card" style="margin-bottom:16px;padding:14px 20px;">
+    <form method="GET" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
+      <div class="form-group" style="margin-bottom:0;min-width:140px;">
+        <label>Department</label>
+        <select name="dept" onchange="this.form.submit()">
+          <option value="">All Departments</option>
+          {% for d in DEPARTMENTS %}
+          <option value="{{ d }}" {% if d==sel_dept %}selected{% endif %}>{{ d }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom:0;min-width:140px;">
+        <label>Year</label>
+        <select name="year" onchange="this.form.submit()">
+          <option value="">All Years</option>
+          <option value="1" {% if sel_year==1 %}selected{% endif %}>I Year (Sem 1–2)</option>
+          <option value="2" {% if sel_year==2 %}selected{% endif %}>II Year (Sem 3–4)</option>
+          <option value="3" {% if sel_year==3 %}selected{% endif %}>III Year (Sem 5–6)</option>
+          <option value="4" {% if sel_year==4 %}selected{% endif %}>IV Year (Sem 7–8)</option>
+        </select>
+      </div>
+      <a href="{{ url_for('admin_subjects') }}" class="btn btn-outline btn-sm" style="padding:10px 16px;">Reset</a>
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <i class="fas fa-table"></i> ALL SUBJECTS
+      <span style="font-size:11px;font-family:'Rajdhani',sans-serif;color:var(--text2);font-weight:400;margin-left:8px;">({{ subjects|length }} total)</span>
     </div>
-    <div class="form-group" style="margin-bottom:0;min-width:120px;"><label>Semester</label>
-      <select name="sem"><option value="">All</option>{% for i in range(1,9) %}<option value="{{ i }}" {% if i==sel_sem %}selected{% endif %}>Sem {{ i }}</option>{% endfor %}</select>
-    </div>
-    <button type="submit" class="btn btn-outline btn-sm" style="padding:10px 18px;">Filter</button>
-    <a href="{{ url_for('admin_subjects') }}" class="btn btn-outline btn-sm" style="padding:10px 18px;">Reset</a>
-  </form>
-</div>
 
-{% set unique_subjects = [] %}
-{% set seen_ids = [] %}
-{% for s in subjects %}{% if s.id not in seen_ids %}{% set _ = seen_ids.append(s.id) %}{% set _ = unique_subjects.append(s) %}{% endif %}{% endfor %}
+    {% if subjects %}
+    {# Group by semester #}
+    {% set sems_seen = [] %}
+    {% for s in subjects %}{% if s.semester not in sems_seen %}{% set _ = sems_seen.append(s.semester) %}{% endif %}{% endfor %}
 
-<div class="card">
-  <div class="card-title"><i class="fas fa-list"></i> ALL SUBJECTS ({{ unique_subjects|length }})</div>
-  {% if unique_subjects %}
-
-  {# Group by semester #}
-  {% set sems_shown = [] %}
-  {% for sem_n in range(1,9) %}
-    {% set sem_subjects = unique_subjects | selectattr('semester','equalto',sem_n) | list %}
+    {% for sem_n in sems_seen %}
+    {% set sem_subjects = subjects | selectattr('semester','equalto',sem_n) | list %}
     {% if sem_subjects %}
     <div style="margin-bottom:18px;">
-      <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:rgba(233,69,96,0.08);border-radius:8px;border-left:3px solid var(--accent);margin-bottom:10px;cursor:pointer;" onclick="toggleSem({{ sem_n }})">
-        <span style="font-family:'Orbitron',monospace;font-size:12px;color:var(--accent);font-weight:700;">SEMESTER {{ sem_n }}</span>
-        <span style="font-size:11px;color:var(--text2);">({{ sem_subjects|length }} subject{% if sem_subjects|length != 1 %}s{% endif %})</span>
-        <span id="semArrow{{ sem_n }}" style="margin-left:auto;color:var(--text2);font-size:12px;">▾</span>
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:rgba(233,69,96,0.08);border-radius:8px;border-left:3px solid var(--accent);margin-bottom:8px;cursor:pointer;" onclick="toggleSem({{ sem_n }})">
+        <span style="font-family:'Orbitron',monospace;font-size:11px;color:var(--accent);font-weight:700;">SEMESTER {{ sem_n }}</span>
+        <span style="font-size:11px;color:var(--text2);">({{ sem_subjects|length }} subject{% if sem_subjects|length!=1 %}s{% endif %})</span>
+        <span id="semArrow{{ sem_n }}" style="margin-left:auto;color:var(--text2);">▾</span>
       </div>
       <div id="semGroup{{ sem_n }}">
-        <div class="table-wrap"><table>
-          <thead><tr><th>Dept</th><th>Subject</th><th>Type</th><th>Staff</th><th>Class</th><th></th></tr></thead>
-          <tbody>
-          {% for s in sem_subjects %}
-          <tr>
-            <td style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--blue);">{{ s.department }}</td>
-            <td style="font-weight:600;">{{ s.subject }}</td>
-            <td>
-              {% if s.subject_type == 'integrated' %}
-              <span class="badge" style="background:rgba(124,58,237,0.2);color:#a78bfa;border:1px solid rgba(124,58,237,0.3);font-size:9px;">Integrated</span>
-              {% elif s.subject_type == 'lab' %}<span class="badge badge-blue" style="font-size:9px;">Lab</span>
-              {% elif s.subject_type == 'elective' %}<span class="badge badge-gold" style="font-size:9px;">Elective</span>
-              {% else %}<span class="badge badge-green" style="font-size:9px;">Theory</span>{% endif %}
-            </td>
-            <td style="font-size:12px;color:var(--text2);">{{ s.assigned_staff or '—' }}</td>
-            <td style="font-size:12px;color:var(--text2);">{{ s.assigned_class or '—' }}</td>
-            <td style="display:flex;gap:6px;">
-              {% if s.assign_id %}<form method="POST" style="display:inline;"><input type="hidden" name="action" value="unassign"><input type="hidden" name="assign_id" value="{{ s.assign_id }}"><button type="submit" class="btn btn-sm" style="background:rgba(255,165,0,0.15);color:orange;border:1px solid orange;padding:4px 8px;font-size:11px;" onclick="return confirm('Remove assignment?')">Unassign</button></form>{% endif %}
-              <form method="POST" style="display:inline;"><input type="hidden" name="action" value="delete"><input type="hidden" name="subject_id" value="{{ s.id }}"><button type="submit" class="btn btn-sm" style="background:rgba(233,69,96,0.15);color:var(--accent);border:1px solid rgba(233,69,96,0.4);padding:4px 8px;font-size:11px;" onclick="return confirm('Delete subject?')">✕</button></form>
-            </td>
-          </tr>
-          {% endfor %}
-          </tbody>
-        </table></div>
+        {% for s in sem_subjects %}
+        <div class="subj-row">
+          <div style="width:44px;flex-shrink:0;">
+            <span class="sem-badge">S{{ s.semester }}</span>
+          </div>
+          <div style="width:50px;flex-shrink:0;font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--blue);">{{ s.department }}</div>
+          <div style="flex:1;font-weight:600;font-size:13px;">{{ s.subject }}</div>
+          <div style="width:90px;flex-shrink:0;">
+            <span class="type-badge type-{{ s.subject_type }}">
+              {% if s.subject_type=='integrated' %}Integrated{% else %}{{ s.subject_type.title() }}{% endif %}
+            </span>
+          </div>
+          <div style="flex-shrink:0;">
+            <form method="POST" style="display:inline;">
+              <input type="hidden" name="action" value="delete">
+              <input type="hidden" name="subject_id" value="{{ s.id }}">
+              <button type="submit" class="btn btn-sm"
+                style="background:rgba(233,69,96,0.1);color:var(--accent);border:1px solid rgba(233,69,96,0.3);padding:4px 10px;font-size:11px;"
+                onclick="return confirm('Delete {{ s.subject }}?')">✕</button>
+            </form>
+          </div>
+        </div>
+        {% endfor %}
       </div>
     </div>
     {% endif %}
-  {% endfor %}
-  {% else %}<div style="text-align:center;padding:40px;color:var(--text2);">No subjects found.</div>{% endif %}
-</div>
+    {% endfor %}
+
+    {% else %}
+    <div style="text-align:center;padding:50px;color:var(--text2);">
+      <div style="font-size:40px;margin-bottom:10px;">📭</div>
+      <div style="font-family:'Orbitron',monospace;font-size:12px;margin-bottom:6px;">NO SUBJECTS FOUND</div>
+      <div style="font-size:12px;">Add subjects using the "Add Subjects" tab.</div>
+    </div>
+    {% endif %}
+  </div>
 </div>
 
+<!-- Inject all subjects as JSON for JS quick-list -->
 <script>
+const ALL_SUBJECTS_DATA = {{ subjects | tojson }};
+const YEAR_SEM_MAP      = {{ YEAR_SEM_MAP | tojson }};
+
+let selDept = '', selYear = null;
+
 function showTab(id, btn) {
-  ['tab-add','tab-assign','tab-list'].forEach(t => document.getElementById(t).style.display = 'none');
+  ['tab-add','tab-list'].forEach(t => document.getElementById(t).style.display='none');
   document.getElementById(id).style.display = 'block';
-  document.querySelectorAll('.subj-tab').forEach(b => { b.style.color='var(--text2)'; b.style.borderBottomColor='transparent'; });
-  btn.style.color='var(--text)'; btn.style.borderBottomColor='var(--accent)';
+  document.querySelectorAll('.subj-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
 }
-function filterSubjects() {
-  const dept = document.getElementById('filterDept').value;
-  const sem  = document.getElementById('filterSem').value;
-  document.querySelectorAll('#subjectDropdown option').forEach(o => {
-    if (!o.value) return;
-    o.style.display = ((!dept||o.dataset.dept===dept) && (!sem||o.dataset.sem===sem)) ? '' : 'none';
+
+// ── Dept selection ──
+function selectDept(dept) {
+  selDept = dept;
+  document.getElementById('selDept').value = dept;
+  document.getElementById('deptErr').style.display = 'none';
+  document.querySelectorAll('.dept-pill').forEach(p => p.classList.remove('active'));
+  document.getElementById('dpill_' + dept).classList.add('active');
+  document.getElementById('yearStep').style.display = 'block';
+  document.getElementById('semStep').style.display = 'none';
+  document.getElementById('subjectStep').style.display = 'none';
+  // reset year pills
+  [1,2,3,4].forEach(y => document.getElementById('ypill_'+y).classList.remove('active'));
+  document.getElementById('selYear').value = '';
+  selYear = null;
+  refreshQuickList();
+}
+
+// ── Year selection ──
+function selectYear(yr) {
+  selYear = yr;
+  document.getElementById('selYear').value = yr;
+  [1,2,3,4].forEach(y => document.getElementById('ypill_'+y).classList.remove('active'));
+  document.getElementById('ypill_'+yr).classList.add('active');
+
+  // Populate semester dropdown
+  const semRanges = YEAR_SEM_MAP[yr] || [1,2];
+  const semSel = document.getElementById('semSelect');
+  semSel.innerHTML = '<option value="">— Select Semester —</option>';
+  for (let s = semRanges[0]; s <= semRanges[1]; s++) {
+    const opt = document.createElement('option');
+    opt.value = s; opt.textContent = 'Semester ' + s;
+    semSel.appendChild(opt);
+  }
+  if (semRanges[1] - semRanges[0] === 1) semSel.value = semRanges[0]; // auto-select odd sem
+
+  document.getElementById('semStep').style.display = 'block';
+  document.getElementById('subjectStep').style.display = 'block';
+  refreshQuickList();
+}
+
+// ── Type selection highlight ──
+function selectType(t) {
+  ['theory','lab','elective','integrated'].forEach(x => {
+    const lbl = document.getElementById('tlbl_'+x);
+    if (lbl) { lbl.style.borderColor = x===t ? 'var(--accent)' : 'var(--border)'; lbl.style.background = x===t ? 'rgba(233,69,96,0.1)' : 'var(--bg3)'; }
   });
-  document.getElementById('subjectDropdown').value = '';
+  updatePreview();
 }
-function checkLoad(staffId) {
-  const info = document.getElementById('loadInfo');
-  if (!staffId) { info.style.display='none'; return; }
-  const name = document.querySelector(`#staffSel option[value="${staffId}"]`)?.textContent?.trim()||'';
-  let count = 0;
-  document.querySelectorAll('#tab-assign .table-wrap tbody tr').forEach(r => {
-    if (r.cells[3] && r.cells[3].textContent.trim()===name) count++;
+
+// ── Live preview ──
+document.addEventListener('input', function(e) {
+  if (e.target.id === 'subjectName' || e.target.name === 'semester') updatePreview();
+});
+function updatePreview() {
+  const dept = document.getElementById('selDept').value;
+  const yr   = document.getElementById('selYear').value;
+  const sem  = document.getElementById('semSelect')?.value;
+  const subj = document.getElementById('subjectName')?.value?.trim();
+  const type = document.querySelector('input[name="subject_type"]:checked')?.value || 'theory';
+  const prev = document.getElementById('addPreview');
+  if (!prev) return;
+  if (dept && yr && sem && subj) {
+    prev.style.display = 'block';
+    const yearLabels = {1:'I Year',2:'II Year',3:'III Year',4:'IV Year'};
+    prev.textContent = `✓ Will add: ${dept} · ${yearLabels[yr]} · Sem ${sem} · "${subj}" [${type}]`;
+  } else {
+    prev.style.display = 'none';
+  }
+}
+
+// ── Form validation ──
+function validateForm() {
+  const dept = document.getElementById('selDept').value;
+  if (!dept) { document.getElementById('deptErr').style.display='block'; return false; }
+  return true;
+}
+
+// ── Quick list (right panel) ──
+function refreshQuickList() {
+  const panel = document.getElementById('quickList');
+  const title = document.getElementById('quickListTitle');
+
+  if (!selDept) {
+    title.textContent = 'SELECT DEPT & YEAR';
+    panel.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text2);"><div style="font-size:36px;margin-bottom:8px;">📂</div><div style="font-size:12px;">Choose department and year on the left.</div></div>';
+    return;
+  }
+
+  const yearLabels = {1:'I Year',2:'II Year',3:'III Year',4:'IV Year'};
+  let filtered = ALL_SUBJECTS_DATA.filter(s => s.department === selDept);
+
+  if (selYear) {
+    const [sMin, sMax] = YEAR_SEM_MAP[selYear];
+    filtered = filtered.filter(s => s.semester >= sMin && s.semester <= sMax);
+    title.textContent = `${selDept} — ${yearLabels[selYear]}`;
+  } else {
+    title.textContent = `${selDept} — ALL YEARS`;
+  }
+
+  if (!filtered.length) {
+    panel.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text2);font-size:12px;">No subjects added yet for this selection.</div>';
+    return;
+  }
+
+  const typeColor = {theory:'var(--green)',lab:'var(--blue)',elective:'var(--gold)',integrated:'#a78bfa'};
+  let html = '';
+  let lastSem = null;
+  filtered.forEach(s => {
+    if (s.semester !== lastSem) {
+      if (lastSem !== null) html += '</div>';
+      html += `<div style="font-size:10px;color:var(--accent);font-family:'Orbitron',monospace;letter-spacing:1px;padding:8px 0 4px;font-weight:700;">SEMESTER ${s.semester}</div><div>`;
+      lastSem = s.semester;
+    }
+    html += `<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);">
+      <div style="flex:1;font-size:13px;font-weight:600;">${s.subject}</div>
+      <div style="font-size:10px;color:${typeColor[s.subject_type]||'var(--text2)'};font-weight:700;">${s.subject_type.toUpperCase()}</div>
+    </div>`;
   });
-  info.style.display='block';
-  info.style.color = count >= 4 ? 'var(--gold)' : 'var(--green)';
-  info.textContent = count >= 4 ? `⚠️ ${name} is at max (4/4 classes)` : `✓ ${name}: ${count}/4 classes (${4-count} slot${4-count!==1?'s':''} free)`;
+  if (lastSem !== null) html += '</div>';
+  panel.innerHTML = html;
 }
+
 function toggleSem(n) {
   const g = document.getElementById('semGroup'+n);
   const a = document.getElementById('semArrow'+n);
@@ -367,5 +345,8 @@ function toggleSem(n) {
   g.style.display = hidden ? '' : 'none';
   if (a) a.textContent = hidden ? '▾' : '▸';
 }
+
+// Init type highlight
+selectType('theory');
 </script>
 {% endblock %}
