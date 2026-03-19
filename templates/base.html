@@ -500,6 +500,7 @@
             <a href="{{ url_for('admin_timetable') }}" class="nav-link {% if request.endpoint=='admin_timetable' %}active{% endif %}"><i class="fas fa-clock"></i><span>Timetable</span></a>
             <a href="{{ url_for('admin_attendance') }}" class="nav-link {% if request.endpoint=='admin_attendance' %}active{% endif %}"><i class="fas fa-calendar-check"></i><span>Attendance</span></a>
             <a href="{{ url_for('admin_staff') }}" class="nav-link {% if request.endpoint=='admin_staff' %}active{% endif %}"><i class="fas fa-users-cog"></i><span>Staff</span></a>
+            <a href="{{ url_for('admin_subjects') }}" class="nav-link {% if request.endpoint=='admin_subjects' %}active{% endif %}"><i class="fas fa-book-open"></i><span>Subjects</span></a>
             <div class="nav-section">Classes</div>
             <div style="display:flex;gap:4px;padding:4px 10px 8px;flex-wrap:wrap;">
               {% for yr in [1,2,3,4] %}
@@ -650,6 +651,7 @@
             <a href="{{ url_for('admin_timetable') }}" class="drawer-link {% if request.endpoint=='admin_timetable' %}active{% endif %}"><i class="fas fa-clock"></i>Timetable</a>
             <a href="{{ url_for('admin_attendance') }}" class="drawer-link {% if request.endpoint=='admin_attendance' %}active{% endif %}"><i class="fas fa-calendar-check"></i>Attendance</a>
             <a href="{{ url_for('admin_staff') }}" class="drawer-link {% if request.endpoint=='admin_staff' %}active{% endif %}"><i class="fas fa-users-cog"></i>Staff</a>
+            <a href="{{ url_for('admin_subjects') }}" class="drawer-link {% if request.endpoint=='admin_subjects' %}active{% endif %}"><i class="fas fa-book-open"></i>Subjects</a>
             <div class="drawer-section">Account</div>
             <a href="{{ url_for('profile') }}" class="drawer-link {% if request.endpoint=='profile' %}active{% endif %}"><i class="fas fa-user"></i>Profile</a>
             <a href="{{ url_for('notifications') }}" class="drawer-link"><i class="fas fa-bell"></i>Notifications</a>
