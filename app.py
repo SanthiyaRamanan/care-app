@@ -565,17 +565,24 @@ def admin_timetable():
     # Fetch subjects from subject_master for the selected class/year so timetable can use them
     subjects_for_tt = []
     if selected_class and selected_year:
-        # Determine dept from class name (e.g. AD-B -> AD)
-        cls_dept = selected_class.split('-')[0] if '-' in selected_class else ''
-        sem_min = (selected_year - 1) * 2 + 1
-        sem_max = sem_min + 1
-        cur.execute("""SELECT sm.subject, sm.subject_type, u.id AS staff_id, u.name AS staff_name
-                       FROM subject_master sm
-                       LEFT JOIN subject_assignments sa ON sa.subject_id=sm.id AND sa.class_name=%s
-                       LEFT JOIN users u ON u.id=sa.staff_id
-                       WHERE sm.department=%s AND sm.semester IN (%s,%s)
-                       ORDER BY sm.semester, sm.subject""",
-                    (selected_class, cls_dept, sem_min, sem_max))
+        # Determine dept from class name (e.g. AD-B -> AD, I-A -> first year no dept filter)
+        cls_parts = selected_class.split('-')
+        cls_dept  = cls_parts[0] if len(cls_parts) > 1 and not cls_parts[0].startswith('I') else ''
+        sem_min   = (selected_year - 1) * 2 + 1
+        sem_max   = sem_min + 1
+        if cls_dept:
+            cur.execute("""SELECT id, subject, subject_type, semester
+                           FROM subject_master
+                           WHERE department=%s AND semester IN (%s,%s)
+                           ORDER BY semester, subject_type, subject""",
+                        (cls_dept, sem_min, sem_max))
+        else:
+            # 1st year — fetch sem 1 & 2 regardless of dept
+            cur.execute("""SELECT id, subject, subject_type, semester
+                           FROM subject_master
+                           WHERE semester IN (%s,%s)
+                           ORDER BY semester, subject_type, subject""",
+                        (sem_min, sem_max))
         subjects_for_tt = cur.fetchall()
 
     conditions = []
@@ -682,6 +689,71 @@ def admin_staff():
     staff_list = cur.fetchall()
     cur.close()
     return render_template('admin/staff.html', user=user, staff_list=staff_list)
+
+
+# ════════════════════════════════════════════
+#  ADMIN SUBJECT MASTER (dept + year + sem + type)
+# ════════════════════════════════════════════
+
+DEPARTMENTS = ['CS','CE','MECH','AD','ECE','IT','S&H','T&P']
+YEAR_SEM_MAP = {1:(1,2), 2:(3,4), 3:(5,6), 4:(7,8)}
+
+@app.route('/admin/subjects', methods=['GET','POST'])
+@login_required
+@admin_required
+def admin_subjects():
+    user = get_current_user()
+    if not user: return redirect(url_for('login'))
+    cur = get_cur()
+
+    if request.method == 'POST':
+        action = request.form.get('action','add')
+        if action == 'add':
+            dept    = request.form.get('department','').strip()
+            year    = request.form.get('year', type=int)
+            sem     = request.form.get('semester', type=int)
+            subject = request.form.get('subject','').strip()
+            stype   = request.form.get('subject_type','theory')
+            if dept and sem and subject:
+                cur.execute("""INSERT IGNORE INTO subject_master
+                               (department, semester, subject, subject_type)
+                               VALUES (%s,%s,%s,%s)""",
+                            (dept, sem, subject, stype))
+                mysql.connection.commit()
+                flash(f'Subject "{subject}" added ✓','success')
+            else:
+                flash('Please fill department, semester and subject name.','warning')
+        elif action == 'delete':
+            sid = request.form.get('subject_id', type=int)
+            cur.execute("DELETE FROM subject_master WHERE id=%s", (sid,))
+            mysql.connection.commit()
+            flash('Subject deleted','success')
+        cur.close()
+        return redirect(url_for('admin_subjects',
+                                dept=request.form.get('department',''),
+                                year=request.form.get('year','')))
+
+    sel_dept = request.args.get('dept','')
+    sel_year = request.args.get('year', type=int)
+
+    # Build subject list filtered by dept + year (via semester range)
+    q = "SELECT * FROM subject_master WHERE 1=1"
+    params = []
+    if sel_dept:
+        q += " AND department=%s"; params.append(sel_dept)
+    if sel_year:
+        sem_min, sem_max = YEAR_SEM_MAP.get(sel_year, (1,8))
+        q += " AND semester BETWEEN %s AND %s"
+        params += [sem_min, sem_max]
+    q += " ORDER BY department, semester, subject_type, subject"
+    cur.execute(q, params)
+    subjects = cur.fetchall()
+    cur.close()
+
+    return render_template('admin/subjects.html',
+        user=user, subjects=subjects,
+        DEPARTMENTS=DEPARTMENTS, YEAR_SEM_MAP=YEAR_SEM_MAP,
+        sel_dept=sel_dept, sel_year=sel_year)
 
 
 # ════════════════════════════════════════════
