@@ -683,188 +683,6 @@ def admin_staff():
     cur.close()
     return render_template('admin/staff.html', user=user, staff_list=staff_list)
 
-# ── Admin: Subject Master ──
-@app.route('/admin/subjects', methods=['GET','POST'])
-@login_required
-@admin_required
-def admin_subjects():
-    user = get_current_user()
-    if not user: return redirect(url_for('login'))
-    cur = get_cur()
-
-    if request.method == 'POST':
-        action = request.form.get('action','add')
-        if action == 'add':
-            dept     = request.form.get('department','')
-            sem      = request.form.get('semester', type=int)
-            subject  = request.form.get('subject','').strip()
-            stype    = request.form.get('subject_type','theory')
-            if dept and sem and subject:
-                cur.execute("""INSERT IGNORE INTO subject_master (department,semester,subject,subject_type)
-                               VALUES (%s,%s,%s,%s)""", (dept,sem,subject,stype))
-                mysql.connection.commit()
-                flash('Subject added ✓','success')
-        elif action == 'delete':
-            sid = request.form.get('subject_id', type=int)
-            cur.execute("DELETE FROM subject_master WHERE id=%s", (sid,))
-            mysql.connection.commit()
-            flash('Subject deleted','success')
-        elif action == 'assign':
-            subject_id = request.form.get('subject_id', type=int)
-            staff_id   = request.form.get('staff_id', type=int)
-            class_name = request.form.get('class_name','')
-            if subject_id and staff_id and class_name:
-                cur.execute("""INSERT INTO subject_assignments (subject_id,staff_id,class_name)
-                               VALUES (%s,%s,%s)
-                               ON DUPLICATE KEY UPDATE staff_id=%s""",
-                            (subject_id, staff_id, class_name, staff_id))
-                mysql.connection.commit()
-                flash('Subject assigned to staff ✓','success')
-        elif action == 'unassign':
-            assign_id = request.form.get('assign_id', type=int)
-            cur.execute("DELETE FROM subject_assignments WHERE id=%s", (assign_id,))
-            mysql.connection.commit()
-            flash('Assignment removed','success')
-        cur.close()
-        return redirect(url_for('admin_subjects'))
-
-    sel_dept = request.args.get('dept','')
-    sel_sem  = request.args.get('sem', type=int)
-
-    # Distinct departments
-    DEPARTMENTS = ['CS','CE','MECH','AD','ECE','IT','MBA','MCA']
-
-    # Subject master list
-    q = "SELECT sm.*, sa.id AS assign_id, sa.class_name AS assigned_class, u.name AS assigned_staff FROM subject_master sm LEFT JOIN subject_assignments sa ON sa.subject_id=sm.id LEFT JOIN users u ON u.id=sa.staff_id WHERE 1=1"
-    params = []
-    if sel_dept:
-        q += " AND sm.department=%s"; params.append(sel_dept)
-    if sel_sem:
-        q += " AND sm.semester=%s"; params.append(sel_sem)
-    q += " ORDER BY sm.department, sm.semester, sm.subject_type, sm.subject"
-    cur.execute(q, params)
-    subjects = cur.fetchall()
-
-    cur.execute("SELECT id,name,department FROM users WHERE role='staff' ORDER BY department, name")
-    staff_list = cur.fetchall()
-    cur.close()
-
-    return render_template('admin/subjects.html',
-        user=user, subjects=subjects, staff_list=staff_list,
-        all_classes=ALL_CLASSES, DEPARTMENTS=DEPARTMENTS,
-        sel_dept=sel_dept, sel_sem=sel_sem)
-
-# ── API: subjects for a dept+sem (for student results dropdown) ──
-# ── API: subjects for a dept+sem (for student results dropdown) ──
-@app.route('/api/subjects')
-@login_required
-def api_subjects():
-    dept = request.args.get('department','')
-    sem  = request.args.get('semester', type=int)
-    cls  = request.args.get('class_name','')
-
-    # Strip year prefix if passed as "3-AD-B"
-    cls_plain = cls.split('-',1)[-1] if cls and cls[0].isdigit() else cls
-
-    # Normalize department: "AI & DS" → "AD", "Computer Science" → "CS" etc.
-    DEPT_MAP = {
-        'ai & ds': 'AD', 'ai&ds': 'AD', 'aids': 'AD',
-        'computer science': 'CS', 'cs': 'CS',
-        'civil': 'CE', 'ce': 'CE',
-        'mechanical': 'MECH', 'mech': 'MECH',
-        'ece': 'ECE', 'electronics': 'ECE',
-        'it': 'IT', 'information technology': 'IT',
-        'mba': 'MBA', 'mca': 'MCA',
-    }
-    dept_normalized = DEPT_MAP.get(dept.lower().strip(), dept)
-
-    # Also try extracting dept from class name e.g. "AD-B" → "AD"
-    dept_from_class = cls_plain.split('-')[0] if cls_plain and '-' in cls_plain else ''
-
-    if not sem:
-        return jsonify([])
-
-    cur = get_cur()
-
-    # ── Try 1: dept from user profile (normalized) + semester ──
-    if dept_normalized:
-        cur.execute("""SELECT sm.id, sm.subject, sm.subject_type,
-                       u.name AS staff_name
-                       FROM subject_master sm
-                       LEFT JOIN subject_assignments sa
-                           ON sa.subject_id=sm.id AND sa.class_name=%s
-                       LEFT JOIN users u ON u.id=sa.staff_id
-                       WHERE sm.department=%s AND sm.semester=%s
-                       ORDER BY sm.subject_type, sm.subject""",
-                    (cls_plain, dept_normalized, sem))
-        rows = cur.fetchall()
-        if rows:
-            cur.close()
-            return jsonify([{'id':r['id'],'subject':r['subject'],
-                             'type':r['subject_type'],'staff':r['staff_name'] or ''} for r in rows])
-
-    # ── Try 2: dept extracted from class name e.g. "AD" from "AD-B" ──
-    if dept_from_class and dept_from_class != dept_normalized:
-        cur.execute("""SELECT sm.id, sm.subject, sm.subject_type,
-                       u.name AS staff_name
-                       FROM subject_master sm
-                       LEFT JOIN subject_assignments sa
-                           ON sa.subject_id=sm.id AND sa.class_name=%s
-                       LEFT JOIN users u ON u.id=sa.staff_id
-                       WHERE sm.department=%s AND sm.semester=%s
-                       ORDER BY sm.subject_type, sm.subject""",
-                    (cls_plain, dept_from_class, sem))
-        rows = cur.fetchall()
-        if rows:
-            cur.close()
-            return jsonify([{'id':r['id'],'subject':r['subject'],
-                             'type':r['subject_type'],'staff':r['staff_name'] or ''} for r in rows])
-
-    # ── Try 3: subjects assigned to this class directly ──
-    if cls_plain:
-        cur.execute("""SELECT sm.id, sm.subject, sm.subject_type, u.name AS staff_name
-                       FROM subject_assignments sa
-                       JOIN subject_master sm ON sm.id=sa.subject_id
-                       LEFT JOIN users u ON u.id=sa.staff_id
-                       WHERE sa.class_name=%s AND sm.semester=%s
-                       ORDER BY sm.subject_type, sm.subject""",
-                    (cls_plain, sem))
-        rows = cur.fetchall()
-        if rows:
-            cur.close()
-            return jsonify([{'id':r['id'],'subject':r['subject'],
-                             'type':r['subject_type'],'staff':r['staff_name'] or ''} for r in rows])
-
-    # ── Try 4: subjects from ANY matching department pattern (LIKE) ──
-    if dept:
-        # e.g. search for 'AD' inside 'AI & DS' or vice versa
-        like_term = f"%{dept_from_class or dept_normalized}%"
-        cur.execute("""SELECT sm.id, sm.subject, sm.subject_type,
-                       u.name AS staff_name
-                       FROM subject_master sm
-                       LEFT JOIN subject_assignments sa
-                           ON sa.subject_id=sm.id AND sa.class_name=%s
-                       LEFT JOIN users u ON u.id=sa.staff_id
-                       WHERE sm.department LIKE %s AND sm.semester=%s
-                       ORDER BY sm.subject_type, sm.subject""",
-                    (cls_plain, like_term, sem))
-        rows = cur.fetchall()
-        if rows:
-            cur.close()
-            return jsonify([{'id':r['id'],'subject':r['subject'],
-                             'type':r['subject_type'],'staff':r['staff_name'] or ''} for r in rows])
-
-    # ── Last resort: subjects from cat_marks saved for this class/sem ──
-    if cls_plain:
-        cur.execute("""SELECT DISTINCT subject FROM cat_marks
-                       WHERE class_name=%s AND semester=%s
-                       ORDER BY subject""", (cls_plain, sem))
-        rows = cur.fetchall()
-        cur.close()
-        return jsonify([{'id':None,'subject':r['subject'],'type':'theory','staff':''} for r in rows])
-
-    cur.close()
-    return jsonify([])
 
 # ════════════════════════════════════════════
 #  STAFF DASHBOARD — 4 class buttons
@@ -1146,14 +964,25 @@ def profile():
         cur.execute("UPDATE users SET phone=%s, profile_pic=%s WHERE id=%s",
                     (phone, pic_path, user['id']))
 
-        # Staff: update class assignments (max 5)
+        # Staff: update class assignments (max 5) + CC
         if user['role'] in ('staff','admin'):
             selected = request.form.getlist('staff_classes')[:5]
+            is_cc    = 1 if request.form.get('is_coordinator') else 0
+            cc_class = request.form.get('coordinator_class','')
+            cc_year  = request.form.get('coordinator_year','')
+            cc_key   = f"{cc_year}-{cc_class}" if (is_cc and cc_year and cc_class) else ''
+
             cur.execute("DELETE FROM staff_classes WHERE staff_id=%s", (user['id'],))
             for cls in selected:
                 if cls in ALL_CLASSES:
                     cur.execute("INSERT IGNORE INTO staff_classes (staff_id,class_name) VALUES (%s,%s)",
                                 (user['id'], cls))
+            # Save CC info
+            if is_cc and cc_key:
+                cur.execute("""INSERT INTO staff_classes (staff_id,class_name,is_coordinator,coordinator_class)
+                               VALUES (%s,%s,1,%s)
+                               ON DUPLICATE KEY UPDATE is_coordinator=1, coordinator_class=%s""",
+                            (user['id'], cc_key, cc_key, cc_key))
 
         mysql.connection.commit()
         flash('Profile updated ✓','success')
@@ -1165,11 +994,31 @@ def profile():
     streak_history = cur.fetchall()
 
     my_classes = get_staff_classes(user['id']) if user['role'] in ('staff','admin') else []
+
+    # Get CC info for staff
+    cc_info = None
+    if user['role'] in ('staff','admin'):
+        try:
+            cur.execute("""SELECT coordinator_class, is_coordinator FROM staff_classes
+                           WHERE staff_id=%s AND is_coordinator=1 LIMIT 1""", (user['id'],))
+            cc_row = cur.fetchone()
+            if cc_row and cc_row['coordinator_class']:
+                raw = cc_row['coordinator_class']
+                # Parse "3-AD-B" → year=3, class=AD-B  or "I-A" → year=1, class=I-A
+                import re as _re
+                m = _re.match(r'^(\d+)-(.+)$', raw)
+                if m:
+                    cc_info = {'cc_year': int(m.group(1)), 'cc_class': m.group(2), 'raw': raw}
+                else:
+                    cc_info = {'cc_year': 1, 'cc_class': raw, 'raw': raw}
+        except:
+            pass
+
     cur.close()
 
     return render_template('profile.html',
         user=user, streak_history=streak_history,
-        my_classes=my_classes, all_classes=ALL_CLASSES)
+        my_classes=my_classes, cc_info=cc_info, all_classes=ALL_CLASSES)
 
 # ════════════════════════════════════════════
 #  TIMETABLE (staff view only — admin manages)
