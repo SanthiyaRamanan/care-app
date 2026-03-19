@@ -294,13 +294,28 @@ updateClassDropdown();
       {% set pt = period_times.get(p.num, ('','')) %}
       <td style="border:1px solid var(--border);padding:5px;vertical-align:top;background:var(--bg);">
         <div style="display:flex;flex-direction:column;gap:3px;">
-          <input type="text"
-            name="slot_{{ day }}_{{ p.num }}_subject"
-            placeholder="Subject"
-            value="{{ ns2.slot.subject if ns2.slot else '' }}"
-            list="subjectSuggestions"
-            style="width:100%;background:#0f0f1e;border:1px solid var(--border);color:var(--text);padding:5px 7px;border-radius:6px;font-size:11px;font-family:'Rajdhani',sans-serif;"
-            oninput="checkFill();autoSetStaff(this)">
+          <select name="slot_{{ day }}_{{ p.num }}_subject"
+            style="width:100%;background:#0f0f1e;border:1px solid var(--border);color:var(--text);padding:4px 6px;border-radius:6px;font-size:10px;"
+            onchange="checkFill()">
+            <option value="">— Subject —</option>
+            {% if subjects_for_tt %}
+              {% set last_sem = namespace(v=None) %}
+              {% for subj in subjects_for_tt %}
+                {% if subj.semester != last_sem.v %}
+                  {% if last_sem.v is not none %}</optgroup>{% endif %}
+                  <optgroup label="Sem {{ subj.semester }}">
+                  {% set last_sem.v = subj.semester %}
+                {% endif %}
+                <option value="{{ subj.subject }}"
+                  {% if ns2.slot and ns2.slot.subject == subj.subject %}selected{% endif %}>
+                  {{ subj.subject }}{% if subj.subject_type != 'theory' %} ({{ subj.subject_type }}){% endif %}
+                </option>
+              {% endfor %}
+              {% if subjects_for_tt %}</optgroup>{% endif %}
+            {% else %}
+              {% if ns2.slot %}<option value="{{ ns2.slot.subject }}" selected>{{ ns2.slot.subject }}</option>{% endif %}
+            {% endif %}
+          </select>
           <select name="slot_{{ day }}_{{ p.num }}_staff"
             style="width:100%;background:#0f0f1e;border:1px solid var(--border);color:var(--text);padding:4px 6px;border-radius:6px;font-size:10px;"
             onchange="checkFill()">
@@ -340,14 +355,7 @@ updateClassDropdown();
 </form>
 </div>
 
-<!-- Subject suggestions datalist from subject_master -->
-<datalist id="subjectSuggestions">
-  {% if subjects_for_tt %}
-    {% for s in subjects_for_tt %}
-    <option value="{{ s.subject }}">{{ s.subject }} ({{ s.subject_type }}{% if s.staff_name %} – {{ s.staff_name }}{% endif %})</option>
-    {% endfor %}
-  {% endif %}
-</datalist>
+<!-- subjects now loaded via select dropdown -->
 
 {% else %}
 <!-- No class selected -->
@@ -359,24 +367,9 @@ updateClassDropdown();
 {% endif %}
 
 <script>
-// Subject → staff auto-assign map from subject_master
-const subjectStaffMap = {
-  {% if subjects_for_tt %}
-  {% for s in subjects_for_tt %}{% if s.staff_id %}"{{ s.subject|lower }}": {{ s.staff_id }},{% endif %}{% endfor %}
-  {% endif %}
-};
+// Subjects loaded via server-side dropdown
 
-function autoSetStaff(inp) {
-  const val = inp.value.trim().toLowerCase();
-  if (!val || !subjectStaffMap[val]) return;
-  // Find the nearest staff select in the same cell
-  const cell = inp.closest('td');
-  if (!cell) return;
-  const staffSel = cell.querySelector('select[name*="_staff"]');
-  if (staffSel && subjectStaffMap[val]) {
-    staffSel.value = subjectStaffMap[val];
-  }
-}
+// autoSetStaff removed — subject is now a dropdown select
 
 function enableEdit() {
   document.getElementById('viewSection').style.display = 'none';
