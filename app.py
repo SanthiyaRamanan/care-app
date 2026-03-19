@@ -1,3 +1,6 @@
+import pymysql
+pymysql.install_as_MySQLdb()
+
 import os, json, tempfile, smtplib, threading
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -2243,7 +2246,7 @@ def generate_resume_page():
     cur.execute("SELECT * FROM certificates WHERE student_id=%s AND verification_status='verified'",(user['id'],)); certs=cur.fetchall()
     cur.execute("SELECT * FROM projects WHERE student_id=%s",(user['id'],)); projects=cur.fetchall()
     cur.execute("SELECT * FROM seminars WHERE student_id=%s",(user['id'],)); seminars=cur.fetchall()
-    cur.execute("SELECT * FROM results WHERE student_id=%s ORDER BY semester",(user['id'],)); results=cur.fetchall()
+    cur.execute("SELECT * FROM semester_results WHERE student_id=%s ORDER BY semester, subject",(user['id'],)); results=cur.fetchall()
     cur.close()
     try:
         from fpdf import FPDF
@@ -2263,7 +2266,7 @@ def generate_resume_page():
                 pdf.cell(0,6,line,ln=True)
         if projects: section('Projects'); [pdf.cell(0,6,f"- {p['title']} [{p['tech_stack'] or ''}]",ln=True) for p in projects]
         if seminars: section('Seminars'); [pdf.cell(0,6,f"- {s['title']}",ln=True) for s in seminars]
-        if results: section('Results'); [pdf.cell(0,6,f"- Sem{r['semester']} {r['subject']} {r['marks_obtained']}/{r['max_marks']} {r['grade']}",ln=True) for r in results]
+        if results: section('Results'); [pdf.cell(0,6,f"- Sem{r['semester']} {r['subject']} ({r.get('subject_type','theory').title()}) — Grade: {r['grade']}",ln=True) for r in results]
         path=os.path.join(TEMP_DIR, f'resume_{user["id"]}.pdf'); pdf.output(path)
         return send_file(path,as_attachment=True,download_name=f"{user['name'].replace(' ','_')}_Resume.pdf",mimetype='application/pdf')
     except ImportError:
