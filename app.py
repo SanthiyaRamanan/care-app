@@ -681,8 +681,10 @@ def admin_staff():
     if not user: return redirect(url_for('login'))
     cur = get_cur()
     cur.execute("""SELECT u.*,
-                   GROUP_CONCAT(DISTINCT sc.class_name ORDER BY sc.class_name SEPARATOR ', ') AS classes,
-                   GROUP_CONCAT(DISTINCT CASE WHEN sc.is_coordinator=1 THEN sc.coordinator_class END) AS cc_class
+                   GROUP_CONCAT(DISTINCT CASE WHEN (sc.is_coordinator=0 OR sc.is_coordinator IS NULL)
+                       THEN sc.class_name END ORDER BY sc.class_name SEPARATOR ', ') AS classes,
+                   MAX(CASE WHEN sc.is_coordinator=1 THEN
+                       COALESCE(sc.coordinator_class, sc.class_name) END) AS cc_class
                    FROM users u LEFT JOIN staff_classes sc ON sc.staff_id=u.id
                    WHERE u.role IN ('staff','admin')
                    GROUP BY u.id ORDER BY u.name""")
