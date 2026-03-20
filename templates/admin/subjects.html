@@ -252,7 +252,7 @@ function selectYear(yr) {
 
   document.getElementById('semStep').style.display = 'block';
   document.getElementById('subjectStep').style.display = 'block';
-  refreshQuickList();
+  refreshQuickList(); // will show "select semester" placeholder
 }
 
 // ── Type selection highlight ──
@@ -266,7 +266,13 @@ function selectType(t) {
 
 // ── Live preview ──
 document.addEventListener('input', function(e) {
-  if (e.target.id === 'subjectName' || e.target.name === 'semester') updatePreview();
+  if (e.target.id === 'subjectName') updatePreview();
+});
+document.addEventListener('change', function(e) {
+  if (e.target.id === 'semSelect') {
+    updatePreview();
+    refreshQuickList(); // refresh right panel when semester chosen
+  }
 });
 function updatePreview() {
   const dept = document.getElementById('selDept').value;
@@ -297,43 +303,50 @@ function refreshQuickList() {
   const panel = document.getElementById('quickList');
   const title = document.getElementById('quickListTitle');
 
+  // Show placeholder until BOTH dept AND year are selected
   if (!selDept) {
     title.textContent = 'SELECT DEPT & YEAR';
     panel.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text2);"><div style="font-size:36px;margin-bottom:8px;">📂</div><div style="font-size:12px;">Choose department and year on the left.</div></div>';
     return;
   }
 
+  if (!selYear) {
+    title.textContent = `${selDept} — SELECT YEAR`;
+    panel.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text2);"><div style="font-size:36px;margin-bottom:8px;">📅</div><div style="font-size:12px;">Now choose a year to see subjects.</div></div>';
+    return;
+  }
+
   const yearLabels = {1:'I Year',2:'II Year',3:'III Year',4:'IV Year'};
+  const [sMin, sMax] = YEAR_SEM_MAP[selYear];
+
+  // Check if a specific semester is selected
+  const semVal = document.getElementById('semSelect')?.value;
   let filtered = ALL_SUBJECTS_DATA.filter(s => s.department === selDept);
 
-  if (selYear) {
-    const [sMin, sMax] = YEAR_SEM_MAP[selYear];
-    filtered = filtered.filter(s => s.semester >= sMin && s.semester <= sMax);
-    title.textContent = `${selDept} — ${yearLabels[selYear]}`;
+  if (semVal) {
+    // Show only selected semester
+    filtered = filtered.filter(s => s.semester == semVal);
+    title.textContent = `${selDept} — ${yearLabels[selYear]} · Sem ${semVal}`;
   } else {
-    title.textContent = `${selDept} — ALL YEARS`;
+    // Year selected but no sem yet — show placeholder
+    title.textContent = `${selDept} — ${yearLabels[selYear]}`;
+    panel.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text2);"><div style="font-size:36px;margin-bottom:8px;">🗓️</div><div style="font-size:12px;">Now select a semester to see subjects.</div></div>';
+    return;
   }
 
   if (!filtered.length) {
-    panel.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text2);font-size:12px;">No subjects added yet for this selection.</div>';
+    panel.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text2);font-size:12px;">No subjects added yet for this semester.</div>';
     return;
   }
 
   const typeColor = {theory:'var(--green)',lab:'var(--blue)',elective:'var(--gold)',integrated:'#a78bfa'};
   let html = '';
-  let lastSem = null;
   filtered.forEach(s => {
-    if (s.semester !== lastSem) {
-      if (lastSem !== null) html += '</div>';
-      html += `<div style="font-size:10px;color:var(--accent);font-family:'Orbitron',monospace;letter-spacing:1px;padding:8px 0 4px;font-weight:700;">SEMESTER ${s.semester}</div><div>`;
-      lastSem = s.semester;
-    }
-    html += `<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);">
+    html += `<div style="display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--border);">
       <div style="flex:1;font-size:13px;font-weight:600;">${s.subject}</div>
       <div style="font-size:10px;color:${typeColor[s.subject_type]||'var(--text2)'};font-weight:700;">${s.subject_type.toUpperCase()}</div>
     </div>`;
   });
-  if (lastSem !== null) html += '</div>';
   panel.innerHTML = html;
 }
 
