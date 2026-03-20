@@ -38,37 +38,49 @@
     <div class="form-group">
       <label>MY CLASSES <span style="color:var(--text2);font-weight:400;text-transform:none;letter-spacing:0;">(select all you handle, max 5)</span></label>
       <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px;">
+
+        <!-- 1ST YEAR -->
         <div style="font-size:11px;color:var(--gold);letter-spacing:1px;margin-bottom:6px;">1ST YEAR</div>
-        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;">
           {% for cls in ['I-A','I-B','I-C','I-D','I-E','I-F','I-G'] %}
+          {% set stored_key = '1-' + cls %}
           <label style="display:flex;align-items:center;gap:6px;cursor:pointer;text-transform:none;letter-spacing:0;font-size:13px;font-weight:600;
-                        background:{% if cls in my_classes %}rgba(233,69,96,0.15){% else %}var(--bg3){% endif %};
-                        border:1px solid {% if cls in my_classes %}var(--accent){% else %}var(--border){% endif %};
+                        background:{% if stored_key in my_classes or cls in my_classes %}rgba(233,69,96,0.15){% else %}var(--bg3){% endif %};
+                        border:1px solid {% if stored_key in my_classes or cls in my_classes %}var(--accent){% else %}var(--border){% endif %};
                         border-radius:8px;padding:6px 12px;transition:all 0.15s;" id="lbl_{{ cls }}"
                 onclick="toggleClass(this, '{{ cls }}')">
             <input type="checkbox" name="staff_classes" value="{{ cls }}"
-                   {% if cls in my_classes %}checked{% endif %}
+                   {% if stored_key in my_classes or cls in my_classes %}checked{% endif %}
                    style="width:auto;accent-color:var(--accent);">
             {{ cls }}
           </label>
           {% endfor %}
         </div>
-        <div style="font-size:11px;color:var(--blue);letter-spacing:1px;margin-bottom:6px;">2ND – 4TH YEAR</div>
-        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+
+        <!-- 2ND–4TH YEAR — grouped by year with year selector per class -->
+        {% for yr, yr_label, yr_color in [(2,'II Year','var(--blue)'),(3,'III Year','var(--green)'),(4,'IV Year','var(--purple)')] %}
+        <div style="font-size:11px;color:{{ yr_color }};letter-spacing:1px;margin-bottom:6px;">{{ yr_label }}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;">
           {% for cls in ['CS-A','CS-B','CE-A','MECH-A','AD-A','AD-B','ECE-A'] %}
+          {% set stored_key = yr|string + '-' + cls %}
           <label style="display:flex;align-items:center;gap:6px;cursor:pointer;text-transform:none;letter-spacing:0;font-size:13px;font-weight:600;
-                        background:{% if cls in my_classes %}rgba(233,69,96,0.15){% else %}var(--bg3){% endif %};
-                        border:1px solid {% if cls in my_classes %}var(--accent){% else %}var(--border){% endif %};
-                        border-radius:8px;padding:6px 12px;transition:all 0.15s;" id="lbl_{{ cls }}"
-                onclick="toggleClass(this, '{{ cls }}')">
+                        background:{% if stored_key in my_classes %}rgba(233,69,96,0.15){% else %}var(--bg3){% endif %};
+                        border:1px solid {% if stored_key in my_classes %}var(--accent){% else %}var(--border){% endif %};
+                        border-radius:8px;padding:6px 12px;transition:all 0.15s;"
+                onclick="toggleClassYr(this, '{{ cls }}', {{ yr }})">
             <input type="checkbox" name="staff_classes" value="{{ cls }}"
-                   {% if cls in my_classes %}checked{% endif %}
+                   data-year="{{ yr }}"
+                   {% if stored_key in my_classes %}checked{% endif %}
                    style="width:auto;accent-color:var(--accent);">
+            <!-- Hidden field carries year when this checkbox is checked -->
+            <input type="hidden" name="year_for_{{ cls }}" value="{{ yr }}" disabled id="yhid_{{ yr }}_{{ cls }}">
             {{ cls }}
           </label>
           {% endfor %}
         </div>
-        <div id="classCount" style="font-size:11px;color:var(--text2);margin-top:10px;">
+        {% endfor %}
+
+        <div id="classCount" style="font-size:11px;color:var(--text2);margin-top:4px;">
           Selected: <span id="countNum" style="color:var(--accent);font-weight:700;">{{ my_classes|length }}</span> / 5
         </div>
       </div>
@@ -163,22 +175,56 @@ const CLASS_OPTIONS_PROF = {
 };
 
 let maxClasses = 5;
+
+// For 1st year classes (no year ambiguity)
 function toggleClass(label, cls) {
-  const cb = label.querySelector('input[type=checkbox]');
+  const cb = label.querySelector('input[type=checkbox][name="staff_classes"]');
   const checked = document.querySelectorAll('input[name="staff_classes"]:checked').length;
   if (!cb.checked && checked >= maxClasses) {
     alert('Maximum 5 classes allowed!');
-    event.preventDefault();
-    return false;
+    event.preventDefault(); return false;
   }
   setTimeout(() => {
     const isChecked = cb.checked;
     label.style.background = isChecked ? 'rgba(233,69,96,0.15)' : '';
     label.style.borderColor = isChecked ? 'var(--accent)' : 'var(--border)';
-    document.getElementById('countNum').textContent =
-      document.querySelectorAll('input[name="staff_classes"]:checked').length;
+    updateCount();
   }, 10);
 }
+
+// For 2nd-4th year classes — also enable/disable the hidden year field
+function toggleClassYr(label, cls, yr) {
+  const cb   = label.querySelector('input[type=checkbox][name="staff_classes"]');
+  const yhid = document.getElementById(`yhid_${yr}_${cls}`);
+  const checked = document.querySelectorAll('input[name="staff_classes"]:checked').length;
+  if (!cb.checked && checked >= maxClasses) {
+    alert('Maximum 5 classes allowed!');
+    event.preventDefault(); return false;
+  }
+  setTimeout(() => {
+    const isChecked = cb.checked;
+    label.style.background = isChecked ? 'rgba(233,69,96,0.15)' : '';
+    label.style.borderColor = isChecked ? 'var(--accent)' : 'var(--border)';
+    // Enable hidden year field only when checked so it gets submitted
+    if (yhid) yhid.disabled = !isChecked;
+    updateCount();
+  }, 10);
+}
+
+function updateCount() {
+  document.getElementById('countNum').textContent =
+    document.querySelectorAll('input[name="staff_classes"]:checked').length;
+}
+
+// On page load — enable hidden year fields for already-checked boxes
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('input[name="staff_classes"][data-year]:checked').forEach(cb => {
+    const yr  = cb.dataset.year;
+    const cls = cb.value;
+    const hid = document.getElementById(`yhid_${yr}_${cls}`);
+    if (hid) hid.disabled = false;
+  });
+});
 
 function toggleCCProfile() {
   const checked = document.getElementById('ccCheckProfile').checked;
