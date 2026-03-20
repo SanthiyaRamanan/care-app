@@ -697,7 +697,7 @@ def admin_staff():
 #  ADMIN SUBJECT MASTER (dept + year + sem + type)
 # ════════════════════════════════════════════
 
-DEPARTMENTS = ['CS','CE','MECH','AD','ECE','IT','S&H','T&P']
+DEPARTMENTS = ['S&H','AI&DS','CE','CSE','ECE','MECH','T&P']
 YEAR_SEM_MAP = {1:(1,2), 2:(3,4), 3:(5,6), 4:(7,8)}
 
 @app.route('/admin/subjects', methods=['GET','POST'])
