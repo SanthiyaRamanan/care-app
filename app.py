@@ -567,9 +567,20 @@ def admin_timetable():
     if selected_class and selected_year:
         # Determine dept from class name (e.g. AD-B -> AD, I-A -> first year no dept filter)
         cls_parts = selected_class.split('-')
-        cls_dept  = cls_parts[0] if len(cls_parts) > 1 and not cls_parts[0].startswith('I') else ''
+        cls_dept_raw = cls_parts[0] if len(cls_parts) > 1 and not cls_parts[0].startswith('I') else ''
         sem_min   = (selected_year - 1) * 2 + 1
         sem_max   = sem_min + 1
+
+        # Map class prefix to department name in subject_master
+        DEPT_CODE_MAP = {
+            'CS': 'CSE', 'CSE': 'CSE',
+            'AD': 'AI&DS', 'AI': 'AI&DS',
+            'CE': 'CE',
+            'ECE': 'ECE',
+            'MECH': 'MECH',
+        }
+        cls_dept = DEPT_CODE_MAP.get(cls_dept_raw.upper(), cls_dept_raw)
+
         if cls_dept:
             cur.execute("""SELECT id, subject, subject_type, semester
                            FROM subject_master
@@ -1049,8 +1060,16 @@ def profile():
             cur.execute("DELETE FROM staff_classes WHERE staff_id=%s", (user['id'],))
             for cls in selected:
                 if cls in ALL_CLASSES:
+                    # Store with year prefix: I-A→1-I-A, CS-A→stored with year from form
+                    # 1st year classes start with 'I-'
+                    if cls.startswith('I-'):
+                        cls_key = f"1-{cls}"
+                    else:
+                        # For 2nd-4th year, year is submitted as hidden field per class
+                        yr = request.form.get(f'year_for_{cls}', '')
+                        cls_key = f"{yr}-{cls}" if yr else cls
                     cur.execute("INSERT IGNORE INTO staff_classes (staff_id,class_name) VALUES (%s,%s)",
-                                (user['id'], cls))
+                                (user['id'], cls_key))
             # Save CC info
             if is_cc and cc_key:
                 cur.execute("""INSERT INTO staff_classes (staff_id,class_name,is_coordinator,coordinator_class)
